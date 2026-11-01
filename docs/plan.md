@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version / status | v0.2, in progress (Phase 0 steps 1 to 5 done) |
+| Version / status | v0.2, in progress (Steps 1 to 6 done) |
 | Date | 2026-10-31 |
 | Inputs | PRD v0.1, `spec.md` v0.2, `adr.md` v0.2, `prompts.md` v0.2 |
 | Working style | One step at a time; each step ends runnable, tested and committed |
@@ -76,7 +76,7 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 
 | Done | Step | Deliverable | Size | Depends on | Done when |
 | --- | --- | --- | --- | --- | --- |
-| [ ] | 6 | Ingestion API: upload, list, get, MinIO storage, SHA-256 duplicate detection | L | 2, 5 | curl upload creates an object in MinIO and a row in Postgres |
+| [x] | 6 | Ingestion API: upload, list, get, MinIO storage, SHA-256 duplicate detection | L | 2, 5 | curl upload creates an object in MinIO and a row in Postgres |
 | [ ] | 7 | LLM gateway with stub provider, retries, fallback, redaction, prompt loader | L | 3 | Tests pass with no API keys |
 | [ ] | 8 | Classifier agent and document page renderer | M | 3, 7, 5c | Six types and low-confidence paths tested with stub |
 | [ ] | 9 | OCR pre-processor (text layer, Tesseract, LLM fallback) | L | 3, 7 | Skewed sample corrected; fallback triggers; payload validates |
@@ -211,7 +211,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | 2026-11-01 | Spec v0.2.1 | `NPI_CHECKSUM` moved to `ClaimsResult.warnings` (not a KYC flag); `claim_history.kind` is TEXT plus CHECK; `policy_exclusions` lookup rule stated |
 | 2026-10-31 | D1 and D2 confirmed | D1: no coverage decision for discharge summaries and prescriptions. D2: policy amendments always escalate unless KYC fails. All docs updated |
 | 2026-10-31 | Docs updated to v0.2 | Dataset review found 15 mismatches; added Steps 5a to 5c; decisions D1, D2 and the clock rule added |
-| | | |
+| 2026-11-01 | Step 6 | Ingestion API verified: 119 tests passed, Ruff passed, live upload and duplicate detection confirmed against development Postgres and MinIO |
 
 ## 11. Definition of done
 
@@ -221,7 +221,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 ## 12. Next action
 
-Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Next: **Step 6 (ingestion API)**. Earlier next-step notes, kept for the record:
+Phase 0 and Phase 0b (steps 1 to 5c) are done, Gate 0 has passed, and Step 6 is complete. Next: **Step 7 (LLM gateway with stub provider)**. Earlier next-step notes, kept for the record:
 
 1. Replace the four docs in `docs/` with the v0.2 files.
 2. Run **Step 5a** (fix the generator, regenerate once, freeze). Use the Step 5a prompt in `prompts.md`.
