@@ -66,11 +66,11 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 
 | Done | Step | Deliverable | Size | Depends on | Done when |
 | --- | --- | --- | --- | --- | --- |
-| [ ] | 5a | Fix and instrument `generate_docs.py` (seeded, truth values saved, expected decisions), fix `generate_unknown.py`, regenerate once, freeze | M | none | Two runs give identical checksums; `truth.json` covers every document; `expected_decision` on every entry |
-| [ ] | 5b | Retrofit Steps 3 to 5 to spec v0.2: new settings, model fields and enums, decision-engine variants (D1, D2), second Alembic migration (`received_at`, `claim_history` columns, `policy_exclusions`) | M | 3, 4, 5 | Old tests still pass; new tests pass; migration applies on a fresh DB and on the existing one |
-| [ ] | 5c | Integrate the dataset: `LabelRecord`, `labels.jsonl`, `split.json`, seed members and claim history from the patient clusters | M | 5a, 5b | Counts match (31, 30, 30, 30, 30, 4); split deterministic with no cluster in both sets; seed idempotent |
+| [x] | 5a | Fix and instrument `generate_docs.py` (seeded, truth values saved, expected decisions), fix `generate_unknown.py`, regenerate once, freeze | M | none | Two runs give identical checksums; `truth.json` covers every document; `expected_decision` on every entry |
+| [x] | 5b | Retrofit Steps 3 to 5 to spec v0.2: new settings, model fields and enums, decision-engine variants (D1, D2), second Alembic migration (`received_at`, `claim_history` columns, `policy_exclusions`) | M | 3, 4, 5 | Old tests still pass; new tests pass; migration applies on a fresh DB and on the existing one |
+| [x] | 5c | Integrate the dataset: `LabelRecord`, `labels.jsonl`, `split.json`, seed members and claim history from the patient clusters | M | 5a, 5b | Counts match (31, 30, 30, 30, 30, 4); split deterministic with no cluster in both sets; seed idempotent |
 
-**Gate 0 (end of phase 0b):** blocking open questions answered or defaults accepted (PRD section 13; D1 and D2 are confirmed). Dataset frozen and committed. Tests green, repo clean.
+**Gate 0 (passed 2026-11-01):** blocking open questions answered or defaults accepted (PRD section 13; D1 and D2 are confirmed). Dataset frozen and committed. Tests green, repo clean.
 
 ### Phase 1: Core pipeline
 
@@ -103,7 +103,7 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 
 | Done | Step | Deliverable | Size | Depends on | Done when |
 | --- | --- | --- | --- | --- | --- |
-| [ ] | 19 | Dataset review and gap-filling (the generators exist from 5a): scenario coverage matrix against the spec, add missing scenarios such as a prompt-injection document and an unrelated or blank page, confirm the split | S | 5c | Coverage matrix has no empty row; additions are deterministic; split unchanged for existing clusters |
+| [ ] | 19 | Dataset review and gap-filling (the generators exist from 5a): scenario coverage matrix against the spec, add missing scenarios such as a prompt-injection document and an unrelated or blank page, confirm the split. **Also add a second cluster, assigned to holdout, for each single-cluster scenario** (amount under 10k, date conflict, duplicate claim, name mismatch, code mismatch, readmission), because the holdout set currently has none of them | S | 5c | Coverage matrix has no empty row; every scenario has at least one holdout cluster; additions are deterministic; split unchanged for existing clusters |
 | [ ] | 20 | Evaluation harness (runner sets `received_at`, original before duplicate), baseline run with a real model, tuning loop on dev, final numbers on holdout | L | 16, 19 | Report with all metrics, per-scenario and per-category breakdown, dev and holdout columns, sample sizes; gate script works |
 | [ ] | 21 | Next.js: login, dashboard, case detail with document viewer | L | 17, 18 | Log in, list cases, open a case with agent outputs |
 | [ ] | 22 | Review queue, override dialog, audit tab, policies page | L | 21 | AC-06 and AC-07 pass by hand and in Playwright |
@@ -207,6 +207,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | --- | --- | --- |
 | 2026-10-30 | Planning (PRD, spec, ADRs, prompts, plan) | Ready to start Step 1 |
 | 2026-10-31 | Steps 1 to 5 (Phase 0) | Done by you with Copilot. Step 3: spec naming won over PRD (`agent_version`, `SKIPPED`, GraphState keys `document`, `ocr`, `audit`) |
+| 2026-11-01 | Steps 5a, 5b, 5c; Gate 0 passed | Dataset fixed (readmission dates, secondary ICD truth, deterministic PDFs) and frozen. Phase 0 code aligned with spec v0.2 (`medishield_test` database, second migration). 155 labels, 94 APPROVE / 43 ESCALATE / 18 REJECT; split 21 dev and 9 holdout clusters. Six single-cluster fraud scenarios are dev-only |
 | 2026-11-01 | Spec v0.2.1 | `NPI_CHECKSUM` moved to `ClaimsResult.warnings` (not a KYC flag); `claim_history.kind` is TEXT plus CHECK; `policy_exclusions` lookup rule stated |
 | 2026-10-31 | D1 and D2 confirmed | D1: no coverage decision for discharge summaries and prescriptions. D2: policy amendments always escalate unless KYC fails. All docs updated |
 | 2026-10-31 | Docs updated to v0.2 | Dataset review found 15 mismatches; added Steps 5a to 5c; decisions D1, D2 and the clock rule added |
@@ -220,7 +221,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 ## 12. Next action
 
-Phase 0 steps 1 to 5 are done. Next:
+Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Next: **Step 6 (ingestion API)**. Earlier next-step notes, kept for the record:
 
 1. Replace the four docs in `docs/` with the v0.2 files.
 2. Run **Step 5a** (fix the generator, regenerate once, freeze). Use the Step 5a prompt in `prompts.md`.
