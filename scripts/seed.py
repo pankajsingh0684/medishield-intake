@@ -1,5 +1,6 @@
 """Seed deterministic synthetic members, claim history, and local test users."""
 
+import argparse
 import sys
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
@@ -19,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from packages.core.db.models import ClaimHistory, Member, User
 from packages.core.db.session import create_database_engine
 from packages.core.enums import ClaimHistoryKind, UserRole
+from scripts.seed_from_dataset import seed_dataset
 
 SEED = 20261031
 POLICY_ID_NAMESPACE = "medishield:synthetic:policy:"
@@ -37,7 +39,7 @@ class SeedSettings(BaseSettings):
     seed_test_user_password: SecretStr
 
 
-def seed_database(session: Session, test_user_password: str) -> None:
+def seed_random_population(session: Session, test_user_password: str) -> None:
     fake = Faker("en_US")
     fake.seed_instance(SEED)
     members: list[dict[str, object]] = []
@@ -134,13 +136,29 @@ def seed_database(session: Session, test_user_password: str) -> None:
             existing_user.role = role
 
 
+def seed_database(session: Session, test_user_password: str) -> None:
+    seed_dataset(session, test_user_password)
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Seed MediShield development data.")
+    parser.add_argument(
+        "--random",
+        action="store_true",
+        help="also seed the optional MS-TEST random population",
+    )
+    args = parser.parse_args()
     settings = SeedSettings()
     engine = create_database_engine(settings.database_url)
     with Session(engine) as session, session.begin():
-        seed_database(session, settings.seed_test_user_password.get_secret_value())
+        password = settings.seed_test_user_password.get_secret_value()
+        seed_database(session, password)
+        if args.random:
+            seed_random_population(session, password)
     engine.dispose()
-    print("Seeded 40 synthetic members, 200 claim-history rows, and 4 role users.")
+    print("Seeded dataset members, history, and 4 role users.")
+    if args.random:
+        print("Also seeded the optional random MS-TEST population.")
 
 
 if __name__ == "__main__":

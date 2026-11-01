@@ -29,7 +29,9 @@ from packages.core.db.repositories import (
     MemberRepo,
 )
 from packages.core.enums import CaseStatus, ClaimHistoryKind, DocType, UserRole
+from packages.eval.split import load_labels
 from scripts.seed import MEMBER_ID_PREFIX, seed_database
+from scripts.seed_from_dataset import SILVER_MEMBER_ID
 
 
 class DatabaseTestSettings(BaseSettings):
@@ -334,19 +336,61 @@ def test_seed_is_idempotent_and_passwords_are_argon2_hashed(database_engine) -> 
         member_count = session.scalar(
             select(func.count())
             .select_from(Member)
+            .where(Member.member_id.like("PT\\_%", escape="\\"))
+        )
+        claim_count = session.scalar(select(func.count()).select_from(ClaimHistory))
+        users = list(session.scalars(select(User).where(User.email.like("%@medishield.test"))))
+        silver_member = session.get(Member, SILVER_MEMBER_ID)
+        history = list(session.scalars(select(ClaimHistory)))
+        random_member_count = session.scalar(
+            select(func.count())
+            .select_from(Member)
             .where(Member.member_id.like(f"{MEMBER_ID_PREFIX}%"))
         )
-        claim_count = session.scalar(
-            select(func.count())
-            .select_from(ClaimHistory)
-            .where(ClaimHistory.member_id.like(f"{MEMBER_ID_PREFIX}%"))
-        )
-        users = list(session.scalars(select(User).where(User.email.like("%@medishield.test"))))
 
-    assert member_count == 40
-    assert claim_count == 200
+    assert member_count == 30
+    assert random_member_count == 0
+    assert silver_member is not None
+    assert silver_member.policy_number == "MED-SLV-RETRIEVAL"
+    assert claim_count == len(history) > 0
     assert {user.role for user in users} == set(UserRole)
     assert all(user.password_hash.startswith("$argon2id$") for user in users)
+    assert any(
+        row.kind is ClaimHistoryKind.EPISODE_CLAIM and row.member_id == "PT_99733"
+        for row in history
+    )
+    readmission = next(
+        row
+        for row in history
+        if row.kind is ClaimHistoryKind.PRIOR_STAY and row.member_id == "PT_19116"
+    )
+    assert readmission.discharge_date is not None
+    assert readmission.admit_date is not None
+    assert 0 < (readmission.admit_date - readmission.discharge_date).days <= 30
+    duplicate_original = next(row for row in history if row.member_id == "PT_20322")
+    assert duplicate_original.kind is ClaimHistoryKind.PRIOR_CLAIM
+
+    dataset_history = [row for row in history if row.member_id and row.member_id.startswith("PT_")]
+    normal_prior_claims = [
+        row for row in dataset_history if row.kind is ClaimHistoryKind.PRIOR_CLAIM
+    ]
+    source_amounts = {
+        label.fields.claim_amount
+        for label in load_labels()
+        if label.doc_type == DocType.CLAIM_FORM and label.fields.claim_amount is not None
+    }
+    assert all(row.amount in source_amounts for row in normal_prior_claims)
+    date_conflict_rx = next(
+        label
+        for label in load_labels()
+        if label.doc_type == DocType.PRESCRIPTION and label.scenario == "date_conflict"
+    )
+    episode_claim = next(
+        row for row in dataset_history if row.kind is ClaimHistoryKind.EPISODE_CLAIM
+    )
+    assert date_conflict_rx.fields.rx_date is not None
+    assert episode_claim.service_date is not None
+    assert (date_conflict_rx.fields.rx_date - episode_claim.service_date).days > 30
 
     first_counts = (member_count, claim_count, len(users))
     with Session(database_engine) as session, session.begin():
@@ -356,13 +400,9 @@ def test_seed_is_idempotent_and_passwords_are_argon2_hashed(database_engine) -> 
         repeated_member_count = session.scalar(
             select(func.count())
             .select_from(Member)
-            .where(Member.member_id.like(f"{MEMBER_ID_PREFIX}%"))
+            .where(Member.member_id.like("PT\\_%", escape="\\"))
         )
-        repeated_claim_count = session.scalar(
-            select(func.count())
-            .select_from(ClaimHistory)
-            .where(ClaimHistory.member_id.like(f"{MEMBER_ID_PREFIX}%"))
-        )
+        repeated_claim_count = session.scalar(select(func.count()).select_from(ClaimHistory))
         repeated_user_count = session.scalar(
             select(func.count()).select_from(User).where(User.email.like("%@medishield.test"))
         )
