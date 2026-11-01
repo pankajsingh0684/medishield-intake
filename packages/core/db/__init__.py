@@ -12,7 +12,13 @@ from packages.core.db.models import (
     Policy,
     User,
 )
-from packages.core.db.repositories import AuditRepo, CaseRepo, ClaimHistoryRepo, MemberRepo
+from packages.core.db.repositories import (
+    AuditRepo,
+    CaseRepo,
+    ClaimHistoryRepo,
+    MemberRepo,
+    PolicyExclusionRepo,
+)
 
 __all__ = [
     "AgentRun",
@@ -28,5 +34,6 @@ __all__ = [
     "MemberRepo",
     "Override",
     "Policy",
+    "PolicyExclusionRepo",
     "User",
 ]

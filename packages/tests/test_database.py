@@ -5,11 +5,14 @@ from uuid import uuid4
 import pytest
 from alembic import command
 from alembic.config import Config
+from pydantic import ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import create_engine, delete, func, inspect, select, text, update
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
+from packages.core.db import PolicyExclusionRepo
 from packages.core.db.models import (
     AuditEvent,
     Case,
@@ -24,7 +27,6 @@ from packages.core.db.repositories import (
     CaseRepo,
     ClaimHistoryRepo,
     MemberRepo,
-    PolicyExclusionRepo,
 )
 from packages.core.enums import CaseStatus, ClaimHistoryKind, DocType, UserRole
 from scripts.seed import MEMBER_ID_PREFIX, seed_database
@@ -32,27 +34,73 @@ from scripts.seed import MEMBER_ID_PREFIX, seed_database
 
 class DatabaseTestSettings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.example"),
+        env_file=(".env.example", ".env"),
         env_file_encoding="utf-8",
         env_ignore_empty=True,
         extra="ignore",
     )
 
+    database_url: str
     test_database_url: str
 
+    @model_validator(mode="after")
+    def reject_development_database(self) -> "DatabaseTestSettings":
+        development_url = make_url(self.database_url)
+        test_url = make_url(self.test_database_url)
+        development_host = (development_url.host or "").casefold()
+        test_host = (test_url.host or "").casefold()
+        if development_host in {"localhost", "127.0.0.1", "::1"}:
+            development_host = "loopback"
+        if test_host in {"localhost", "127.0.0.1", "::1"}:
+            test_host = "loopback"
+        development_target = (
+            development_url.get_backend_name(),
+            development_host,
+            development_url.port or 5432,
+            development_url.database,
+        )
+        test_target = (
+            test_url.get_backend_name(),
+            test_host,
+            test_url.port or 5432,
+            test_url.database,
+        )
+        if test_target == development_target:
+            raise ValueError("TEST_DATABASE_URL must target a database separate from DATABASE_URL")
+        return self
 
-TEST_DATABASE_URL = DatabaseTestSettings().test_database_url
+
+def test_database_settings_require_urls(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("TEST_DATABASE_URL", raising=False)
+
+    with pytest.raises(ValidationError):
+        DatabaseTestSettings(_env_file=None)
+
+
+def test_database_settings_reject_development_database() -> None:
+    with pytest.raises(ValidationError, match="separate from DATABASE_URL"):
+        DatabaseTestSettings(
+            _env_file=None,
+            database_url="postgresql://user:dev@localhost:5432/medishield",
+            test_database_url="postgresql+psycopg://other:pass@127.0.0.1:5432/medishield",
+        )
 
 
 @pytest.fixture(scope="module")
 def database_engine():
+    test_database_url = DatabaseTestSettings().test_database_url
     alembic_config = Config("alembic.ini")
-    alembic_config.set_main_option("sqlalchemy.url", TEST_DATABASE_URL.replace("%", "%%"))
-    engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+    alembic_config.set_main_option("sqlalchemy.url", test_database_url.replace("%", "%%"))
+    engine = create_engine(test_database_url, pool_pre_ping=True)
     with engine.begin() as connection:
         connection.exec_driver_sql("DROP SCHEMA public CASCADE")
         connection.exec_driver_sql("CREATE SCHEMA public")
     command.upgrade(alembic_config, "head")
+    with engine.connect() as connection:
+        version = connection.scalar(text("SELECT version_num FROM alembic_version"))
+    assert version == "5b20261101"
+
     with engine.begin() as connection:
         connection.exec_driver_sql("DROP SCHEMA public CASCADE")
         connection.exec_driver_sql("CREATE SCHEMA public")
@@ -61,6 +109,18 @@ def database_engine():
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
     assert version == "762e1c97c741"
     command.upgrade(alembic_config, "head")
+    with engine.connect() as connection:
+        version = connection.scalar(text("SELECT version_num FROM alembic_version"))
+    assert version == "5b20261101"
+
+    command.downgrade(alembic_config, "-1")
+    with engine.connect() as connection:
+        version = connection.scalar(text("SELECT version_num FROM alembic_version"))
+    assert version == "762e1c97c741"
+    command.upgrade(alembic_config, "head")
+    with engine.connect() as connection:
+        version = connection.scalar(text("SELECT version_num FROM alembic_version"))
+    assert version == "5b20261101"
     yield engine
     engine.dispose()
 
@@ -85,8 +145,20 @@ def test_migrations_create_all_spec_tables_and_step_5b_columns(database_engine) 
     history_columns = {
         column["name"] for column in inspect(database_engine).get_columns("claim_history")
     }
+    exclusion_columns = {
+        column["name"] for column in inspect(database_engine).get_columns("policy_exclusions")
+    }
     assert "received_at" in cases_columns
     assert {"kind", "claim_number", "admit_date", "discharge_date"} <= history_columns
+    assert exclusion_columns == {
+        "exclusion_id",
+        "policy_id",
+        "range_start",
+        "range_end",
+        "category",
+        "basis",
+        "page",
+    }
     kind_column = next(
         column
         for column in inspect(database_engine).get_columns("claim_history")
