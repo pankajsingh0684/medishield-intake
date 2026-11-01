@@ -1,0 +1,2215 @@
+[
+    {
+        "cluster_id": "C_001",
+        "patient_id": "PT_19116",
+        "name": "Christopher Harris I.",
+        "id_display_name": "Christopher Harris I.",
+        "gender": "M",
+        "dob": "04/25/1954",
+        "address": "456 Oak Ave, Minneapolis, MN",
+        "city": "Minneapolis",
+        "state": "Minnesota",
+        "st_abbr": "MN",
+        "ssn": "489-22-6881",
+        "policy": "MED-GLD-6770619",
+        "group_number": "GRP-89131",
+        "hospital": "Northwestern Memorial Hospital",
+        "doctor": "Dr. Rachel Kim, MD",
+        "npi": "NPI-5610293847",
+        "treatment_date": "2025-12-15 00:00:00",
+        "los": 2,
+        "icd_code": "I25.10",
+        "icd_desc": "Coronary artery disease without angina pectoris",
+        "secondary_icd_code": "G43.909",
+        "secondary_icd_desc": "Migraine, unspecified, not intractable",
+        "cpt_list": [
+            [
+                "90837",
+                "Psychotherapy Session, 60 min",
+                250.0
+            ],
+            [
+                "93000",
+                "Electrocardiogram, routine ECG with at least 12 leads",
+                95.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Alprazolam",
+                "Xanax",
+                "Take 0.5 mg tablet three times daily",
+                30,
+                "$95/month",
+                0
+            ],
+            [
+                "Montelukast",
+                "Singulair",
+                "Take 1 tablet once daily in the evening",
+                30,
+                "$65/month",
+                3
+            ],
+            [
+                "Sertraline",
+                "Zoloft",
+                "Take 1 tablet once daily with food",
+                30,
+                "$35/month",
+                2
+            ]
+        ],
+        "amendment": [
+            "Beneficiary Change",
+            "Updating primary beneficiary designation"
+        ],
+        "claim_number": "CLM-2024-00001",
+        "theme_idx": 0,
+        "id_type": "drivers_license",
+        "is_fraud": true,
+        "fraud_reason": "readmission_30d",
+        "edge_flags": [],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "UB04",
+        "prior_discharge_date": "2025-11-23 00:00:00"
+    },
+    {
+        "cluster_id": "C_002",
+        "patient_id": "PT_99733",
+        "name": "Jessica Jackson Y.",
+        "id_display_name": "Jessica Jackson Y.",
+        "gender": "F",
+        "dob": "02/28/1963",
+        "address": "246 Birch Blvd, Detroit, MI",
+        "city": "Detroit",
+        "state": "Michigan",
+        "st_abbr": "MI",
+        "ssn": "384-68-6977",
+        "policy": "MED-GLD-3728882",
+        "group_number": "GRP-58520",
+        "hospital": "Advocate Christ Medical Center",
+        "doctor": "Dr. David Nguyen, MD",
+        "npi": "NPI-6102938475",
+        "treatment_date": "2025-11-09 00:00:00",
+        "los": 2,
+        "icd_code": "S52.501A",
+        "icd_desc": "Unspecified fracture of lower end of radius, initial encounter",
+        "secondary_icd_code": "M54.5",
+        "secondary_icd_desc": "Low back pain",
+        "cpt_list": [
+            [
+                "80053",
+                "Comprehensive metabolic panel",
+                75.0
+            ],
+            [
+                "90837",
+                "Psychotherapy Session, 60 min",
+                250.0
+            ],
+            [
+                "27447",
+                "Arthroplasty, knee, condyle & plateau \u2013 total knee replacement",
+                15400.0
+            ],
+            [
+                "99291",
+                "Critical care, first 30\u201374 minutes",
+                1100.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Amlodipine",
+                "Norvasc",
+                "Take 1 tablet once daily",
+                30,
+                "$22/month",
+                3
+            ],
+            [
+                "Hydrocodone",
+                "Vicodin",
+                "Take 1-2 tablets every 4-6 hrs for pain",
+                30,
+                "$220/month",
+                0
+            ]
+        ],
+        "amendment": [
+            "Cancellation",
+            "Requesting policy cancellation -- coverage termination"
+        ],
+        "claim_number": "CLM-2024-00002",
+        "theme_idx": 3,
+        "claim_service_date": "2025-11-09 00:00:00",
+        "id_type": "passport",
+        "is_fraud": true,
+        "fraud_reason": "date_conflict",
+        "edge_flags": [],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_003",
+        "patient_id": "PT_62350",
+        "name": "Patricia Miller H.",
+        "id_display_name": "Patricia Miller H.",
+        "gender": "F",
+        "dob": "01/26/1997",
+        "address": "654 Elm St, Rochester, MN",
+        "city": "Rochester",
+        "state": "Minnesota",
+        "st_abbr": "MN",
+        "ssn": "167-37-6155",
+        "policy": "MED-GLD-4567281",
+        "group_number": "GRP-95909",
+        "hospital": "Advocate Illinois Masonic Medical Center",
+        "doctor": "Dr. Brian Wallace, MD",
+        "npi": "NPI-8374651029",
+        "treatment_date": "2025-11-15 00:00:00",
+        "los": 3,
+        "icd_code": "K35.80",
+        "icd_desc": "Unspecified acute appendicitis",
+        "secondary_icd_code": "S52.501A",
+        "secondary_icd_desc": "Unspecified fracture of lower end of radius, initial encounter",
+        "cpt_list": [
+            [
+                "59400",
+                "Routine obstetric care including antepartum/postpartum care",
+                3500.0
+            ],
+            [
+                "27447",
+                "Arthroplasty, knee, condyle & plateau \u2013 total knee replacement",
+                15400.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Amlodipine",
+                "Norvasc",
+                "Take 1 tablet once daily",
+                30,
+                "$22/month",
+                3
+            ],
+            [
+                "Gabapentin",
+                "Neurontin",
+                "Take 1 capsule three times daily",
+                30,
+                "$40/month",
+                2
+            ],
+            [
+                "Alprazolam",
+                "Xanax",
+                "Take 0.5 mg tablet three times daily",
+                30,
+                "$95/month",
+                0
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - Critical Illness",
+            "Electing Critical Illness Rider"
+        ],
+        "claim_number": "CLM-2024-00003",
+        "theme_idx": 1,
+        "id_type": "state_id",
+        "is_fraud": true,
+        "fraud_reason": "proc_diag_mismatch",
+        "edge_flags": [],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_004",
+        "patient_id": "PT_69470",
+        "name": "Elizabeth Taylor Q.",
+        "id_display_name": "Elizabeth Taylor Q.",
+        "gender": "F",
+        "dob": "02/25/1976",
+        "address": "789 Pine Ln, Chicago, IL",
+        "city": "Chicago",
+        "state": "Illinois",
+        "st_abbr": "IL",
+        "ssn": "742-30-7916",
+        "policy": "MED-GLD-2065818",
+        "group_number": "GRP-60432",
+        "hospital": "OSF Saint Francis Medical Center",
+        "doctor": "Dr. Monica Suarez, MD",
+        "npi": "NPI-7293847561",
+        "treatment_date": "2025-09-09 00:00:00",
+        "los": 2,
+        "icd_code": "F32.1",
+        "icd_desc": "Major depressive disorder, single episode, moderate",
+        "secondary_icd_code": "J01.90",
+        "secondary_icd_desc": "Acute sinusitis, unspecified",
+        "cpt_list": [
+            [
+                "71046",
+                "Radiologic examination, chest, 2 views",
+                110.0
+            ],
+            [
+                "47562",
+                "Laparoscopic Cholecystectomy",
+                18500.0
+            ],
+            [
+                "90837",
+                "Psychotherapy Session, 60 min",
+                250.0
+            ],
+            [
+                "99284",
+                "Emergency department visit, problem of high severity",
+                680.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Sertraline",
+                "Zoloft",
+                "Take 1 tablet once daily with food",
+                30,
+                "$35/month",
+                2
+            ],
+            [
+                "Metformin",
+                "Glucophage",
+                "Take 1 tablet twice daily with meals",
+                30,
+                "$12/month",
+                3
+            ],
+            [
+                "Amlodipine",
+                "Norvasc",
+                "Take 1 tablet once daily",
+                30,
+                "$22/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - Critical Illness",
+            "Electing Critical Illness Rider"
+        ],
+        "claim_number": "CLM-2024-00004",
+        "theme_idx": 2,
+        "id_type": "insurance_card",
+        "is_fraud": true,
+        "fraud_reason": "amount_under_10k",
+        "edge_flags": [],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_005",
+        "patient_id": "PT_20322",
+        "name": "Sarah White Q.",
+        "id_display_name": "Sarah White Q.",
+        "gender": "F",
+        "dob": "03/17/1993",
+        "address": "417 Willow Rd, Evansville, IN",
+        "city": "Evansville",
+        "state": "Indiana",
+        "st_abbr": "IN",
+        "ssn": "619-87-4258",
+        "policy": "MED-GLD-3564217",
+        "group_number": "GRP-59009",
+        "hospital": "Northwestern Memorial Hospital",
+        "doctor": "Dr. Emily Chen, MD",
+        "npi": "NPI-3847561029",
+        "treatment_date": "2025-10-11 00:00:00",
+        "los": 5,
+        "icd_code": "E11.9",
+        "icd_desc": "Type 2 diabetes mellitus without complications",
+        "secondary_icd_code": "S52.501A",
+        "secondary_icd_desc": "Unspecified fracture of lower end of radius, initial encounter",
+        "cpt_list": [
+            [
+                "70553",
+                "MRI brain with contrast material",
+                2100.0
+            ],
+            [
+                "93000",
+                "Electrocardiogram, routine ECG with at least 12 leads",
+                95.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Omeprazole",
+                "Prilosec",
+                "Take 1 capsule 30 min before breakfast",
+                30,
+                "$24/month",
+                2
+            ]
+        ],
+        "amendment": [
+            "Beneficiary Change",
+            "Updating primary beneficiary designation"
+        ],
+        "claim_number": "CLM-2024-00005",
+        "theme_idx": 0,
+        "id_type": "medicare_card",
+        "is_fraud": true,
+        "fraud_reason": "duplicate_claim",
+        "edge_flags": [],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_006",
+        "patient_id": "PT_39451",
+        "name": "Sandra Hall C.",
+        "id_display_name": "Sindra Hall C.",
+        "gender": "F",
+        "dob": "09/25/1993",
+        "address": "417 Willow Rd, Madison, WI",
+        "city": "Madison",
+        "state": "Wisconsin",
+        "st_abbr": "WI",
+        "ssn": "586-80-3705",
+        "policy": "MED-GLD-5446912",
+        "group_number": "GRP-79163",
+        "hospital": "Advocate Christ Medical Center",
+        "doctor": "Dr. Monica Suarez, MD",
+        "npi": "NPI-7293847561",
+        "treatment_date": "2025-09-25 00:00:00",
+        "los": 3,
+        "icd_code": "G43.909",
+        "icd_desc": "Migraine, unspecified, not intractable",
+        "secondary_icd_code": "I10",
+        "secondary_icd_desc": "Essential (primary) hypertension",
+        "cpt_list": [
+            [
+                "36415",
+                "Collection of venous blood by venipuncture",
+                35.0
+            ],
+            [
+                "47562",
+                "Laparoscopic Cholecystectomy",
+                18500.0
+            ],
+            [
+                "43239",
+                "EGD w/ Biopsy (Upper GI Endoscopy)",
+                3200.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Amoxicillin",
+                "Amoxil",
+                "Take 1 capsule three times daily",
+                10,
+                "$18/course",
+                0
+            ],
+            [
+                "Oxycodone",
+                "OxyContin",
+                "Take 1 tablet every 4-6 hrs for pain",
+                30,
+                "$180/month",
+                0
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - OPD",
+            "Electing Outpatient Department (OPD) Rider"
+        ],
+        "claim_number": "CLM-2024-00006",
+        "theme_idx": 3,
+        "id_type": "drivers_license",
+        "is_fraud": true,
+        "fraud_reason": "name_mismatch",
+        "edge_flags": [],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_007",
+        "patient_id": "PT_71993",
+        "name": "Mary Davis S.",
+        "id_display_name": "Mary Davis S.",
+        "gender": "F",
+        "dob": "04/19/1980",
+        "address": "456 Oak Ave, Detroit, MI",
+        "city": "Detroit",
+        "state": "Michigan",
+        "st_abbr": "MI",
+        "ssn": "824-90-1964",
+        "policy": "MED-GLD-4841005",
+        "group_number": "GRP-18834",
+        "hospital": "UI Health \u2013 University of Illinois Hospital",
+        "doctor": "Dr. Sarah Jenkins, MD",
+        "npi": "NPI-1029384756",
+        "treatment_date": "2025-02-17 00:00:00",
+        "los": 3,
+        "icd_code": "K35.80",
+        "icd_desc": "Unspecified acute appendicitis",
+        "secondary_icd_code": "M54.5",
+        "secondary_icd_desc": "Low back pain",
+        "cpt_list": [
+            [
+                "17000",
+                "Destruction, premalignant lesions \u2013 Aesthetic/Cosmetic",
+                1200.0
+            ],
+            [
+                "93306",
+                "Echocardiography, transthoracic, complete",
+                1450.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Prednisone",
+                "Deltasone",
+                "Take 1 tablet once daily (taper schedule)",
+                10,
+                "$30/course",
+                0
+            ],
+            [
+                "Alprazolam",
+                "Xanax",
+                "Take 0.5 mg tablet three times daily",
+                30,
+                "$95/month",
+                0
+            ],
+            [
+                "Montelukast",
+                "Singulair",
+                "Take 1 tablet once daily in the evening",
+                30,
+                "$65/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - OPD",
+            "Electing Outpatient Department (OPD) Rider"
+        ],
+        "claim_number": "CLM-2024-00007",
+        "theme_idx": 0,
+        "id_type": "passport",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "uncovered_procedure"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": "dea",
+        "claim_type": "UB04"
+    },
+    {
+        "cluster_id": "C_008",
+        "patient_id": "PT_82132",
+        "name": "Richard Martinez D.",
+        "id_display_name": "Richard Martinez D.",
+        "gender": "M",
+        "dob": "11/14/1951",
+        "address": "246 Birch Blvd, Rochester, MN",
+        "city": "Rochester",
+        "state": "Minnesota",
+        "st_abbr": "MN",
+        "ssn": "578-16-2612",
+        "policy": "MED-GLD-2016911",
+        "group_number": "GRP-62772",
+        "hospital": "Rush University Medical Center",
+        "doctor": "Dr. David Nguyen, MD",
+        "npi": "NPI-6102938475",
+        "treatment_date": "2025-04-07 00:00:00",
+        "los": 3,
+        "icd_code": "N39.0",
+        "icd_desc": "Urinary tract infection, site not specified",
+        "secondary_icd_code": "M17.11",
+        "secondary_icd_desc": "Primary osteoarthritis, right knee",
+        "cpt_list": [
+            [
+                "85025",
+                "Blood count, complete (CBC) with auto differential WBC",
+                55.0
+            ],
+            [
+                "43239",
+                "Esophagogastroduodenoscopy (EGD) with biopsy",
+                3400.0
+            ],
+            [
+                "80053",
+                "Comprehensive metabolic panel",
+                75.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Amoxicillin",
+                "Amoxil",
+                "Take 1 capsule three times daily",
+                10,
+                "$18/course",
+                0
+            ],
+            [
+                "Atorvastatin",
+                "Lipitor",
+                "Take 1 tablet at bedtime",
+                30,
+                "$45/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Add Dependent - Spouse",
+            "Adding legal spouse as covered dependent"
+        ],
+        "claim_number": "CLM-2024-00008",
+        "theme_idx": 1,
+        "id_type": "state_id",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "missing_fields"
+        ],
+        "missing_field_type": "dob",
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_009",
+        "patient_id": "PT_17665",
+        "name": "Mary Davis C.",
+        "id_display_name": "Mary Davis C.",
+        "gender": "F",
+        "dob": "04/06/1993",
+        "address": "135 Walnut Way, Columbia, MO",
+        "city": "Columbia",
+        "state": "Missouri",
+        "st_abbr": "MO",
+        "ssn": "318-61-1960",
+        "policy": "MED-GLD-3762152",
+        "group_number": "GRP-59672",
+        "hospital": "Advocate Illinois Masonic Medical Center",
+        "doctor": "Dr. Sarah Jenkins, MD",
+        "npi": "NPI-1029384756",
+        "treatment_date": "2025-05-26 00:00:00",
+        "los": 5,
+        "icd_code": "K35.80",
+        "icd_desc": "Unspecified acute appendicitis",
+        "secondary_icd_code": "M54.5",
+        "secondary_icd_desc": "Low back pain",
+        "cpt_list": [
+            [
+                "29827",
+                "Shoulder Arthroscopy w/ Rotator Cuff Repair",
+                22000.0
+            ],
+            [
+                "90837",
+                "Psychotherapy Session, 60 min",
+                250.0
+            ],
+            [
+                "47562",
+                "Laparoscopic Cholecystectomy",
+                18500.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Amoxicillin",
+                "Amoxil",
+                "Take 1 capsule three times daily",
+                10,
+                "$18/course",
+                0
+            ],
+            [
+                "Lisinopril",
+                "Zestril",
+                "Take 1 tablet once daily",
+                30,
+                "$18/month",
+                3
+            ],
+            [
+                "Atorvastatin",
+                "Lipitor",
+                "Take 1 tablet at bedtime",
+                30,
+                "$45/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Coverage Tier Upgrade",
+            "Requesting upgrade from Silver to Gold tier"
+        ],
+        "claim_number": "CLM-2024-00009",
+        "theme_idx": 1,
+        "id_type": "insurance_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "missing_fields"
+        ],
+        "missing_field_type": "npi",
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_010",
+        "patient_id": "PT_20745",
+        "name": "John Johnson X.",
+        "id_display_name": "John Johnson X.",
+        "gender": "M",
+        "dob": "01/02/1965",
+        "address": "579 Ash Ave, San Antonio, TX",
+        "city": "San Antonio",
+        "state": "Texas",
+        "st_abbr": "TX",
+        "ssn": "973-77-3579",
+        "policy": "MED-GLD-1954280",
+        "group_number": "GRP-76562",
+        "hospital": "University of Chicago Medical Center",
+        "doctor": "Dr. Mark Owen, MD",
+        "npi": "NPI-2938475610",
+        "treatment_date": "2025-02-20 00:00:00",
+        "los": 2,
+        "icd_code": "F32.1",
+        "icd_desc": "Major depressive disorder, single episode, moderate",
+        "secondary_icd_code": "S52.501A",
+        "secondary_icd_desc": "Unspecified fracture of lower end of radius, initial encounter",
+        "cpt_list": [
+            [
+                "36415",
+                "Collection of venous blood by venipuncture",
+                35.0
+            ],
+            [
+                "71046",
+                "Radiologic examination, chest, 2 views",
+                110.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Atorvastatin",
+                "Lipitor",
+                "Take 1 tablet at bedtime",
+                30,
+                "$45/month",
+                3
+            ],
+            [
+                "Alprazolam",
+                "Xanax",
+                "Take 0.5 mg tablet three times daily",
+                30,
+                "$95/month",
+                0
+            ],
+            [
+                "Montelukast",
+                "Singulair",
+                "Take 1 tablet once daily in the evening",
+                30,
+                "$65/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Change of Address",
+            "Requesting update of mailing address to new residence"
+        ],
+        "claim_number": "CLM-2024-00010",
+        "theme_idx": 2,
+        "id_type": "medicare_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expired_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "UB04"
+    },
+    {
+        "cluster_id": "C_011",
+        "patient_id": "PT_47353",
+        "name": "Nancy Martin I.",
+        "id_display_name": "Nancy Martin I.",
+        "gender": "F",
+        "dob": "11/23/1958",
+        "address": "654 Elm St, Saint Paul, MN",
+        "city": "Saint Paul",
+        "state": "Minnesota",
+        "st_abbr": "MN",
+        "ssn": "505-26-5915",
+        "policy": "MED-GLD-8670955",
+        "group_number": "GRP-51441",
+        "hospital": "Northwestern Memorial Hospital",
+        "doctor": "Dr. Mark Owen, MD",
+        "npi": "NPI-2938475610",
+        "treatment_date": "2025-08-20 00:00:00",
+        "los": 2,
+        "icd_code": "I10",
+        "icd_desc": "Essential (primary) hypertension",
+        "secondary_icd_code": "J18.9",
+        "secondary_icd_desc": "Unspecified pneumonia",
+        "cpt_list": [
+            [
+                "44970",
+                "Laparoscopy, surgical, appendectomy",
+                8750.0
+            ],
+            [
+                "72148",
+                "MRI lumbar spine without contrast",
+                1800.0
+            ],
+            [
+                "99284",
+                "Emergency department visit, problem of high severity",
+                680.0
+            ],
+            [
+                "85025",
+                "Blood count, complete (CBC) with auto differential WBC",
+                55.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Prednisone",
+                "Deltasone",
+                "Take 1 tablet once daily (taper schedule)",
+                10,
+                "$30/course",
+                0
+            ],
+            [
+                "Metformin",
+                "Glucophage",
+                "Take 1 tablet twice daily with meals",
+                30,
+                "$12/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Beneficiary Change",
+            "Updating primary beneficiary designation"
+        ],
+        "claim_number": "CLM-2024-00011",
+        "theme_idx": 0,
+        "id_type": "drivers_license",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expired_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_012",
+        "patient_id": "PT_16658",
+        "name": "Karen Harris T.",
+        "id_display_name": "Karen Harris T.",
+        "gender": "F",
+        "dob": "11/17/1996",
+        "address": "654 Elm St, Rockford, IL",
+        "city": "Rockford",
+        "state": "Illinois",
+        "st_abbr": "IL",
+        "ssn": "779-23-3200",
+        "policy": "MED-GLD-5437001",
+        "group_number": "GRP-25129",
+        "hospital": "University of Chicago Medical Center",
+        "doctor": "Dr. Mark Owen, MD",
+        "npi": "NPI-2938475610",
+        "treatment_date": "2025-05-10 00:00:00",
+        "los": 3,
+        "icd_code": "G43.909",
+        "icd_desc": "Migraine, unspecified, not intractable",
+        "secondary_icd_code": "M75.100",
+        "secondary_icd_desc": "Unspecified rotator cuff syndrome",
+        "cpt_list": [
+            [
+                "17000",
+                "Destruction, premalignant lesions \u2013 Aesthetic/Cosmetic",
+                1200.0
+            ],
+            [
+                "44970",
+                "Laparoscopy, surgical, appendectomy",
+                8750.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Oxycodone",
+                "OxyContin",
+                "Take 1 tablet every 4-6 hrs for pain",
+                30,
+                "$180/month",
+                0
+            ],
+            [
+                "Amoxicillin",
+                "Amoxil",
+                "Take 1 capsule three times daily",
+                10,
+                "$18/course",
+                0
+            ]
+        ],
+        "amendment": [
+            "Coverage Tier Upgrade",
+            "Requesting upgrade from Silver to Gold tier"
+        ],
+        "claim_number": "CLM-2024-00012",
+        "theme_idx": 2,
+        "id_type": "passport",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "uncovered_procedure"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_013",
+        "patient_id": "PT_57795",
+        "name": "Betty Clark I.",
+        "id_display_name": "Betty Clark I.",
+        "gender": "F",
+        "dob": "01/11/1947",
+        "address": "417 Willow Rd, Pittsburgh, PA",
+        "city": "Pittsburgh",
+        "state": "Pennsylvania",
+        "st_abbr": "PA",
+        "ssn": "368-30-8239",
+        "policy": "MED-GLD-8175395",
+        "group_number": "GRP-83519",
+        "hospital": "Rush University Medical Center",
+        "doctor": "Dr. Sarah Jenkins, MD",
+        "npi": "NPI-1029384756",
+        "treatment_date": "2025-02-23 00:00:00",
+        "los": 3,
+        "icd_code": "N39.0",
+        "icd_desc": "Urinary tract infection, site not specified",
+        "secondary_icd_code": "K35.80",
+        "secondary_icd_desc": "Unspecified acute appendicitis",
+        "cpt_list": [
+            [
+                "70553",
+                "MRI brain with contrast material",
+                2100.0
+            ],
+            [
+                "33533",
+                "CABG \u2014 Arterial, Single Vessel",
+                85000.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Lisinopril",
+                "Zestril",
+                "Take 1 tablet once daily",
+                30,
+                "$18/month",
+                3
+            ],
+            [
+                "Albuterol",
+                "ProAir HFA",
+                "Inhale 2 puffs every 4-6 hrs as needed",
+                30,
+                "$55/month",
+                1
+            ],
+            [
+                "Prednisone",
+                "Deltasone",
+                "Take 1 tablet once daily (taper schedule)",
+                10,
+                "$30/course",
+                0
+            ]
+        ],
+        "amendment": [
+            "Change of Address",
+            "Requesting update of mailing address to new residence"
+        ],
+        "claim_number": "CLM-2024-00013",
+        "theme_idx": 1,
+        "id_type": "drivers_license",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "tampered_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "UB04"
+    },
+    {
+        "cluster_id": "C_014",
+        "patient_id": "PT_15075",
+        "name": "John Johnson L.",
+        "id_display_name": "John Johnson L.",
+        "gender": "M",
+        "dob": "11/08/1958",
+        "address": "987 Cedar Ct, Miami, FL",
+        "city": "Miami",
+        "state": "Florida",
+        "st_abbr": "FL",
+        "ssn": "898-81-7658",
+        "policy": "MED-GLD-3592974",
+        "group_number": "GRP-41029",
+        "hospital": "University of Chicago Medical Center",
+        "doctor": "Dr. Emily Chen, MD",
+        "npi": "NPI-3847561029",
+        "treatment_date": "2025-07-01 00:00:00",
+        "los": 3,
+        "icd_code": "G43.909",
+        "icd_desc": "Migraine, unspecified, not intractable",
+        "secondary_icd_code": "I25.10",
+        "secondary_icd_desc": "Coronary artery disease without angina pectoris",
+        "cpt_list": [
+            [
+                "43239",
+                "Esophagogastroduodenoscopy (EGD) with biopsy",
+                3400.0
+            ],
+            [
+                "47562",
+                "Laparoscopic Cholecystectomy",
+                18500.0
+            ],
+            [
+                "27447",
+                "Arthroplasty, knee, condyle & plateau \u2013 total knee replacement",
+                15400.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Lisinopril",
+                "Zestril",
+                "Take 1 tablet once daily",
+                30,
+                "$18/month",
+                3
+            ],
+            [
+                "Levothyroxine",
+                "Synthroid",
+                "Take 1 tablet once daily on empty stomach",
+                30,
+                "$28/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Add Dependent - Spouse",
+            "Adding legal spouse as covered dependent"
+        ],
+        "claim_number": "CLM-2024-00014",
+        "theme_idx": 2,
+        "id_type": "insurance_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expired_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_015",
+        "patient_id": "PT_24208",
+        "name": "Joseph Anderson G.",
+        "id_display_name": "Joseph Anderson G.",
+        "gender": "M",
+        "dob": "08/12/1997",
+        "address": "321 Maple Dr, Cleveland, OH",
+        "city": "Cleveland",
+        "state": "Ohio",
+        "st_abbr": "OH",
+        "ssn": "124-94-4164",
+        "policy": "MED-GLD-7685149",
+        "group_number": "GRP-53025",
+        "hospital": "Rush University Medical Center",
+        "doctor": "Dr. Rachel Kim, MD",
+        "npi": "NPI-5610293847",
+        "treatment_date": "2025-05-12 00:00:00",
+        "los": 5,
+        "icd_code": "F32.1",
+        "icd_desc": "Major depressive disorder, single episode, moderate",
+        "secondary_icd_code": "E11.9",
+        "secondary_icd_desc": "Type 2 diabetes mellitus without complications",
+        "cpt_list": [
+            [
+                "21120",
+                "Genioplasty \u2013 Cosmetic craniofacial surgery",
+                6800.0
+            ],
+            [
+                "71250",
+                "CT thorax without contrast material",
+                1250.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Alprazolam",
+                "Xanax",
+                "Take 0.5 mg tablet three times daily",
+                30,
+                "$95/month",
+                0
+            ]
+        ],
+        "amendment": [
+            "Coverage Tier Upgrade",
+            "Requesting upgrade from Silver to Gold tier"
+        ],
+        "claim_number": "CLM-2024-00015",
+        "theme_idx": 1,
+        "id_type": "medicare_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "uncovered_procedure"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": "dosage",
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_016",
+        "patient_id": "PT_50538",
+        "name": "Daniel Taylor X.",
+        "id_display_name": "Daniel Taylor X.",
+        "gender": "M",
+        "dob": "06/14/1995",
+        "address": "246 Birch Blvd, Houston, TX",
+        "city": "Houston",
+        "state": "Texas",
+        "st_abbr": "TX",
+        "ssn": "690-34-5173",
+        "policy": "MED-GLD-1744682",
+        "group_number": "GRP-67154",
+        "hospital": "Advocate Christ Medical Center",
+        "doctor": "Dr. Sarah Jenkins, MD",
+        "npi": "NPI-1029384756",
+        "treatment_date": "2025-06-14 00:00:00",
+        "los": 2,
+        "icd_code": "F32.1",
+        "icd_desc": "Major depressive disorder, single episode, moderate",
+        "secondary_icd_code": "N39.0",
+        "secondary_icd_desc": "Urinary tract infection, site not specified",
+        "cpt_list": [
+            [
+                "27447",
+                "Total Knee Arthroplasty",
+                42000.0
+            ],
+            [
+                "71250",
+                "CT thorax without contrast material",
+                1250.0
+            ],
+            [
+                "47562",
+                "Laparoscopic Cholecystectomy",
+                18500.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Gabapentin",
+                "Neurontin",
+                "Take 1 capsule three times daily",
+                30,
+                "$40/month",
+                2
+            ]
+        ],
+        "amendment": [
+            "Coverage Tier Upgrade",
+            "Requesting upgrade from Silver to Gold tier"
+        ],
+        "claim_number": "CLM-2024-00016",
+        "theme_idx": 3,
+        "id_type": "drivers_license",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expiring_soon_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "UB04"
+    },
+    {
+        "cluster_id": "C_017",
+        "patient_id": "PT_72021",
+        "name": "Christopher Harris M.",
+        "id_display_name": "Christopher Harris M.",
+        "gender": "M",
+        "dob": "05/18/1989",
+        "address": "246 Birch Blvd, Madison, WI",
+        "city": "Madison",
+        "state": "Wisconsin",
+        "st_abbr": "WI",
+        "ssn": "780-58-3851",
+        "policy": "MED-GLD-6049101",
+        "group_number": "GRP-63225",
+        "hospital": "Loyola University Medical Center",
+        "doctor": "Dr. Sarah Jenkins, MD",
+        "npi": "NPI-1029384756",
+        "treatment_date": "2025-05-07 00:00:00",
+        "los": 5,
+        "icd_code": "K21.0",
+        "icd_desc": "Gastro-esophageal reflux disease with esophagitis",
+        "secondary_icd_code": "N39.0",
+        "secondary_icd_desc": "Urinary tract infection, site not specified",
+        "cpt_list": [
+            [
+                "27447",
+                "Total Knee Arthroplasty",
+                42000.0
+            ],
+            [
+                "43239",
+                "EGD w/ Biopsy (Upper GI Endoscopy)",
+                3200.0
+            ],
+            [
+                "71250",
+                "CT thorax without contrast material",
+                1250.0
+            ],
+            [
+                "99291",
+                "Critical care, first 30\u201374 minutes",
+                1100.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Amoxicillin",
+                "Amoxil",
+                "Take 1 capsule three times daily",
+                10,
+                "$18/course",
+                0
+            ],
+            [
+                "Hydrocodone",
+                "Vicodin",
+                "Take 1-2 tablets every 4-6 hrs for pain",
+                30,
+                "$220/month",
+                0
+            ]
+        ],
+        "amendment": [
+            "Beneficiary Change",
+            "Updating primary beneficiary designation"
+        ],
+        "claim_number": "CLM-2024-00017",
+        "theme_idx": 4,
+        "id_type": "passport",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_018",
+        "patient_id": "PT_62383",
+        "name": "David Garcia V.",
+        "id_display_name": "David Garcia V.",
+        "gender": "M",
+        "dob": "05/17/1950",
+        "address": "456 Oak Ave, Tampa, FL",
+        "city": "Tampa",
+        "state": "Florida",
+        "st_abbr": "FL",
+        "ssn": "938-40-6085",
+        "policy": "MED-GLD-4768844",
+        "group_number": "GRP-36100",
+        "hospital": "Northwestern Memorial Hospital",
+        "doctor": "Dr. Emily Chen, MD",
+        "npi": "NPI-3847561029",
+        "treatment_date": "2025-01-08 00:00:00",
+        "los": 5,
+        "icd_code": "S52.501A",
+        "icd_desc": "Unspecified fracture of lower end of radius, initial encounter",
+        "secondary_icd_code": "M17.11",
+        "secondary_icd_desc": "Primary osteoarthritis, right knee",
+        "cpt_list": [
+            [
+                "99291",
+                "Critical care, first 30\u201374 minutes",
+                1100.0
+            ],
+            [
+                "43239",
+                "Esophagogastroduodenoscopy (EGD) with biopsy",
+                3400.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Alprazolam",
+                "Xanax",
+                "Take 0.5 mg tablet three times daily",
+                30,
+                "$95/month",
+                0
+            ],
+            [
+                "Atorvastatin",
+                "Lipitor",
+                "Take 1 tablet at bedtime",
+                30,
+                "$45/month",
+                3
+            ],
+            [
+                "Gabapentin",
+                "Neurontin",
+                "Take 1 capsule three times daily",
+                30,
+                "$40/month",
+                2
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - Critical Illness",
+            "Electing Critical Illness Rider"
+        ],
+        "claim_number": "CLM-2024-00018",
+        "theme_idx": 0,
+        "id_type": "drivers_license",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "tampered_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_019",
+        "patient_id": "PT_81810",
+        "name": "Mary Davis Y.",
+        "id_display_name": "Mary Davis Y.",
+        "gender": "F",
+        "dob": "02/25/2000",
+        "address": "789 Pine Ln, Kansas City, MO",
+        "city": "Kansas City",
+        "state": "Missouri",
+        "st_abbr": "MO",
+        "ssn": "923-99-9486",
+        "policy": "MED-GLD-8793853",
+        "group_number": "GRP-16582",
+        "hospital": "Rush University Medical Center",
+        "doctor": "Dr. James Patel, DO",
+        "npi": "NPI-4756102938",
+        "treatment_date": "2025-08-05 00:00:00",
+        "los": 5,
+        "icd_code": "F32.1",
+        "icd_desc": "Major depressive disorder, single episode, moderate",
+        "secondary_icd_code": "M75.100",
+        "secondary_icd_desc": "Unspecified rotator cuff syndrome",
+        "cpt_list": [
+            [
+                "90837",
+                "Psychotherapy Session, 60 min",
+                250.0
+            ],
+            [
+                "27447",
+                "Total Knee Arthroplasty",
+                42000.0
+            ],
+            [
+                "71250",
+                "CT thorax without contrast material",
+                1250.0
+            ],
+            [
+                "99291",
+                "Critical care, first 30\u201374 minutes",
+                1100.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Montelukast",
+                "Singulair",
+                "Take 1 tablet once daily in the evening",
+                30,
+                "$65/month",
+                3
+            ],
+            [
+                "Gabapentin",
+                "Neurontin",
+                "Take 1 capsule three times daily",
+                30,
+                "$40/month",
+                2
+            ],
+            [
+                "Oxycodone",
+                "OxyContin",
+                "Take 1 tablet every 4-6 hrs for pain",
+                30,
+                "$180/month",
+                0
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - Critical Illness",
+            "Electing Critical Illness Rider"
+        ],
+        "claim_number": "CLM-2024-00019",
+        "theme_idx": 1,
+        "id_type": "insurance_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "UB04"
+    },
+    {
+        "cluster_id": "C_020",
+        "patient_id": "PT_30028",
+        "name": "Barbara Anderson X.",
+        "id_display_name": "Barbara Anderson X.",
+        "gender": "F",
+        "dob": "08/15/2000",
+        "address": "417 Willow Rd, Cleveland, OH",
+        "city": "Cleveland",
+        "state": "Ohio",
+        "st_abbr": "OH",
+        "ssn": "383-76-8939",
+        "policy": "MED-GLD-5013879",
+        "group_number": "GRP-45992",
+        "hospital": "Rush University Medical Center",
+        "doctor": "Dr. Brian Wallace, MD",
+        "npi": "NPI-8374651029",
+        "treatment_date": "2025-12-10 00:00:00",
+        "los": 3,
+        "icd_code": "K35.80",
+        "icd_desc": "Unspecified acute appendicitis",
+        "secondary_icd_code": "I25.10",
+        "secondary_icd_desc": "Coronary artery disease without angina pectoris",
+        "cpt_list": [
+            [
+                "21120",
+                "Genioplasty \u2013 Cosmetic craniofacial surgery",
+                6800.0
+            ],
+            [
+                "71250",
+                "CT thorax without contrast material",
+                1250.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Lisinopril",
+                "Zestril",
+                "Take 1 tablet once daily",
+                30,
+                "$18/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Beneficiary Change",
+            "Updating primary beneficiary designation"
+        ],
+        "claim_number": "CLM-2024-00020",
+        "theme_idx": 1,
+        "id_type": "medicare_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "uncovered_procedure"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_021",
+        "patient_id": "PT_67125",
+        "name": "Robert Williams N.",
+        "id_display_name": "Robert Williams N.",
+        "gender": "M",
+        "dob": "06/18/1971",
+        "address": "123 Main St, Chattanooga, TN",
+        "city": "Chattanooga",
+        "state": "Tennessee",
+        "st_abbr": "TN",
+        "ssn": "311-63-7381",
+        "policy": "MED-GLD-1327691",
+        "group_number": "GRP-85456",
+        "hospital": "OSF Saint Francis Medical Center",
+        "doctor": "Dr. Monica Suarez, MD",
+        "npi": "NPI-7293847561",
+        "treatment_date": "2025-01-12 00:00:00",
+        "los": 4,
+        "icd_code": "K21.0",
+        "icd_desc": "Gastro-esophageal reflux disease with esophagitis",
+        "secondary_icd_code": "K35.80",
+        "secondary_icd_desc": "Unspecified acute appendicitis",
+        "cpt_list": [
+            [
+                "43239",
+                "Esophagogastroduodenoscopy (EGD) with biopsy",
+                3400.0
+            ],
+            [
+                "90837",
+                "Psychotherapy Session, 60 min",
+                250.0
+            ],
+            [
+                "27447",
+                "Total Knee Arthroplasty",
+                42000.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Amoxicillin",
+                "Amoxil",
+                "Take 1 capsule three times daily",
+                10,
+                "$18/course",
+                0
+            ]
+        ],
+        "amendment": [
+            "Beneficiary Change",
+            "Updating primary beneficiary designation"
+        ],
+        "claim_number": "CLM-2024-00021",
+        "theme_idx": 2,
+        "id_type": "drivers_license",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expiring_soon_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": "refills",
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_022",
+        "patient_id": "PT_54236",
+        "name": "Margaret Lee K.",
+        "id_display_name": "Margaret Lee K.",
+        "gender": "F",
+        "dob": "11/26/1987",
+        "address": "135 Walnut Way, Kansas City, MO",
+        "city": "Kansas City",
+        "state": "Missouri",
+        "st_abbr": "MO",
+        "ssn": "230-89-9751",
+        "policy": "MED-GLD-1452421",
+        "group_number": "GRP-61645",
+        "hospital": "Rush University Medical Center",
+        "doctor": "Dr. Sarah Jenkins, MD",
+        "npi": "NPI-1029384756",
+        "treatment_date": "2025-11-14 00:00:00",
+        "los": 3,
+        "icd_code": "M75.100",
+        "icd_desc": "Unspecified rotator cuff syndrome",
+        "secondary_icd_code": "J18.9",
+        "secondary_icd_desc": "Unspecified pneumonia",
+        "cpt_list": [
+            [
+                "80053",
+                "Comprehensive metabolic panel",
+                75.0
+            ],
+            [
+                "99214",
+                "Office/outpatient visit, estab. patient, mod. complexity",
+                185.0
+            ],
+            [
+                "99284",
+                "Emergency department visit, problem of high severity",
+                680.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Sertraline",
+                "Zoloft",
+                "Take 1 tablet once daily with food",
+                30,
+                "$35/month",
+                2
+            ],
+            [
+                "Atorvastatin",
+                "Lipitor",
+                "Take 1 tablet at bedtime",
+                30,
+                "$45/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - OPD",
+            "Electing Outpatient Department (OPD) Rider"
+        ],
+        "claim_number": "CLM-2024-00022",
+        "theme_idx": 1,
+        "id_type": "passport",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expiring_soon_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "UB04"
+    },
+    {
+        "cluster_id": "C_023",
+        "patient_id": "PT_24993",
+        "name": "Anthony Moore I.",
+        "id_display_name": "Anthony Moore I.",
+        "gender": "M",
+        "dob": "07/09/1993",
+        "address": "135 Walnut Way, Louisville, KY",
+        "city": "Louisville",
+        "state": "Kentucky",
+        "st_abbr": "KY",
+        "ssn": "119-79-1853",
+        "policy": "MED-GLD-6871360",
+        "group_number": "GRP-39389",
+        "hospital": "Northwestern Memorial Hospital",
+        "doctor": "Dr. Mark Owen, MD",
+        "npi": "NPI-2938475610",
+        "treatment_date": "2025-01-08 00:00:00",
+        "los": 3,
+        "icd_code": "M75.100",
+        "icd_desc": "Unspecified rotator cuff syndrome",
+        "secondary_icd_code": "F32.1",
+        "secondary_icd_desc": "Major depressive disorder, single episode, moderate",
+        "cpt_list": [
+            [
+                "27447",
+                "Total Knee Arthroplasty",
+                42000.0
+            ],
+            [
+                "85025",
+                "Blood count, complete (CBC) with auto differential WBC",
+                55.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Lisinopril",
+                "Zestril",
+                "Take 1 tablet once daily",
+                30,
+                "$18/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - OPD",
+            "Electing Outpatient Department (OPD) Rider"
+        ],
+        "claim_number": "CLM-2024-00023",
+        "theme_idx": 0,
+        "id_type": "state_id",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "missing_fields"
+        ],
+        "missing_field_type": "diag_code",
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_024",
+        "patient_id": "PT_99687",
+        "name": "Richard Martinez O.",
+        "id_display_name": "Richard Martinez O.",
+        "gender": "M",
+        "dob": "05/25/1989",
+        "address": "864 Spruce St, Saint Paul, MN",
+        "city": "Saint Paul",
+        "state": "Minnesota",
+        "st_abbr": "MN",
+        "ssn": "721-24-3683",
+        "policy": "MED-GLD-6218367",
+        "group_number": "GRP-24168",
+        "hospital": "Loyola University Medical Center",
+        "doctor": "Dr. Sarah Jenkins, MD",
+        "npi": "NPI-1029384756",
+        "treatment_date": "2025-10-22 00:00:00",
+        "los": 5,
+        "icd_code": "I25.10",
+        "icd_desc": "Coronary artery disease without angina pectoris",
+        "secondary_icd_code": "M75.100",
+        "secondary_icd_desc": "Unspecified rotator cuff syndrome",
+        "cpt_list": [
+            [
+                "44970",
+                "Laparoscopy, surgical, appendectomy",
+                8750.0
+            ],
+            [
+                "99215",
+                "Office/outpatient visit, estab. patient, high complexity",
+                260.0
+            ],
+            [
+                "33533",
+                "CABG \u2014 Arterial, Single Vessel",
+                85000.0
+            ],
+            [
+                "29827",
+                "Shoulder Arthroscopy w/ Rotator Cuff Repair",
+                22000.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Atorvastatin",
+                "Lipitor",
+                "Take 1 tablet at bedtime",
+                30,
+                "$45/month",
+                3
+            ],
+            [
+                "Metformin",
+                "Glucophage",
+                "Take 1 tablet twice daily with meals",
+                30,
+                "$12/month",
+                3
+            ],
+            [
+                "Gabapentin",
+                "Neurontin",
+                "Take 1 capsule three times daily",
+                30,
+                "$40/month",
+                2
+            ]
+        ],
+        "amendment": [
+            "Coverage Tier Upgrade",
+            "Requesting upgrade from Silver to Gold tier"
+        ],
+        "claim_number": "CLM-2024-00024",
+        "theme_idx": 4,
+        "id_type": "insurance_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expiring_soon_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_025",
+        "patient_id": "PT_45400",
+        "name": "Michael Brown Z.",
+        "id_display_name": "Michael Brown Z.",
+        "gender": "M",
+        "dob": "01/12/1981",
+        "address": "417 Willow Rd, Macon, GA",
+        "city": "Macon",
+        "state": "Georgia",
+        "st_abbr": "GA",
+        "ssn": "479-18-9289",
+        "policy": "MED-GLD-6724909",
+        "group_number": "GRP-11658",
+        "hospital": "OSF Saint Francis Medical Center",
+        "doctor": "Dr. Monica Suarez, MD",
+        "npi": "NPI-7293847561",
+        "treatment_date": "2025-02-14 00:00:00",
+        "los": 4,
+        "icd_code": "F32.1",
+        "icd_desc": "Major depressive disorder, single episode, moderate",
+        "secondary_icd_code": "G43.909",
+        "secondary_icd_desc": "Migraine, unspecified, not intractable",
+        "cpt_list": [
+            [
+                "21120",
+                "Genioplasty \u2013 Cosmetic craniofacial surgery",
+                6800.0
+            ],
+            [
+                "29827",
+                "Shoulder Arthroscopy w/ Rotator Cuff Repair",
+                22000.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Gabapentin",
+                "Neurontin",
+                "Take 1 capsule three times daily",
+                30,
+                "$40/month",
+                2
+            ]
+        ],
+        "amendment": [
+            "Cancellation",
+            "Requesting policy cancellation -- coverage termination"
+        ],
+        "claim_number": "CLM-2024-00025",
+        "theme_idx": 2,
+        "id_type": "medicare_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "uncovered_procedure"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": "drug_name",
+        "claim_type": "UB04"
+    },
+    {
+        "cluster_id": "C_026",
+        "patient_id": "PT_88139",
+        "name": "Paul Walker O.",
+        "id_display_name": "Paul Walker O.",
+        "gender": "M",
+        "dob": "12/19/1972",
+        "address": "321 Maple Dr, Cincinnati, OH",
+        "city": "Cincinnati",
+        "state": "Ohio",
+        "st_abbr": "OH",
+        "ssn": "950-21-5569",
+        "policy": "MED-GLD-8563202",
+        "group_number": "GRP-41963",
+        "hospital": "Advocate Illinois Masonic Medical Center",
+        "doctor": "Dr. Brian Wallace, MD",
+        "npi": "NPI-8374651029",
+        "treatment_date": "2025-06-01 00:00:00",
+        "los": 5,
+        "icd_code": "M75.100",
+        "icd_desc": "Unspecified rotator cuff syndrome",
+        "secondary_icd_code": "K35.80",
+        "secondary_icd_desc": "Unspecified acute appendicitis",
+        "cpt_list": [
+            [
+                "80053",
+                "Comprehensive metabolic panel",
+                75.0
+            ],
+            [
+                "93306",
+                "Echocardiography, transthoracic, complete",
+                1450.0
+            ],
+            [
+                "44970",
+                "Laparoscopy, surgical, appendectomy",
+                8750.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Levothyroxine",
+                "Synthroid",
+                "Take 1 tablet once daily on empty stomach",
+                30,
+                "$28/month",
+                3
+            ],
+            [
+                "Amlodipine",
+                "Norvasc",
+                "Take 1 tablet once daily",
+                30,
+                "$22/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Rider Addition - Maternity",
+            "Electing optional Maternity Rider coverage"
+        ],
+        "claim_number": "CLM-2024-00026",
+        "theme_idx": 1,
+        "id_type": "drivers_license",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expiring_soon_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_027",
+        "patient_id": "PT_55056",
+        "name": "Thomas Jackson R.",
+        "id_display_name": "Thomas Jackson R.",
+        "gender": "M",
+        "dob": "09/07/1945",
+        "address": "732 Poplar Pl, Fort Wayne, IN",
+        "city": "Fort Wayne",
+        "state": "Indiana",
+        "st_abbr": "IN",
+        "ssn": "516-72-4937",
+        "policy": "MED-GLD-8987516",
+        "group_number": "GRP-94659",
+        "hospital": "OSF Saint Francis Medical Center",
+        "doctor": "Dr. Brian Wallace, MD",
+        "npi": "NPI-8374651029",
+        "treatment_date": "2025-01-03 00:00:00",
+        "los": 4,
+        "icd_code": "M54.5",
+        "icd_desc": "Low back pain",
+        "secondary_icd_code": "N39.0",
+        "secondary_icd_desc": "Urinary tract infection, site not specified",
+        "cpt_list": [
+            [
+                "29827",
+                "Shoulder Arthroscopy w/ Rotator Cuff Repair",
+                22000.0
+            ],
+            [
+                "27447",
+                "Arthroplasty, knee, condyle & plateau \u2013 total knee replacement",
+                15400.0
+            ],
+            [
+                "93000",
+                "Electrocardiogram, routine ECG with at least 12 leads",
+                95.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Alprazolam",
+                "Xanax",
+                "Take 0.5 mg tablet three times daily",
+                30,
+                "$95/month",
+                0
+            ],
+            [
+                "Sertraline",
+                "Zoloft",
+                "Take 1 tablet once daily with food",
+                30,
+                "$35/month",
+                2
+            ],
+            [
+                "Amoxicillin",
+                "Amoxil",
+                "Take 1 capsule three times daily",
+                10,
+                "$18/course",
+                0
+            ]
+        ],
+        "amendment": [
+            "Cancellation",
+            "Requesting policy cancellation -- coverage termination"
+        ],
+        "claim_number": "CLM-2024-00027",
+        "theme_idx": 2,
+        "id_type": "passport",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "missing_fields"
+        ],
+        "missing_field_type": "auth_number",
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_028",
+        "patient_id": "PT_39816",
+        "name": "Nancy Martin L.",
+        "id_display_name": "Nancy Martin L.",
+        "gender": "F",
+        "dob": "08/09/1989",
+        "address": "321 Maple Dr, Cincinnati, OH",
+        "city": "Cincinnati",
+        "state": "Ohio",
+        "st_abbr": "OH",
+        "ssn": "223-34-6169",
+        "policy": "MED-GLD-3005795",
+        "group_number": "GRP-80236",
+        "hospital": "Advocate Christ Medical Center",
+        "doctor": "Dr. Emily Chen, MD",
+        "npi": "NPI-3847561029",
+        "treatment_date": "2025-04-24 00:00:00",
+        "los": 5,
+        "icd_code": "K35.80",
+        "icd_desc": "Unspecified acute appendicitis",
+        "secondary_icd_code": "J18.9",
+        "secondary_icd_desc": "Unspecified pneumonia",
+        "cpt_list": [
+            [
+                "33533",
+                "CABG \u2014 Arterial, Single Vessel",
+                85000.0
+            ],
+            [
+                "72148",
+                "MRI lumbar spine without contrast",
+                1800.0
+            ],
+            [
+                "27447",
+                "Total Knee Arthroplasty",
+                42000.0
+            ],
+            [
+                "93000",
+                "Electrocardiogram, routine ECG with at least 12 leads",
+                95.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Montelukast",
+                "Singulair",
+                "Take 1 tablet once daily in the evening",
+                30,
+                "$65/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Beneficiary Change",
+            "Updating primary beneficiary designation"
+        ],
+        "claim_number": "CLM-2024-00028",
+        "theme_idx": 3,
+        "id_type": "state_id",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expired_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "UB04"
+    },
+    {
+        "cluster_id": "C_029",
+        "patient_id": "PT_74454",
+        "name": "Karen Harris A.",
+        "id_display_name": "Karen Harris A.",
+        "gender": "F",
+        "dob": "09/05/1990",
+        "address": "123 Main St, Columbus, OH",
+        "city": "Columbus",
+        "state": "Ohio",
+        "st_abbr": "OH",
+        "ssn": "666-47-3068",
+        "policy": "MED-GLD-9235577",
+        "group_number": "GRP-23446",
+        "hospital": "Loyola University Medical Center",
+        "doctor": "Dr. Sarah Jenkins, MD",
+        "npi": "NPI-1029384756",
+        "treatment_date": "2025-08-16 00:00:00",
+        "los": 5,
+        "icd_code": "J18.9",
+        "icd_desc": "Unspecified pneumonia",
+        "secondary_icd_code": "I25.10",
+        "secondary_icd_desc": "Coronary artery disease without angina pectoris",
+        "cpt_list": [
+            [
+                "99214",
+                "Office/outpatient visit, estab. patient, mod. complexity",
+                185.0
+            ],
+            [
+                "99284",
+                "Emergency department visit, problem of high severity",
+                680.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Metformin",
+                "Glucophage",
+                "Take 1 tablet twice daily with meals",
+                30,
+                "$12/month",
+                3
+            ],
+            [
+                "Montelukast",
+                "Singulair",
+                "Take 1 tablet once daily in the evening",
+                30,
+                "$65/month",
+                3
+            ]
+        ],
+        "amendment": [
+            "Add Dependent - Spouse",
+            "Adding legal spouse as covered dependent"
+        ],
+        "claim_number": "CLM-2024-00029",
+        "theme_idx": 4,
+        "id_type": "drivers_license",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "tampered_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    },
+    {
+        "cluster_id": "C_030",
+        "patient_id": "PT_41439",
+        "name": "Patricia Miller E.",
+        "id_display_name": "Patricia Miller E.",
+        "gender": "F",
+        "dob": "10/10/1954",
+        "address": "456 Oak Ave, Fort Wayne, IN",
+        "city": "Fort Wayne",
+        "state": "Indiana",
+        "st_abbr": "IN",
+        "ssn": "671-63-4697",
+        "policy": "MED-GLD-9767312",
+        "group_number": "GRP-59856",
+        "hospital": "OSF Saint Francis Medical Center",
+        "doctor": "Dr. Brian Wallace, MD",
+        "npi": "NPI-8374651029",
+        "treatment_date": "2025-05-28 00:00:00",
+        "los": 5,
+        "icd_code": "K35.80",
+        "icd_desc": "Unspecified acute appendicitis",
+        "secondary_icd_code": "J01.90",
+        "secondary_icd_desc": "Acute sinusitis, unspecified",
+        "cpt_list": [
+            [
+                "27447",
+                "Total Knee Arthroplasty",
+                42000.0
+            ],
+            [
+                "99214",
+                "Office/outpatient visit, estab. patient, mod. complexity",
+                185.0
+            ],
+            [
+                "71046",
+                "Radiologic examination, chest, 2 views",
+                110.0
+            ],
+            [
+                "44970",
+                "Laparoscopy, surgical, appendectomy",
+                8750.0
+            ]
+        ],
+        "rx_list": [
+            [
+                "Atorvastatin",
+                "Lipitor",
+                "Take 1 tablet at bedtime",
+                30,
+                "$45/month",
+                3
+            ],
+            [
+                "Amlodipine",
+                "Norvasc",
+                "Take 1 tablet once daily",
+                30,
+                "$22/month",
+                3
+            ],
+            [
+                "Hydrocodone",
+                "Vicodin",
+                "Take 1-2 tablets every 4-6 hrs for pain",
+                30,
+                "$220/month",
+                0
+            ]
+        ],
+        "amendment": [
+            "Add Dependent - Spouse",
+            "Adding legal spouse as covered dependent"
+        ],
+        "claim_number": "CLM-2024-00030",
+        "theme_idx": 2,
+        "id_type": "medicare_card",
+        "is_fraud": false,
+        "fraud_reason": null,
+        "edge_flags": [
+            "expired_id"
+        ],
+        "missing_field_type": null,
+        "rx_missing_field_type": null,
+        "claim_type": "CMS1500"
+    }
+]

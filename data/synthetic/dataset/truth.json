@@ -1,0 +1,2063 @@
+{
+    "id_PT_19116": {
+        "patient_id": "PT_19116",
+        "policy_number": "MED-GLD-6770619",
+        "cluster_id": "C_001",
+        "reference_date": "2025-12-15 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "Christopher Harris I.",
+        "printed_expiry_date": "2029-12-14 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_19116": {
+        "patient_id": "PT_19116",
+        "policy_number": "MED-GLD-6770619",
+        "cluster_id": "C_001",
+        "reference_date": "2025-12-15 00:00:00",
+        "claim_amount": "4095.00",
+        "cpt_codes": [
+            "90837",
+            "93000"
+        ],
+        "icd10_codes": [
+            "I25.10",
+            "G43.909"
+        ],
+        "icd10_code": "I25.10",
+        "provider_npi": "NPI-5610293847",
+        "service_date": "2025-12-15 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_19116": {
+        "patient_id": "PT_19116",
+        "policy_number": "MED-GLD-6770619",
+        "cluster_id": "C_001",
+        "reference_date": "2025-12-15 00:00:00",
+        "admit_date": "2025-12-02 00:00:00",
+        "discharge_date": "2025-12-05 00:00:00",
+        "icd10_code": "I25.10",
+        "icd10_codes": [
+            "I25.10",
+            "G43.909"
+        ],
+        "cpt_codes": [
+            "90837",
+            "93000"
+        ],
+        "prior_discharge_date": "2025-11-23 00:00:00"
+    },
+    "rx_PT_19116": {
+        "patient_id": "PT_19116",
+        "policy_number": "MED-GLD-6770619",
+        "cluster_id": "C_001",
+        "reference_date": "2025-12-15 00:00:00",
+        "rx_date": "2025-12-17 00:00:00",
+        "drug_names": [
+            "Alprazolam",
+            "Montelukast",
+            "Sertraline"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_19116": {
+        "patient_id": "PT_19116",
+        "policy_number": "MED-GLD-6770619",
+        "cluster_id": "C_001",
+        "reference_date": "2025-12-15 00:00:00"
+    },
+    "id_PT_99733": {
+        "patient_id": "PT_99733",
+        "policy_number": "MED-GLD-3728882",
+        "cluster_id": "C_002",
+        "reference_date": "2025-11-09 00:00:00",
+        "document_type": "passport",
+        "printed_name": "Jessica Jackson Y.",
+        "printed_expiry_date": "2029-11-08 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_99733": {
+        "patient_id": "PT_99733",
+        "policy_number": "MED-GLD-3728882",
+        "cluster_id": "C_002",
+        "reference_date": "2025-11-09 00:00:00",
+        "claim_amount": "16825.00",
+        "cpt_codes": [
+            "80053",
+            "90837",
+            "27447",
+            "99291"
+        ],
+        "icd10_codes": [
+            "S52.501A"
+        ],
+        "icd10_code": "S52.501A",
+        "provider_npi": "NPI-6102938475",
+        "service_date": "2025-11-09 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_99733": {
+        "patient_id": "PT_99733",
+        "policy_number": "MED-GLD-3728882",
+        "cluster_id": "C_002",
+        "reference_date": "2025-11-09 00:00:00",
+        "admit_date": "2025-11-09 00:00:00",
+        "discharge_date": "2025-11-14 00:00:00",
+        "icd10_code": "S52.501A",
+        "icd10_codes": [
+            "S52.501A",
+            "M54.5"
+        ],
+        "cpt_codes": [
+            "80053",
+            "90837",
+            "27447",
+            "99291"
+        ]
+    },
+    "rx_PT_99733": {
+        "patient_id": "PT_99733",
+        "policy_number": "MED-GLD-3728882",
+        "cluster_id": "C_002",
+        "reference_date": "2025-11-09 00:00:00",
+        "rx_date": "2026-01-03 00:00:00",
+        "drug_names": [
+            "Amlodipine",
+            "Hydrocodone"
+        ],
+        "missing_field": null,
+        "claim_service_date": "2025-11-09 00:00:00"
+    },
+    "amend_PT_99733": {
+        "patient_id": "PT_99733",
+        "policy_number": "MED-GLD-3728882",
+        "cluster_id": "C_002",
+        "reference_date": "2025-11-09 00:00:00"
+    },
+    "id_PT_62350": {
+        "patient_id": "PT_62350",
+        "policy_number": "MED-GLD-4567281",
+        "cluster_id": "C_003",
+        "reference_date": "2025-11-15 00:00:00",
+        "document_type": "state_id",
+        "printed_name": "Patricia Miller H.",
+        "printed_expiry_date": "2029-11-14 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_62350": {
+        "patient_id": "PT_62350",
+        "policy_number": "MED-GLD-4567281",
+        "cluster_id": "C_003",
+        "reference_date": "2025-11-15 00:00:00",
+        "claim_amount": "18900.00",
+        "cpt_codes": [
+            "59400",
+            "27447"
+        ],
+        "icd10_codes": [
+            "K35.80"
+        ],
+        "icd10_code": "K35.80",
+        "provider_npi": "NPI-8374651029",
+        "service_date": "2025-11-15 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_62350": {
+        "patient_id": "PT_62350",
+        "policy_number": "MED-GLD-4567281",
+        "cluster_id": "C_003",
+        "reference_date": "2025-11-15 00:00:00",
+        "admit_date": "2025-11-15 00:00:00",
+        "discharge_date": "2025-11-17 00:00:00",
+        "icd10_code": "K35.80",
+        "icd10_codes": [
+            "K35.80",
+            "S52.501A"
+        ],
+        "cpt_codes": [
+            "59400",
+            "27447"
+        ]
+    },
+    "rx_PT_62350": {
+        "patient_id": "PT_62350",
+        "policy_number": "MED-GLD-4567281",
+        "cluster_id": "C_003",
+        "reference_date": "2025-11-15 00:00:00",
+        "rx_date": "2025-11-18 00:00:00",
+        "drug_names": [
+            "Amlodipine",
+            "Gabapentin",
+            "Alprazolam"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_62350": {
+        "patient_id": "PT_62350",
+        "policy_number": "MED-GLD-4567281",
+        "cluster_id": "C_003",
+        "reference_date": "2025-11-15 00:00:00"
+    },
+    "id_PT_69470": {
+        "patient_id": "PT_69470",
+        "policy_number": "MED-GLD-2065818",
+        "cluster_id": "C_004",
+        "reference_date": "2025-09-09 00:00:00",
+        "document_type": "insurance_card",
+        "printed_name": "Elizabeth Taylor Q.",
+        "printed_expiry_date": "2029-09-08 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_69470": {
+        "patient_id": "PT_69470",
+        "policy_number": "MED-GLD-2065818",
+        "cluster_id": "C_004",
+        "reference_date": "2025-09-09 00:00:00",
+        "claim_amount": "9875.00",
+        "cpt_codes": [
+            "71046",
+            "47562",
+            "90837",
+            "99284",
+            "99999"
+        ],
+        "icd10_codes": [
+            "F32.1"
+        ],
+        "icd10_code": "F32.1",
+        "provider_npi": "NPI-7293847561",
+        "service_date": "2025-09-09 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_69470": {
+        "patient_id": "PT_69470",
+        "policy_number": "MED-GLD-2065818",
+        "cluster_id": "C_004",
+        "reference_date": "2025-09-09 00:00:00",
+        "admit_date": "2025-09-09 00:00:00",
+        "discharge_date": "2025-09-14 00:00:00",
+        "icd10_code": "F32.1",
+        "icd10_codes": [
+            "F32.1",
+            "J01.90"
+        ],
+        "cpt_codes": [
+            "71046",
+            "47562",
+            "90837",
+            "99284"
+        ]
+    },
+    "rx_PT_69470": {
+        "patient_id": "PT_69470",
+        "policy_number": "MED-GLD-2065818",
+        "cluster_id": "C_004",
+        "reference_date": "2025-09-09 00:00:00",
+        "rx_date": "2025-09-11 00:00:00",
+        "drug_names": [
+            "Sertraline",
+            "Metformin",
+            "Amlodipine"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_69470": {
+        "patient_id": "PT_69470",
+        "policy_number": "MED-GLD-2065818",
+        "cluster_id": "C_004",
+        "reference_date": "2025-09-09 00:00:00"
+    },
+    "id_PT_20322": {
+        "patient_id": "PT_20322",
+        "policy_number": "MED-GLD-3564217",
+        "cluster_id": "C_005",
+        "reference_date": "2025-10-11 00:00:00",
+        "document_type": "medicare_card",
+        "printed_name": "Sarah White Q.",
+        "printed_expiry_date": null,
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_20322": {
+        "patient_id": "PT_20322",
+        "policy_number": "MED-GLD-3564217",
+        "cluster_id": "C_005",
+        "reference_date": "2025-10-11 00:00:00",
+        "claim_amount": "2195.00",
+        "cpt_codes": [
+            "70553",
+            "93000"
+        ],
+        "icd10_codes": [
+            "E11.9"
+        ],
+        "icd10_code": "E11.9",
+        "provider_npi": "NPI-3847561029",
+        "service_date": "2025-10-11 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "claim_PT_20322_dup": {
+        "patient_id": "PT_20322",
+        "policy_number": "MED-GLD-3564217",
+        "cluster_id": "C_005",
+        "reference_date": "2025-10-11 00:00:00",
+        "claim_amount": "2195.00",
+        "cpt_codes": [
+            "70553",
+            "93000"
+        ],
+        "icd10_codes": [
+            "E11.9"
+        ],
+        "icd10_code": "E11.9",
+        "provider_npi": "NPI-3847561029",
+        "service_date": "2025-10-11 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_20322": {
+        "patient_id": "PT_20322",
+        "policy_number": "MED-GLD-3564217",
+        "cluster_id": "C_005",
+        "reference_date": "2025-10-11 00:00:00",
+        "admit_date": "2025-10-11 00:00:00",
+        "discharge_date": "2025-10-16 00:00:00",
+        "icd10_code": "E11.9",
+        "icd10_codes": [
+            "E11.9",
+            "S52.501A"
+        ],
+        "cpt_codes": [
+            "70553",
+            "93000"
+        ]
+    },
+    "rx_PT_20322": {
+        "patient_id": "PT_20322",
+        "policy_number": "MED-GLD-3564217",
+        "cluster_id": "C_005",
+        "reference_date": "2025-10-11 00:00:00",
+        "rx_date": "2025-10-16 00:00:00",
+        "drug_names": [
+            "Omeprazole"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_20322": {
+        "patient_id": "PT_20322",
+        "policy_number": "MED-GLD-3564217",
+        "cluster_id": "C_005",
+        "reference_date": "2025-10-11 00:00:00"
+    },
+    "id_PT_39451": {
+        "patient_id": "PT_39451",
+        "policy_number": "MED-GLD-5446912",
+        "cluster_id": "C_006",
+        "reference_date": "2025-09-25 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "Sindra Hall C.",
+        "printed_expiry_date": "2029-09-24 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_39451": {
+        "patient_id": "PT_39451",
+        "policy_number": "MED-GLD-5446912",
+        "cluster_id": "C_006",
+        "reference_date": "2025-09-25 00:00:00",
+        "claim_amount": "21735.00",
+        "cpt_codes": [
+            "36415",
+            "47562",
+            "43239"
+        ],
+        "icd10_codes": [
+            "G43.909"
+        ],
+        "icd10_code": "G43.909",
+        "provider_npi": "NPI-7293847561",
+        "service_date": "2025-09-25 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_39451": {
+        "patient_id": "PT_39451",
+        "policy_number": "MED-GLD-5446912",
+        "cluster_id": "C_006",
+        "reference_date": "2025-09-25 00:00:00",
+        "admit_date": "2025-09-25 00:00:00",
+        "discharge_date": "2025-09-30 00:00:00",
+        "icd10_code": "G43.909",
+        "icd10_codes": [
+            "G43.909",
+            "I10"
+        ],
+        "cpt_codes": [
+            "36415",
+            "47562",
+            "43239"
+        ]
+    },
+    "rx_PT_39451": {
+        "patient_id": "PT_39451",
+        "policy_number": "MED-GLD-5446912",
+        "cluster_id": "C_006",
+        "reference_date": "2025-09-25 00:00:00",
+        "rx_date": "2025-09-28 00:00:00",
+        "drug_names": [
+            "Amoxicillin",
+            "Oxycodone"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_39451": {
+        "patient_id": "PT_39451",
+        "policy_number": "MED-GLD-5446912",
+        "cluster_id": "C_006",
+        "reference_date": "2025-09-25 00:00:00"
+    },
+    "id_PT_71993": {
+        "patient_id": "PT_71993",
+        "policy_number": "MED-GLD-4841005",
+        "cluster_id": "C_007",
+        "reference_date": "2025-02-17 00:00:00",
+        "document_type": "passport",
+        "printed_name": "Mary Davis S.",
+        "printed_expiry_date": "2029-02-16 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_71993": {
+        "patient_id": "PT_71993",
+        "policy_number": "MED-GLD-4841005",
+        "cluster_id": "C_007",
+        "reference_date": "2025-02-17 00:00:00",
+        "claim_amount": "6400.00",
+        "cpt_codes": [
+            "17000",
+            "93306"
+        ],
+        "icd10_codes": [
+            "K35.80",
+            "M54.5"
+        ],
+        "icd10_code": "K35.80",
+        "provider_npi": "NPI-1029384756",
+        "service_date": "2025-02-17 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_71993": {
+        "patient_id": "PT_71993",
+        "policy_number": "MED-GLD-4841005",
+        "cluster_id": "C_007",
+        "reference_date": "2025-02-17 00:00:00",
+        "admit_date": "2025-02-17 00:00:00",
+        "discharge_date": "2025-02-19 00:00:00",
+        "icd10_code": "K35.80",
+        "icd10_codes": [
+            "K35.80",
+            "M54.5"
+        ],
+        "cpt_codes": [
+            "17000",
+            "93306"
+        ]
+    },
+    "rx_PT_71993": {
+        "patient_id": "PT_71993",
+        "policy_number": "MED-GLD-4841005",
+        "cluster_id": "C_007",
+        "reference_date": "2025-02-17 00:00:00",
+        "rx_date": "2025-02-20 00:00:00",
+        "drug_names": [
+            "Prednisone",
+            "Alprazolam",
+            "Montelukast"
+        ],
+        "missing_field": "dea"
+    },
+    "amend_PT_71993": {
+        "patient_id": "PT_71993",
+        "policy_number": "MED-GLD-4841005",
+        "cluster_id": "C_007",
+        "reference_date": "2025-02-17 00:00:00"
+    },
+    "id_PT_82132": {
+        "patient_id": "PT_82132",
+        "policy_number": "MED-GLD-2016911",
+        "cluster_id": "C_008",
+        "reference_date": "2025-04-07 00:00:00",
+        "document_type": "state_id",
+        "printed_name": "Richard Martinez D.",
+        "printed_expiry_date": "2029-04-06 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_82132": {
+        "patient_id": "PT_82132",
+        "policy_number": "MED-GLD-2016911",
+        "cluster_id": "C_008",
+        "reference_date": "2025-04-07 00:00:00",
+        "claim_amount": "3530.00",
+        "cpt_codes": [
+            "85025",
+            "43239",
+            "80053"
+        ],
+        "icd10_codes": [
+            "N39.0"
+        ],
+        "icd10_code": "N39.0",
+        "provider_npi": null,
+        "service_date": "2025-04-07 00:00:00",
+        "signature_present": false,
+        "missing_field_type": "dob"
+    },
+    "discharge_PT_82132": {
+        "patient_id": "PT_82132",
+        "policy_number": "MED-GLD-2016911",
+        "cluster_id": "C_008",
+        "reference_date": "2025-04-07 00:00:00",
+        "admit_date": "2025-04-07 00:00:00",
+        "discharge_date": "2025-04-12 00:00:00",
+        "icd10_code": "N39.0",
+        "icd10_codes": [
+            "N39.0",
+            "M17.11"
+        ],
+        "cpt_codes": [
+            "85025",
+            "43239",
+            "80053"
+        ]
+    },
+    "rx_PT_82132": {
+        "patient_id": "PT_82132",
+        "policy_number": "MED-GLD-2016911",
+        "cluster_id": "C_008",
+        "reference_date": "2025-04-07 00:00:00",
+        "rx_date": "2025-04-10 00:00:00",
+        "drug_names": [
+            "Amoxicillin",
+            "Atorvastatin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_82132": {
+        "patient_id": "PT_82132",
+        "policy_number": "MED-GLD-2016911",
+        "cluster_id": "C_008",
+        "reference_date": "2025-04-07 00:00:00"
+    },
+    "id_PT_17665": {
+        "patient_id": "PT_17665",
+        "policy_number": "MED-GLD-3762152",
+        "cluster_id": "C_009",
+        "reference_date": "2025-05-26 00:00:00",
+        "document_type": "insurance_card",
+        "printed_name": "Mary Davis C.",
+        "printed_expiry_date": "2029-05-25 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_17665": {
+        "patient_id": "PT_17665",
+        "policy_number": "MED-GLD-3762152",
+        "cluster_id": "C_009",
+        "reference_date": "2025-05-26 00:00:00",
+        "claim_amount": "40750.00",
+        "cpt_codes": [
+            "29827",
+            "90837",
+            "47562"
+        ],
+        "icd10_codes": [
+            "K35.80"
+        ],
+        "icd10_code": "K35.80",
+        "provider_npi": null,
+        "service_date": "2025-05-26 00:00:00",
+        "signature_present": false,
+        "missing_field_type": "npi"
+    },
+    "discharge_PT_17665": {
+        "patient_id": "PT_17665",
+        "policy_number": "MED-GLD-3762152",
+        "cluster_id": "C_009",
+        "reference_date": "2025-05-26 00:00:00",
+        "admit_date": "2025-05-26 00:00:00",
+        "discharge_date": "2025-05-31 00:00:00",
+        "icd10_code": "K35.80",
+        "icd10_codes": [
+            "K35.80",
+            "M54.5"
+        ],
+        "cpt_codes": [
+            "29827",
+            "90837",
+            "47562"
+        ]
+    },
+    "rx_PT_17665": {
+        "patient_id": "PT_17665",
+        "policy_number": "MED-GLD-3762152",
+        "cluster_id": "C_009",
+        "reference_date": "2025-05-26 00:00:00",
+        "rx_date": "2025-05-31 00:00:00",
+        "drug_names": [
+            "Amoxicillin",
+            "Lisinopril",
+            "Atorvastatin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_17665": {
+        "patient_id": "PT_17665",
+        "policy_number": "MED-GLD-3762152",
+        "cluster_id": "C_009",
+        "reference_date": "2025-05-26 00:00:00"
+    },
+    "id_PT_20745": {
+        "patient_id": "PT_20745",
+        "policy_number": "MED-GLD-1954280",
+        "cluster_id": "C_010",
+        "reference_date": "2025-02-20 00:00:00",
+        "document_type": "medicare_card",
+        "printed_name": "John Johnson X.",
+        "printed_expiry_date": null,
+        "expired": true,
+        "tampered": false
+    },
+    "claim_PT_20745": {
+        "patient_id": "PT_20745",
+        "policy_number": "MED-GLD-1954280",
+        "cluster_id": "C_010",
+        "reference_date": "2025-02-20 00:00:00",
+        "claim_amount": "3895.00",
+        "cpt_codes": [
+            "36415",
+            "71046"
+        ],
+        "icd10_codes": [
+            "F32.1",
+            "S52.501A"
+        ],
+        "icd10_code": "F32.1",
+        "provider_npi": "NPI-2938475610",
+        "service_date": "2025-02-20 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_20745": {
+        "patient_id": "PT_20745",
+        "policy_number": "MED-GLD-1954280",
+        "cluster_id": "C_010",
+        "reference_date": "2025-02-20 00:00:00",
+        "admit_date": "2025-02-20 00:00:00",
+        "discharge_date": "2025-02-25 00:00:00",
+        "icd10_code": "F32.1",
+        "icd10_codes": [
+            "F32.1",
+            "S52.501A"
+        ],
+        "cpt_codes": [
+            "36415",
+            "71046"
+        ]
+    },
+    "rx_PT_20745": {
+        "patient_id": "PT_20745",
+        "policy_number": "MED-GLD-1954280",
+        "cluster_id": "C_010",
+        "reference_date": "2025-02-20 00:00:00",
+        "rx_date": "2025-02-22 00:00:00",
+        "drug_names": [
+            "Atorvastatin",
+            "Alprazolam",
+            "Montelukast"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_20745": {
+        "patient_id": "PT_20745",
+        "policy_number": "MED-GLD-1954280",
+        "cluster_id": "C_010",
+        "reference_date": "2025-02-20 00:00:00"
+    },
+    "id_PT_47353": {
+        "patient_id": "PT_47353",
+        "policy_number": "MED-GLD-8670955",
+        "cluster_id": "C_011",
+        "reference_date": "2025-08-20 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "Nancy Martin I.",
+        "printed_expiry_date": "2025-06-25 00:00:00",
+        "expired": true,
+        "tampered": false
+    },
+    "claim_PT_47353": {
+        "patient_id": "PT_47353",
+        "policy_number": "MED-GLD-8670955",
+        "cluster_id": "C_011",
+        "reference_date": "2025-08-20 00:00:00",
+        "claim_amount": "11285.00",
+        "cpt_codes": [
+            "44970",
+            "72148",
+            "99284",
+            "85025"
+        ],
+        "icd10_codes": [
+            "I10"
+        ],
+        "icd10_code": "I10",
+        "provider_npi": "NPI-2938475610",
+        "service_date": "2025-08-20 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_47353": {
+        "patient_id": "PT_47353",
+        "policy_number": "MED-GLD-8670955",
+        "cluster_id": "C_011",
+        "reference_date": "2025-08-20 00:00:00",
+        "admit_date": "2025-08-20 00:00:00",
+        "discharge_date": "2025-08-23 00:00:00",
+        "icd10_code": "I10",
+        "icd10_codes": [
+            "I10",
+            "J18.9"
+        ],
+        "cpt_codes": [
+            "44970",
+            "72148",
+            "99284",
+            "85025"
+        ]
+    },
+    "rx_PT_47353": {
+        "patient_id": "PT_47353",
+        "policy_number": "MED-GLD-8670955",
+        "cluster_id": "C_011",
+        "reference_date": "2025-08-20 00:00:00",
+        "rx_date": "2025-08-22 00:00:00",
+        "drug_names": [
+            "Prednisone",
+            "Metformin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_47353": {
+        "patient_id": "PT_47353",
+        "policy_number": "MED-GLD-8670955",
+        "cluster_id": "C_011",
+        "reference_date": "2025-08-20 00:00:00"
+    },
+    "id_PT_16658": {
+        "patient_id": "PT_16658",
+        "policy_number": "MED-GLD-5437001",
+        "cluster_id": "C_012",
+        "reference_date": "2025-05-10 00:00:00",
+        "document_type": "passport",
+        "printed_name": "Karen Harris T.",
+        "printed_expiry_date": "2029-05-09 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_16658": {
+        "patient_id": "PT_16658",
+        "policy_number": "MED-GLD-5437001",
+        "cluster_id": "C_012",
+        "reference_date": "2025-05-10 00:00:00",
+        "claim_amount": "9950.00",
+        "cpt_codes": [
+            "17000",
+            "44970"
+        ],
+        "icd10_codes": [
+            "G43.909"
+        ],
+        "icd10_code": "G43.909",
+        "provider_npi": "NPI-2938475610",
+        "service_date": "2025-05-10 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_16658": {
+        "patient_id": "PT_16658",
+        "policy_number": "MED-GLD-5437001",
+        "cluster_id": "C_012",
+        "reference_date": "2025-05-10 00:00:00",
+        "admit_date": "2025-05-10 00:00:00",
+        "discharge_date": "2025-05-13 00:00:00",
+        "icd10_code": "G43.909",
+        "icd10_codes": [
+            "G43.909",
+            "M75.100"
+        ],
+        "cpt_codes": [
+            "17000",
+            "44970"
+        ]
+    },
+    "rx_PT_16658": {
+        "patient_id": "PT_16658",
+        "policy_number": "MED-GLD-5437001",
+        "cluster_id": "C_012",
+        "reference_date": "2025-05-10 00:00:00",
+        "rx_date": "2025-05-13 00:00:00",
+        "drug_names": [
+            "Oxycodone",
+            "Amoxicillin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_16658": {
+        "patient_id": "PT_16658",
+        "policy_number": "MED-GLD-5437001",
+        "cluster_id": "C_012",
+        "reference_date": "2025-05-10 00:00:00"
+    },
+    "id_PT_57795": {
+        "patient_id": "PT_57795",
+        "policy_number": "MED-GLD-8175395",
+        "cluster_id": "C_013",
+        "reference_date": "2025-02-23 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "Betty Clark I.",
+        "printed_expiry_date": "2030-02-22 00:00:00",
+        "expired": false,
+        "tampered": true
+    },
+    "claim_PT_57795": {
+        "patient_id": "PT_57795",
+        "policy_number": "MED-GLD-8175395",
+        "cluster_id": "C_013",
+        "reference_date": "2025-02-23 00:00:00",
+        "claim_amount": "90850.00",
+        "cpt_codes": [
+            "70553",
+            "33533"
+        ],
+        "icd10_codes": [
+            "N39.0",
+            "K35.80"
+        ],
+        "icd10_code": "N39.0",
+        "provider_npi": "NPI-1029384756",
+        "service_date": "2025-02-23 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_57795": {
+        "patient_id": "PT_57795",
+        "policy_number": "MED-GLD-8175395",
+        "cluster_id": "C_013",
+        "reference_date": "2025-02-23 00:00:00",
+        "admit_date": "2025-02-23 00:00:00",
+        "discharge_date": "2025-02-26 00:00:00",
+        "icd10_code": "N39.0",
+        "icd10_codes": [
+            "N39.0",
+            "K35.80"
+        ],
+        "cpt_codes": [
+            "70553",
+            "33533"
+        ]
+    },
+    "rx_PT_57795": {
+        "patient_id": "PT_57795",
+        "policy_number": "MED-GLD-8175395",
+        "cluster_id": "C_013",
+        "reference_date": "2025-02-23 00:00:00",
+        "rx_date": "2025-02-26 00:00:00",
+        "drug_names": [
+            "Lisinopril",
+            "Albuterol",
+            "Prednisone"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_57795": {
+        "patient_id": "PT_57795",
+        "policy_number": "MED-GLD-8175395",
+        "cluster_id": "C_013",
+        "reference_date": "2025-02-23 00:00:00"
+    },
+    "id_PT_15075": {
+        "patient_id": "PT_15075",
+        "policy_number": "MED-GLD-3592974",
+        "cluster_id": "C_014",
+        "reference_date": "2025-07-01 00:00:00",
+        "document_type": "insurance_card",
+        "printed_name": "John Johnson L.",
+        "printed_expiry_date": "2025-03-29 00:00:00",
+        "expired": true,
+        "tampered": false
+    },
+    "claim_PT_15075": {
+        "patient_id": "PT_15075",
+        "policy_number": "MED-GLD-3592974",
+        "cluster_id": "C_014",
+        "reference_date": "2025-07-01 00:00:00",
+        "claim_amount": "37300.00",
+        "cpt_codes": [
+            "43239",
+            "47562",
+            "27447"
+        ],
+        "icd10_codes": [
+            "G43.909"
+        ],
+        "icd10_code": "G43.909",
+        "provider_npi": "NPI-3847561029",
+        "service_date": "2025-07-01 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_15075": {
+        "patient_id": "PT_15075",
+        "policy_number": "MED-GLD-3592974",
+        "cluster_id": "C_014",
+        "reference_date": "2025-07-01 00:00:00",
+        "admit_date": "2025-07-01 00:00:00",
+        "discharge_date": "2025-07-05 00:00:00",
+        "icd10_code": "G43.909",
+        "icd10_codes": [
+            "G43.909",
+            "I25.10"
+        ],
+        "cpt_codes": [
+            "43239",
+            "47562",
+            "27447"
+        ]
+    },
+    "rx_PT_15075": {
+        "patient_id": "PT_15075",
+        "policy_number": "MED-GLD-3592974",
+        "cluster_id": "C_014",
+        "reference_date": "2025-07-01 00:00:00",
+        "rx_date": "2025-07-04 00:00:00",
+        "drug_names": [
+            "Lisinopril",
+            "Levothyroxine"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_15075": {
+        "patient_id": "PT_15075",
+        "policy_number": "MED-GLD-3592974",
+        "cluster_id": "C_014",
+        "reference_date": "2025-07-01 00:00:00"
+    },
+    "id_PT_24208": {
+        "patient_id": "PT_24208",
+        "policy_number": "MED-GLD-7685149",
+        "cluster_id": "C_015",
+        "reference_date": "2025-05-12 00:00:00",
+        "document_type": "medicare_card",
+        "printed_name": "Joseph Anderson G.",
+        "printed_expiry_date": null,
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_24208": {
+        "patient_id": "PT_24208",
+        "policy_number": "MED-GLD-7685149",
+        "cluster_id": "C_015",
+        "reference_date": "2025-05-12 00:00:00",
+        "claim_amount": "8050.00",
+        "cpt_codes": [
+            "21120",
+            "71250"
+        ],
+        "icd10_codes": [
+            "F32.1"
+        ],
+        "icd10_code": "F32.1",
+        "provider_npi": "NPI-5610293847",
+        "service_date": "2025-05-12 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_24208": {
+        "patient_id": "PT_24208",
+        "policy_number": "MED-GLD-7685149",
+        "cluster_id": "C_015",
+        "reference_date": "2025-05-12 00:00:00",
+        "admit_date": "2025-05-12 00:00:00",
+        "discharge_date": "2025-05-14 00:00:00",
+        "icd10_code": "F32.1",
+        "icd10_codes": [
+            "F32.1",
+            "E11.9"
+        ],
+        "cpt_codes": [
+            "21120",
+            "71250"
+        ]
+    },
+    "rx_PT_24208": {
+        "patient_id": "PT_24208",
+        "policy_number": "MED-GLD-7685149",
+        "cluster_id": "C_015",
+        "reference_date": "2025-05-12 00:00:00",
+        "rx_date": "2025-05-17 00:00:00",
+        "drug_names": [
+            "Alprazolam"
+        ],
+        "missing_field": "dosage"
+    },
+    "amend_PT_24208": {
+        "patient_id": "PT_24208",
+        "policy_number": "MED-GLD-7685149",
+        "cluster_id": "C_015",
+        "reference_date": "2025-05-12 00:00:00"
+    },
+    "id_PT_50538": {
+        "patient_id": "PT_50538",
+        "policy_number": "MED-GLD-1744682",
+        "cluster_id": "C_016",
+        "reference_date": "2025-06-14 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "Daniel Taylor X.",
+        "printed_expiry_date": "2025-07-05 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_50538": {
+        "patient_id": "PT_50538",
+        "policy_number": "MED-GLD-1744682",
+        "cluster_id": "C_016",
+        "reference_date": "2025-06-14 00:00:00",
+        "claim_amount": "65500.00",
+        "cpt_codes": [
+            "27447",
+            "71250",
+            "47562"
+        ],
+        "icd10_codes": [
+            "F32.1",
+            "N39.0"
+        ],
+        "icd10_code": "F32.1",
+        "provider_npi": "NPI-1029384756",
+        "service_date": "2025-06-14 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_50538": {
+        "patient_id": "PT_50538",
+        "policy_number": "MED-GLD-1744682",
+        "cluster_id": "C_016",
+        "reference_date": "2025-06-14 00:00:00",
+        "admit_date": "2025-06-14 00:00:00",
+        "discharge_date": "2025-06-19 00:00:00",
+        "icd10_code": "F32.1",
+        "icd10_codes": [
+            "F32.1",
+            "N39.0"
+        ],
+        "cpt_codes": [
+            "27447",
+            "71250",
+            "47562"
+        ]
+    },
+    "rx_PT_50538": {
+        "patient_id": "PT_50538",
+        "policy_number": "MED-GLD-1744682",
+        "cluster_id": "C_016",
+        "reference_date": "2025-06-14 00:00:00",
+        "rx_date": "2025-06-16 00:00:00",
+        "drug_names": [
+            "Gabapentin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_50538": {
+        "patient_id": "PT_50538",
+        "policy_number": "MED-GLD-1744682",
+        "cluster_id": "C_016",
+        "reference_date": "2025-06-14 00:00:00"
+    },
+    "id_PT_72021": {
+        "patient_id": "PT_72021",
+        "policy_number": "MED-GLD-6049101",
+        "cluster_id": "C_017",
+        "reference_date": "2025-05-07 00:00:00",
+        "document_type": "passport",
+        "printed_name": "Christopher Harris M.",
+        "printed_expiry_date": "2029-05-06 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_72021": {
+        "patient_id": "PT_72021",
+        "policy_number": "MED-GLD-6049101",
+        "cluster_id": "C_017",
+        "reference_date": "2025-05-07 00:00:00",
+        "claim_amount": "47550.00",
+        "cpt_codes": [
+            "27447",
+            "43239",
+            "71250",
+            "99291"
+        ],
+        "icd10_codes": [
+            "K21.0"
+        ],
+        "icd10_code": "K21.0",
+        "provider_npi": "NPI-1029384756",
+        "service_date": "2025-05-07 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_72021": {
+        "patient_id": "PT_72021",
+        "policy_number": "MED-GLD-6049101",
+        "cluster_id": "C_017",
+        "reference_date": "2025-05-07 00:00:00",
+        "admit_date": "2025-05-07 00:00:00",
+        "discharge_date": "2025-05-10 00:00:00",
+        "icd10_code": "K21.0",
+        "icd10_codes": [
+            "K21.0",
+            "N39.0"
+        ],
+        "cpt_codes": [
+            "27447",
+            "43239",
+            "71250",
+            "99291"
+        ]
+    },
+    "rx_PT_72021": {
+        "patient_id": "PT_72021",
+        "policy_number": "MED-GLD-6049101",
+        "cluster_id": "C_017",
+        "reference_date": "2025-05-07 00:00:00",
+        "rx_date": "2025-05-12 00:00:00",
+        "drug_names": [
+            "Amoxicillin",
+            "Hydrocodone"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_72021": {
+        "patient_id": "PT_72021",
+        "policy_number": "MED-GLD-6049101",
+        "cluster_id": "C_017",
+        "reference_date": "2025-05-07 00:00:00"
+    },
+    "id_PT_62383": {
+        "patient_id": "PT_62383",
+        "policy_number": "MED-GLD-4768844",
+        "cluster_id": "C_018",
+        "reference_date": "2025-01-08 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "David Garcia V.",
+        "printed_expiry_date": "2030-01-07 00:00:00",
+        "expired": false,
+        "tampered": true
+    },
+    "claim_PT_62383": {
+        "patient_id": "PT_62383",
+        "policy_number": "MED-GLD-4768844",
+        "cluster_id": "C_018",
+        "reference_date": "2025-01-08 00:00:00",
+        "claim_amount": "4500.00",
+        "cpt_codes": [
+            "99291",
+            "43239"
+        ],
+        "icd10_codes": [
+            "S52.501A"
+        ],
+        "icd10_code": "S52.501A",
+        "provider_npi": "NPI-3847561029",
+        "service_date": "2025-01-08 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_62383": {
+        "patient_id": "PT_62383",
+        "policy_number": "MED-GLD-4768844",
+        "cluster_id": "C_018",
+        "reference_date": "2025-01-08 00:00:00",
+        "admit_date": "2025-01-08 00:00:00",
+        "discharge_date": "2025-01-12 00:00:00",
+        "icd10_code": "S52.501A",
+        "icd10_codes": [
+            "S52.501A",
+            "M17.11"
+        ],
+        "cpt_codes": [
+            "99291",
+            "43239"
+        ]
+    },
+    "rx_PT_62383": {
+        "patient_id": "PT_62383",
+        "policy_number": "MED-GLD-4768844",
+        "cluster_id": "C_018",
+        "reference_date": "2025-01-08 00:00:00",
+        "rx_date": "2025-01-13 00:00:00",
+        "drug_names": [
+            "Alprazolam",
+            "Atorvastatin",
+            "Gabapentin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_62383": {
+        "patient_id": "PT_62383",
+        "policy_number": "MED-GLD-4768844",
+        "cluster_id": "C_018",
+        "reference_date": "2025-01-08 00:00:00"
+    },
+    "id_PT_81810": {
+        "patient_id": "PT_81810",
+        "policy_number": "MED-GLD-8793853",
+        "cluster_id": "C_019",
+        "reference_date": "2025-08-05 00:00:00",
+        "document_type": "insurance_card",
+        "printed_name": "Mary Davis Y.",
+        "printed_expiry_date": "2029-08-04 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_81810": {
+        "patient_id": "PT_81810",
+        "policy_number": "MED-GLD-8793853",
+        "cluster_id": "C_019",
+        "reference_date": "2025-08-05 00:00:00",
+        "claim_amount": "48350.00",
+        "cpt_codes": [
+            "90837",
+            "27447",
+            "71250",
+            "99291"
+        ],
+        "icd10_codes": [
+            "F32.1",
+            "M75.100"
+        ],
+        "icd10_code": "F32.1",
+        "provider_npi": "NPI-4756102938",
+        "service_date": "2025-08-05 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_81810": {
+        "patient_id": "PT_81810",
+        "policy_number": "MED-GLD-8793853",
+        "cluster_id": "C_019",
+        "reference_date": "2025-08-05 00:00:00",
+        "admit_date": "2025-08-05 00:00:00",
+        "discharge_date": "2025-08-07 00:00:00",
+        "icd10_code": "F32.1",
+        "icd10_codes": [
+            "F32.1",
+            "M75.100"
+        ],
+        "cpt_codes": [
+            "90837",
+            "27447",
+            "71250",
+            "99291"
+        ]
+    },
+    "rx_PT_81810": {
+        "patient_id": "PT_81810",
+        "policy_number": "MED-GLD-8793853",
+        "cluster_id": "C_019",
+        "reference_date": "2025-08-05 00:00:00",
+        "rx_date": "2025-08-10 00:00:00",
+        "drug_names": [
+            "Montelukast",
+            "Gabapentin",
+            "Oxycodone"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_81810": {
+        "patient_id": "PT_81810",
+        "policy_number": "MED-GLD-8793853",
+        "cluster_id": "C_019",
+        "reference_date": "2025-08-05 00:00:00"
+    },
+    "id_PT_30028": {
+        "patient_id": "PT_30028",
+        "policy_number": "MED-GLD-5013879",
+        "cluster_id": "C_020",
+        "reference_date": "2025-12-10 00:00:00",
+        "document_type": "medicare_card",
+        "printed_name": "Barbara Anderson X.",
+        "printed_expiry_date": null,
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_30028": {
+        "patient_id": "PT_30028",
+        "policy_number": "MED-GLD-5013879",
+        "cluster_id": "C_020",
+        "reference_date": "2025-12-10 00:00:00",
+        "claim_amount": "8050.00",
+        "cpt_codes": [
+            "21120",
+            "71250"
+        ],
+        "icd10_codes": [
+            "K35.80"
+        ],
+        "icd10_code": "K35.80",
+        "provider_npi": "NPI-8374651029",
+        "service_date": "2025-12-10 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_30028": {
+        "patient_id": "PT_30028",
+        "policy_number": "MED-GLD-5013879",
+        "cluster_id": "C_020",
+        "reference_date": "2025-12-10 00:00:00",
+        "admit_date": "2025-12-10 00:00:00",
+        "discharge_date": "2025-12-14 00:00:00",
+        "icd10_code": "K35.80",
+        "icd10_codes": [
+            "K35.80",
+            "I25.10"
+        ],
+        "cpt_codes": [
+            "21120",
+            "71250"
+        ]
+    },
+    "rx_PT_30028": {
+        "patient_id": "PT_30028",
+        "policy_number": "MED-GLD-5013879",
+        "cluster_id": "C_020",
+        "reference_date": "2025-12-10 00:00:00",
+        "rx_date": "2025-12-13 00:00:00",
+        "drug_names": [
+            "Lisinopril"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_30028": {
+        "patient_id": "PT_30028",
+        "policy_number": "MED-GLD-5013879",
+        "cluster_id": "C_020",
+        "reference_date": "2025-12-10 00:00:00"
+    },
+    "id_PT_67125": {
+        "patient_id": "PT_67125",
+        "policy_number": "MED-GLD-1327691",
+        "cluster_id": "C_021",
+        "reference_date": "2025-01-12 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "Robert Williams N.",
+        "printed_expiry_date": "2025-01-23 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_67125": {
+        "patient_id": "PT_67125",
+        "policy_number": "MED-GLD-1327691",
+        "cluster_id": "C_021",
+        "reference_date": "2025-01-12 00:00:00",
+        "claim_amount": "45650.00",
+        "cpt_codes": [
+            "43239",
+            "90837",
+            "27447"
+        ],
+        "icd10_codes": [
+            "K21.0"
+        ],
+        "icd10_code": "K21.0",
+        "provider_npi": "NPI-7293847561",
+        "service_date": "2025-01-12 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_67125": {
+        "patient_id": "PT_67125",
+        "policy_number": "MED-GLD-1327691",
+        "cluster_id": "C_021",
+        "reference_date": "2025-01-12 00:00:00",
+        "admit_date": "2025-01-12 00:00:00",
+        "discharge_date": "2025-01-14 00:00:00",
+        "icd10_code": "K21.0",
+        "icd10_codes": [
+            "K21.0",
+            "K35.80"
+        ],
+        "cpt_codes": [
+            "43239",
+            "90837",
+            "27447"
+        ]
+    },
+    "rx_PT_67125": {
+        "patient_id": "PT_67125",
+        "policy_number": "MED-GLD-1327691",
+        "cluster_id": "C_021",
+        "reference_date": "2025-01-12 00:00:00",
+        "rx_date": "2025-01-16 00:00:00",
+        "drug_names": [
+            "Amoxicillin"
+        ],
+        "missing_field": "refills"
+    },
+    "amend_PT_67125": {
+        "patient_id": "PT_67125",
+        "policy_number": "MED-GLD-1327691",
+        "cluster_id": "C_021",
+        "reference_date": "2025-01-12 00:00:00"
+    },
+    "id_PT_54236": {
+        "patient_id": "PT_54236",
+        "policy_number": "MED-GLD-1452421",
+        "cluster_id": "C_022",
+        "reference_date": "2025-11-14 00:00:00",
+        "document_type": "passport",
+        "printed_name": "Margaret Lee K.",
+        "printed_expiry_date": "2025-11-28 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_54236": {
+        "patient_id": "PT_54236",
+        "policy_number": "MED-GLD-1452421",
+        "cluster_id": "C_022",
+        "reference_date": "2025-11-14 00:00:00",
+        "claim_amount": "4690.00",
+        "cpt_codes": [
+            "80053",
+            "99214",
+            "99284"
+        ],
+        "icd10_codes": [
+            "M75.100",
+            "J18.9"
+        ],
+        "icd10_code": "M75.100",
+        "provider_npi": "NPI-1029384756",
+        "service_date": "2025-11-14 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_54236": {
+        "patient_id": "PT_54236",
+        "policy_number": "MED-GLD-1452421",
+        "cluster_id": "C_022",
+        "reference_date": "2025-11-14 00:00:00",
+        "admit_date": "2025-11-14 00:00:00",
+        "discharge_date": "2025-11-18 00:00:00",
+        "icd10_code": "M75.100",
+        "icd10_codes": [
+            "M75.100",
+            "J18.9"
+        ],
+        "cpt_codes": [
+            "80053",
+            "99214",
+            "99284"
+        ]
+    },
+    "rx_PT_54236": {
+        "patient_id": "PT_54236",
+        "policy_number": "MED-GLD-1452421",
+        "cluster_id": "C_022",
+        "reference_date": "2025-11-14 00:00:00",
+        "rx_date": "2025-11-17 00:00:00",
+        "drug_names": [
+            "Sertraline",
+            "Atorvastatin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_54236": {
+        "patient_id": "PT_54236",
+        "policy_number": "MED-GLD-1452421",
+        "cluster_id": "C_022",
+        "reference_date": "2025-11-14 00:00:00"
+    },
+    "id_PT_24993": {
+        "patient_id": "PT_24993",
+        "policy_number": "MED-GLD-6871360",
+        "cluster_id": "C_023",
+        "reference_date": "2025-01-08 00:00:00",
+        "document_type": "state_id",
+        "printed_name": "Anthony Moore I.",
+        "printed_expiry_date": "2029-01-07 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_24993": {
+        "patient_id": "PT_24993",
+        "policy_number": "MED-GLD-6871360",
+        "cluster_id": "C_023",
+        "reference_date": "2025-01-08 00:00:00",
+        "claim_amount": "42055.00",
+        "cpt_codes": [
+            "27447",
+            "85025"
+        ],
+        "icd10_codes": [],
+        "icd10_code": null,
+        "provider_npi": null,
+        "service_date": "2025-01-08 00:00:00",
+        "signature_present": false,
+        "missing_field_type": "diag_code"
+    },
+    "discharge_PT_24993": {
+        "patient_id": "PT_24993",
+        "policy_number": "MED-GLD-6871360",
+        "cluster_id": "C_023",
+        "reference_date": "2025-01-08 00:00:00",
+        "admit_date": "2025-01-08 00:00:00",
+        "discharge_date": "2025-01-11 00:00:00",
+        "icd10_code": "M75.100",
+        "icd10_codes": [
+            "M75.100",
+            "F32.1"
+        ],
+        "cpt_codes": [
+            "27447",
+            "85025"
+        ]
+    },
+    "rx_PT_24993": {
+        "patient_id": "PT_24993",
+        "policy_number": "MED-GLD-6871360",
+        "cluster_id": "C_023",
+        "reference_date": "2025-01-08 00:00:00",
+        "rx_date": "2025-01-11 00:00:00",
+        "drug_names": [
+            "Lisinopril"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_24993": {
+        "patient_id": "PT_24993",
+        "policy_number": "MED-GLD-6871360",
+        "cluster_id": "C_023",
+        "reference_date": "2025-01-08 00:00:00"
+    },
+    "id_PT_99687": {
+        "patient_id": "PT_99687",
+        "policy_number": "MED-GLD-6218367",
+        "cluster_id": "C_024",
+        "reference_date": "2025-10-22 00:00:00",
+        "document_type": "insurance_card",
+        "printed_name": "Richard Martinez O.",
+        "printed_expiry_date": "2025-11-12 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_99687": {
+        "patient_id": "PT_99687",
+        "policy_number": "MED-GLD-6218367",
+        "cluster_id": "C_024",
+        "reference_date": "2025-10-22 00:00:00",
+        "claim_amount": "116010.00",
+        "cpt_codes": [
+            "44970",
+            "99215",
+            "33533",
+            "29827"
+        ],
+        "icd10_codes": [
+            "I25.10"
+        ],
+        "icd10_code": "I25.10",
+        "provider_npi": "NPI-1029384756",
+        "service_date": "2025-10-22 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_99687": {
+        "patient_id": "PT_99687",
+        "policy_number": "MED-GLD-6218367",
+        "cluster_id": "C_024",
+        "reference_date": "2025-10-22 00:00:00",
+        "admit_date": "2025-10-22 00:00:00",
+        "discharge_date": "2025-10-26 00:00:00",
+        "icd10_code": "I25.10",
+        "icd10_codes": [
+            "I25.10",
+            "M75.100"
+        ],
+        "cpt_codes": [
+            "44970",
+            "99215",
+            "33533",
+            "29827"
+        ]
+    },
+    "rx_PT_99687": {
+        "patient_id": "PT_99687",
+        "policy_number": "MED-GLD-6218367",
+        "cluster_id": "C_024",
+        "reference_date": "2025-10-22 00:00:00",
+        "rx_date": "2025-10-27 00:00:00",
+        "drug_names": [
+            "Atorvastatin",
+            "Metformin",
+            "Gabapentin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_99687": {
+        "patient_id": "PT_99687",
+        "policy_number": "MED-GLD-6218367",
+        "cluster_id": "C_024",
+        "reference_date": "2025-10-22 00:00:00"
+    },
+    "id_PT_45400": {
+        "patient_id": "PT_45400",
+        "policy_number": "MED-GLD-6724909",
+        "cluster_id": "C_025",
+        "reference_date": "2025-02-14 00:00:00",
+        "document_type": "medicare_card",
+        "printed_name": "Michael Brown Z.",
+        "printed_expiry_date": null,
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_45400": {
+        "patient_id": "PT_45400",
+        "policy_number": "MED-GLD-6724909",
+        "cluster_id": "C_025",
+        "reference_date": "2025-02-14 00:00:00",
+        "claim_amount": "32550.00",
+        "cpt_codes": [
+            "21120",
+            "29827"
+        ],
+        "icd10_codes": [
+            "F32.1",
+            "G43.909"
+        ],
+        "icd10_code": "F32.1",
+        "provider_npi": "NPI-7293847561",
+        "service_date": "2025-02-14 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_45400": {
+        "patient_id": "PT_45400",
+        "policy_number": "MED-GLD-6724909",
+        "cluster_id": "C_025",
+        "reference_date": "2025-02-14 00:00:00",
+        "admit_date": "2025-02-14 00:00:00",
+        "discharge_date": "2025-02-19 00:00:00",
+        "icd10_code": "F32.1",
+        "icd10_codes": [
+            "F32.1",
+            "G43.909"
+        ],
+        "cpt_codes": [
+            "21120",
+            "29827"
+        ]
+    },
+    "rx_PT_45400": {
+        "patient_id": "PT_45400",
+        "policy_number": "MED-GLD-6724909",
+        "cluster_id": "C_025",
+        "reference_date": "2025-02-14 00:00:00",
+        "rx_date": "2025-02-18 00:00:00",
+        "drug_names": [
+            "Gabapentin"
+        ],
+        "missing_field": "drug_name"
+    },
+    "amend_PT_45400": {
+        "patient_id": "PT_45400",
+        "policy_number": "MED-GLD-6724909",
+        "cluster_id": "C_025",
+        "reference_date": "2025-02-14 00:00:00"
+    },
+    "id_PT_88139": {
+        "patient_id": "PT_88139",
+        "policy_number": "MED-GLD-8563202",
+        "cluster_id": "C_026",
+        "reference_date": "2025-06-01 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "Paul Walker O.",
+        "printed_expiry_date": "2025-06-26 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_88139": {
+        "patient_id": "PT_88139",
+        "policy_number": "MED-GLD-8563202",
+        "cluster_id": "C_026",
+        "reference_date": "2025-06-01 00:00:00",
+        "claim_amount": "10275.00",
+        "cpt_codes": [
+            "80053",
+            "93306",
+            "44970"
+        ],
+        "icd10_codes": [
+            "M75.100"
+        ],
+        "icd10_code": "M75.100",
+        "provider_npi": "NPI-8374651029",
+        "service_date": "2025-06-01 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_88139": {
+        "patient_id": "PT_88139",
+        "policy_number": "MED-GLD-8563202",
+        "cluster_id": "C_026",
+        "reference_date": "2025-06-01 00:00:00",
+        "admit_date": "2025-06-01 00:00:00",
+        "discharge_date": "2025-06-04 00:00:00",
+        "icd10_code": "M75.100",
+        "icd10_codes": [
+            "M75.100",
+            "K35.80"
+        ],
+        "cpt_codes": [
+            "80053",
+            "93306",
+            "44970"
+        ]
+    },
+    "rx_PT_88139": {
+        "patient_id": "PT_88139",
+        "policy_number": "MED-GLD-8563202",
+        "cluster_id": "C_026",
+        "reference_date": "2025-06-01 00:00:00",
+        "rx_date": "2025-06-06 00:00:00",
+        "drug_names": [
+            "Levothyroxine",
+            "Amlodipine"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_88139": {
+        "patient_id": "PT_88139",
+        "policy_number": "MED-GLD-8563202",
+        "cluster_id": "C_026",
+        "reference_date": "2025-06-01 00:00:00"
+    },
+    "id_PT_55056": {
+        "patient_id": "PT_55056",
+        "policy_number": "MED-GLD-8987516",
+        "cluster_id": "C_027",
+        "reference_date": "2025-01-03 00:00:00",
+        "document_type": "passport",
+        "printed_name": "Thomas Jackson R.",
+        "printed_expiry_date": "2029-01-02 00:00:00",
+        "expired": false,
+        "tampered": false
+    },
+    "claim_PT_55056": {
+        "patient_id": "PT_55056",
+        "policy_number": "MED-GLD-8987516",
+        "cluster_id": "C_027",
+        "reference_date": "2025-01-03 00:00:00",
+        "claim_amount": "37495.00",
+        "cpt_codes": [
+            "29827",
+            "27447",
+            "93000"
+        ],
+        "icd10_codes": [
+            "M54.5"
+        ],
+        "icd10_code": "M54.5",
+        "provider_npi": null,
+        "service_date": "2025-01-03 00:00:00",
+        "signature_present": false,
+        "missing_field_type": "auth_number"
+    },
+    "discharge_PT_55056": {
+        "patient_id": "PT_55056",
+        "policy_number": "MED-GLD-8987516",
+        "cluster_id": "C_027",
+        "reference_date": "2025-01-03 00:00:00",
+        "admit_date": "2025-01-03 00:00:00",
+        "discharge_date": "2025-01-08 00:00:00",
+        "icd10_code": "M54.5",
+        "icd10_codes": [
+            "M54.5",
+            "N39.0"
+        ],
+        "cpt_codes": [
+            "29827",
+            "27447",
+            "93000"
+        ]
+    },
+    "rx_PT_55056": {
+        "patient_id": "PT_55056",
+        "policy_number": "MED-GLD-8987516",
+        "cluster_id": "C_027",
+        "reference_date": "2025-01-03 00:00:00",
+        "rx_date": "2025-01-07 00:00:00",
+        "drug_names": [
+            "Alprazolam",
+            "Sertraline",
+            "Amoxicillin"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_55056": {
+        "patient_id": "PT_55056",
+        "policy_number": "MED-GLD-8987516",
+        "cluster_id": "C_027",
+        "reference_date": "2025-01-03 00:00:00"
+    },
+    "id_PT_39816": {
+        "patient_id": "PT_39816",
+        "policy_number": "MED-GLD-3005795",
+        "cluster_id": "C_028",
+        "reference_date": "2025-04-24 00:00:00",
+        "document_type": "state_id",
+        "printed_name": "Nancy Martin L.",
+        "printed_expiry_date": "2025-03-28 00:00:00",
+        "expired": true,
+        "tampered": false
+    },
+    "claim_PT_39816": {
+        "patient_id": "PT_39816",
+        "policy_number": "MED-GLD-3005795",
+        "cluster_id": "C_028",
+        "reference_date": "2025-04-24 00:00:00",
+        "claim_amount": "132645.00",
+        "cpt_codes": [
+            "33533",
+            "72148",
+            "27447",
+            "93000"
+        ],
+        "icd10_codes": [
+            "K35.80",
+            "J18.9"
+        ],
+        "icd10_code": "K35.80",
+        "provider_npi": "NPI-3847561029",
+        "service_date": "2025-04-24 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_39816": {
+        "patient_id": "PT_39816",
+        "policy_number": "MED-GLD-3005795",
+        "cluster_id": "C_028",
+        "reference_date": "2025-04-24 00:00:00",
+        "admit_date": "2025-04-24 00:00:00",
+        "discharge_date": "2025-04-28 00:00:00",
+        "icd10_code": "K35.80",
+        "icd10_codes": [
+            "K35.80",
+            "J18.9"
+        ],
+        "cpt_codes": [
+            "33533",
+            "72148",
+            "27447",
+            "93000"
+        ]
+    },
+    "rx_PT_39816": {
+        "patient_id": "PT_39816",
+        "policy_number": "MED-GLD-3005795",
+        "cluster_id": "C_028",
+        "reference_date": "2025-04-24 00:00:00",
+        "rx_date": "2025-04-29 00:00:00",
+        "drug_names": [
+            "Montelukast"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_39816": {
+        "patient_id": "PT_39816",
+        "policy_number": "MED-GLD-3005795",
+        "cluster_id": "C_028",
+        "reference_date": "2025-04-24 00:00:00"
+    },
+    "id_PT_74454": {
+        "patient_id": "PT_74454",
+        "policy_number": "MED-GLD-9235577",
+        "cluster_id": "C_029",
+        "reference_date": "2025-08-16 00:00:00",
+        "document_type": "drivers_license",
+        "printed_name": "Karen Harris A.",
+        "printed_expiry_date": "2030-08-15 00:00:00",
+        "expired": false,
+        "tampered": true
+    },
+    "claim_PT_74454": {
+        "patient_id": "PT_74454",
+        "policy_number": "MED-GLD-9235577",
+        "cluster_id": "C_029",
+        "reference_date": "2025-08-16 00:00:00",
+        "claim_amount": "865.00",
+        "cpt_codes": [
+            "99214",
+            "99284"
+        ],
+        "icd10_codes": [
+            "J18.9"
+        ],
+        "icd10_code": "J18.9",
+        "provider_npi": "NPI-1029384756",
+        "service_date": "2025-08-16 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_74454": {
+        "patient_id": "PT_74454",
+        "policy_number": "MED-GLD-9235577",
+        "cluster_id": "C_029",
+        "reference_date": "2025-08-16 00:00:00",
+        "admit_date": "2025-08-16 00:00:00",
+        "discharge_date": "2025-08-18 00:00:00",
+        "icd10_code": "J18.9",
+        "icd10_codes": [
+            "J18.9",
+            "I25.10"
+        ],
+        "cpt_codes": [
+            "99214",
+            "99284"
+        ]
+    },
+    "rx_PT_74454": {
+        "patient_id": "PT_74454",
+        "policy_number": "MED-GLD-9235577",
+        "cluster_id": "C_029",
+        "reference_date": "2025-08-16 00:00:00",
+        "rx_date": "2025-08-21 00:00:00",
+        "drug_names": [
+            "Metformin",
+            "Montelukast"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_74454": {
+        "patient_id": "PT_74454",
+        "policy_number": "MED-GLD-9235577",
+        "cluster_id": "C_029",
+        "reference_date": "2025-08-16 00:00:00"
+    },
+    "id_PT_41439": {
+        "patient_id": "PT_41439",
+        "policy_number": "MED-GLD-9767312",
+        "cluster_id": "C_030",
+        "reference_date": "2025-05-28 00:00:00",
+        "document_type": "medicare_card",
+        "printed_name": "Patricia Miller E.",
+        "printed_expiry_date": null,
+        "expired": true,
+        "tampered": false
+    },
+    "claim_PT_41439": {
+        "patient_id": "PT_41439",
+        "policy_number": "MED-GLD-9767312",
+        "cluster_id": "C_030",
+        "reference_date": "2025-05-28 00:00:00",
+        "claim_amount": "51045.00",
+        "cpt_codes": [
+            "27447",
+            "99214",
+            "71046",
+            "44970"
+        ],
+        "icd10_codes": [
+            "K35.80"
+        ],
+        "icd10_code": "K35.80",
+        "provider_npi": "NPI-8374651029",
+        "service_date": "2025-05-28 00:00:00",
+        "signature_present": true,
+        "missing_field_type": null
+    },
+    "discharge_PT_41439": {
+        "patient_id": "PT_41439",
+        "policy_number": "MED-GLD-9767312",
+        "cluster_id": "C_030",
+        "reference_date": "2025-05-28 00:00:00",
+        "admit_date": "2025-05-28 00:00:00",
+        "discharge_date": "2025-05-31 00:00:00",
+        "icd10_code": "K35.80",
+        "icd10_codes": [
+            "K35.80",
+            "J01.90"
+        ],
+        "cpt_codes": [
+            "27447",
+            "99214",
+            "71046",
+            "44970"
+        ]
+    },
+    "rx_PT_41439": {
+        "patient_id": "PT_41439",
+        "policy_number": "MED-GLD-9767312",
+        "cluster_id": "C_030",
+        "reference_date": "2025-05-28 00:00:00",
+        "rx_date": "2025-06-02 00:00:00",
+        "drug_names": [
+            "Atorvastatin",
+            "Amlodipine",
+            "Hydrocodone"
+        ],
+        "missing_field": null
+    },
+    "amend_PT_41439": {
+        "patient_id": "PT_41439",
+        "policy_number": "MED-GLD-9767312",
+        "cluster_id": "C_030",
+        "reference_date": "2025-05-28 00:00:00"
+    },
+    "unknown_blurry_scan_001": {
+        "patient_id": null,
+        "policy_number": null,
+        "cluster_id": null,
+        "document_type": "UNKNOWN",
+        "note": "Severely blurred unreadable scan \u2014 content indeterminate"
+    },
+    "unknown_bank_statement_001": {
+        "patient_id": null,
+        "policy_number": null,
+        "cluster_id": null,
+        "document_type": "UNKNOWN",
+        "note": "Bank account statement \u2014 not a medical document"
+    },
+    "unknown_utility_bill_001": {
+        "patient_id": null,
+        "policy_number": null,
+        "cluster_id": null,
+        "document_type": "UNKNOWN",
+        "note": "ComEd electric utility bill \u2014 not a medical document"
+    },
+    "unknown_blank_scan_001": {
+        "patient_id": null,
+        "policy_number": null,
+        "cluster_id": null,
+        "document_type": "UNKNOWN",
+        "note": "Blank/near-blank page \u2014 accidental scanner submission"
+    }
+}

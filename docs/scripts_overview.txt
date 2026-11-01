@@ -1,0 +1,86 @@
+====================================================================
+  MediShield Dataset — Scripts Overview (Assignment 2)
+====================================================================
+
+1. generate_docs.py
+   ─────────────────
+   Generates 151 synthetic insurance PNG documents across 5 categories:
+     - claim_forms/        : 31 files (CMS-1500 + UB-04, incl. 1 duplicate)
+     - discharge_summaries/: 30 files
+     - id_documents/       : 30 files (driver's license, passport, state ID)
+     - prescriptions/      : 30 files (3 visual styles)
+     - policy_amendments/  : 30 files (typed + handwritten mix)
+   Also writes dataset/metadata.json with fraud labels, edge flags,
+   and expected_decision (APPROVE / REJECT / ESCALATE) for every document.
+
+   Key Assignment 2 features:
+     - 30 patient case clusters (all 5 docs tied to one patient/episode)
+     - 6 fraud-positive documents (date conflict, duplicate claim,
+       proc-diag mismatch, readmission, structuring, name mismatch)
+     - Edge cases: 5 expired IDs, 5 expiring-soon IDs, 3 tampered IDs,
+       5 uncovered procedures, 4 incomplete claim forms,
+       4 incomplete prescriptions, 3 blurry prescription scans
+     - All treatment dates constrained to 2025
+
+   Run: python generate_docs.py
+
+
+2. generate_gold_policy.py
+   ────────────────────────
+   Generates the MediShield Gold Plan policy PDF.
+   Output: dataset/policies/medishield_gold_plan.pdf
+
+   Key Assignment 2 features:
+     - 10 bookmarked sections for targeted RAG retrieval
+
+   Run: python generate_gold_policy.py
+
+
+3. generate_silver_policy.py
+   ──────────────────────────
+   Generates the MediShield Silver Plan policy PDF.
+   Output: dataset/policies/medishield_silver_plan.pdf
+
+   Key Assignment 2 features:
+     - Same 10-section structure + bookmarks as the Gold Plan
+     - Different benefit tier
+
+   Run: python generate_silver_policy.py
+
+
+4. generate_unknown.py
+   ────────────────────
+   Generates 4 out-of-distribution documents to stress-test the
+   Document Classifier Agent.
+   Output: dataset/unknown/
+
+   Key Assignment 2 features:
+     - All 4 get expected_decision = "ESCALATE" in metadata.json
+
+   Run: python generate_unknown.py  (run AFTER generate_docs.py)
+
+
+====================================================================
+  Recommended Run Order
+====================================================================
+  1. python generate_docs.py
+  2. python generate_gold_policy.py
+  3. python generate_silver_policy.py
+  4. python generate_unknown.py
+
+====================================================================
+  Output Structure
+====================================================================
+  dataset/
+  ├── claim_forms/           (31 PNGs)
+  ├── discharge_summaries/   (30 PNGs)
+  ├── id_documents/          (30 PNGs)
+  ├── prescriptions/         (30 PNGs)
+  ├── policy_amendments/     (30 PNGs)
+  ├── unknown/               ( 4 PNGs)
+  ├── policies/
+  │   ├── medishield_gold_plan.pdf
+  │   └── medishield_silver_plan.pdf
+  └── metadata.json          (155 entries)
+
+====================================================================

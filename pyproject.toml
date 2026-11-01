@@ -1,0 +1,35 @@
+[project]
+name = "medishield-intake"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.20.1",
+    "argon2-cffi>=25.1.0",
+    "faker>=40.44.0",
+    "psycopg[binary]>=3.3.6",
+    "pydantic>=2.14.2",
+    "pydantic-settings>=2.16.2",
+    "sqlalchemy>=2.1.6",
+]
+
+[dependency-groups]
+data = [
+    "fpdf2>=2.9.0",
+    "numpy>=2.5.4",
+    "pillow>=13.0.0",
+]
+dev = [
+    "hypothesis>=6.170.14",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["packages", "apps"]
+
+[tool.ruff]
+line-length = 100
+# Frozen synthetic generators retain historical lint findings; do not reformat them.
+extend-exclude = ["data/synthetic/generators"]
