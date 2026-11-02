@@ -74,10 +74,11 @@ All configuration comes from environment variables, loaded into a typed `Setting
 | `REDIS_URL` | Broker and pub/sub | none (required) |
 | `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | MinIO/S3 | none (required) |
 | `QDRANT_URL`, `QDRANT_API_KEY` | Vector DB | none (required) |
-| `LLM_PROVIDER` | `anthropic` or `openai` | `anthropic` |
+| `LLM_PROVIDER` | `stub`, `groq`, `anthropic` or `openai` **[Decision, ADR-001 v0.2]**: `stub` for development and tests, `groq` for the real evaluation | `stub` |
 | `LLM_VISION_MODEL`, `LLM_TEXT_MODEL` | Model IDs **[Default, ADR-001]** | set per environment |
-| `LLM_FALLBACK_PROVIDER`, `LLM_FALLBACK_MODEL` | Fallback | `openai`, set per environment |
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | Provider keys | none |
+| `LLM_FALLBACK_PROVIDER`, `LLM_FALLBACK_MODEL` | Optional fallback; empty means no fallback | empty |
+| `GROQ_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | Provider keys (all optional; only the selected provider's key is needed) | none |
+| `LLM_RECORD_FIXTURES` | Stub gateway records a fixture from a real response | `false` |
 | `EMBEDDING_MODEL` | Policy embeddings | `BAAI/bge-small-en-v1.5` |
 | `THRESH_FRAUD_ESCALATE` | Fraud escalation cut | `0.30` |
 | `THRESH_FRAUD_HIGH` | HIGH risk cut | `0.60` |
@@ -694,7 +695,7 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 
 | PRD ID | Spec impact | Default used here |
 | --- | --- | --- |
-| OQ-02 | Model IDs and fallback | Anthropic primary, OpenAI fallback, via gateway |
+| OQ-02 | Model IDs and fallback | Groq primary for the real run (vision-capable Llama 4 models), stub until Step 20, Anthropic and OpenAI as optional providers; model IDs confirmed in the Groq console before Step 20 |
 | OQ-03 | Retention, tracing, BAA | Synthetic only; tracing off |
 | OQ-04 | Claim standard schema | Authored `claim_submission_standard.v1.json` |
 | OQ-05 | Routing table | Section 6.2 table |
@@ -711,6 +712,9 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.3**
+- Provider decision: stub by default, Groq for the real evaluation; Anthropic and OpenAI optional. New settings `GROQ_API_KEY` and `LLM_RECORD_FIXTURES`.
 
 **v0.2.2**
 - Section 11: label derivation rules for `kyc_expected`, `coverage_expected`, `fraud_expected`, `scenario`, NPI normalization and the reference date of unknown documents.

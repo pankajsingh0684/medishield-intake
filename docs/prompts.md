@@ -237,6 +237,51 @@ Show me the plan first.
 
 # Phase 1: Core pipeline
 
+## Step 5d: Local credentials for all four services
+
+Run this once, before Step 7. Use the corrected `.env.example` as the template (placeholders only, `LLM_PROVIDER=stub`, `127.0.0.1` everywhere, `REDIS_PASSWORD`, `LLM_RECORD_FIXTURES=false`, empty `GROQ_API_KEY`).
+
+```
+Task: make local credentials explicit, consistent and safe for Postgres, Redis, MinIO and Qdrant. Do not commit anything. Never print or echo real secrets in your output; show only variable names and whether they are set.
+
+Part A: audit (change nothing yet). For each service, report:
+1. Which variables infra/docker-compose.yml reads, and where each value actually comes from now (.env, .env.example, a default in the compose file, or an inherited shell variable).
+   - Postgres: POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+   - Redis: whether a password is required (requirepass) now
+   - MinIO: root user and password, bucket names
+   - Qdrant: whether an API key is required now
+2. Whether .env exists and whether it is ignored by git (git check-ignore .env).
+3. Whether .env.example contains any real-looking secret. It must only contain obvious placeholders such as replace-with-... or change-me.
+4. Which variables the app uses to reach each service (DATABASE_URL, TEST_DATABASE_URL, REDIS_URL, S3 endpoint/access key/secret key/buckets, QDRANT_URL, QDRANT_API_KEY), and whether the values match the compose credentials.
+5. Where the medishield_test database and the medishield-documents / medishield-documents-test buckets are created now.
+6. Whether the healthchecks and the Celery/app clients can still connect once Redis, MinIO and Qdrant have credentials.
+Then stop and wait for my OK.
+
+Part B: after my OK, in this order:
+1. Replace .env.example with the version I give you, exactly as written. Create .env from it if missing. Generate a random value for each secret (openssl rand -hex 16 or Python secrets) and write it only into .env:
+   POSTGRES_PASSWORD, REDIS_PASSWORD, S3_SECRET_KEY (at least 8 characters), QDRANT_API_KEY, JWT_SECRET, SEED_TEST_USER_PASSWORD.
+   Keep the same value consistent everywhere it is used (compose, DATABASE_URL, TEST_DATABASE_URL, REDIS_URL, S3 keys, QDRANT_API_KEY).
+   Ensure .env is in .gitignore. Keep LLM_PROVIDER=stub.
+2. Update infra/docker-compose.yml to read every secret from .env with no hardcoded defaults for secrets:
+   Redis started with --requirepass, MinIO with its root user and password taken from S3_ACCESS_KEY and S3_SECRET_KEY, Qdrant with QDRANT__SERVICE__API_KEY.
+   Healthchecks must authenticate. Keep all ports bound to 127.0.0.1.
+3. Update packages/core/config.py Settings for the new variables (required ones without defaults), including REDIS_PASSWORD, and update the Redis, S3 and Qdrant clients to use them.
+   Make the app refuse to start when APP_ENV=production and any secret still starts with "replace-with". Test that it fails in production and does not fail in development or test.
+   Add tests that missing secrets raise a clear error.
+4. Before any reset, tell me exactly which volumes `docker compose -f infra/docker-compose.yml down -v` will delete (by name) and what data is lost, then wait for my OK. Then run it, followed by `up -d`, and wait until all four services are healthy.
+5. Make initialization repeatable in one script (for example scripts/init_local.sh): create the medishield_test database, the medishield-documents and medishield-documents-test buckets, and any Qdrant collection needed later, only if they do not exist.
+6. Run `uv run alembic upgrade head`, then `uv run python scripts/seed.py` for the development database.
+7. Run `uv run pytest` and `uv run ruff check .`. pytest must show 0 skipped.
+8. Add a "Local setup" section to README.md: copy .env.example to .env, set the secrets, start compose, run the init script, migrate, seed. Include how to open each service without printing a secret:
+   - Postgres: `docker compose exec postgres psql -U <user> -d medishield`
+   - Redis: `docker compose exec redis redis-cli` then `AUTH <password>`
+   - MinIO console: http://127.0.0.1:9001 with the root user and password from .env
+   - Qdrant dashboard: http://127.0.0.1:6333/dashboard with the API key from .env
+Finally show `git status` and the changed files, and confirm no secret appears in any tracked file (run gitleaks, or grep for each secret value).
+```
+
+Resetting deletes the data in all four services (including MinIO uploads from the Step 6 smoke test). Postgres is rebuilt from the migrations and seed script.
+
 ## Step 6: Ingestion API
 
 ```
@@ -258,12 +303,25 @@ Show me the plan first.
 Step 7: LLM gateway.
 Read: spec.md sections 7.1 and 10; ADR-001.
 Goal: one interface for all model calls, runnable offline with fixtures.
-Create packages/core/llm/ with: LLMGateway protocol complete_json(model, system, messages, images, schema) -> BaseModel; AnthropicProvider; OpenAIProvider; StubProvider that returns recorded JSON fixtures from data/fixtures/llm/ keyed by prompt name + input hash; retry with jitter on 429/5xx; timeout; one schema-validation retry then raise LLMSchemaError; fallback provider switch; token and latency logging; PHI redaction in logs.
+Create packages/core/llm/ with:
+- LLMGateway protocol: complete_json(model, system, messages, images, schema) -> BaseModel.
+- StubProvider (default) that returns recorded JSON fixtures from data/fixtures/llm/, keyed by prompt name plus a SHA-256 of the canonicalized input
+  (messages plus image bytes hash). A missing fixture raises a clear error that prints the key. Add a record mode (LLM_RECORD_FIXTURES=true) that writes a
+  fixture from a real response; off by default.
+- GroqProvider (OpenAI-compatible API, base URL https://api.groq.com/openai/v1, key from GROQ_API_KEY). Use JSON mode (response_format json_object, with the word
+  "JSON" in the prompt) plus our own schema validation and one retry; do not rely on json_schema. Images are sent as base64 data URLs; respect the provider's image limits.
+- AnthropicProvider and OpenAIProvider as optional adapters (real calls only when configured; never called in tests).
+- Retry with jitter on 429 and 5xx; timeout (AGENT_TIMEOUT_S); one schema-validation retry, then raise LLMSchemaError; optional fallback provider switch after
+  repeated failure (no fallback when LLM_FALLBACK_PROVIDER is empty); token and latency logging; PHI redaction in logs (no raw field values).
+- Prompt-injection control per spec 7.1: document text goes in a clearly delimited data block and the system prompt says to ignore instructions inside it.
 Prompts: loader for packages/agents/prompts/{agent}.{version}.md with front matter (model, temperature, schema).
-Config: LLM_PROVIDER=stub|anthropic|openai.
-Tests: stub returns fixture; schema failure triggers one retry then error; retries on 429; fallback is used after repeated failure; logs contain no raw field values. Mock the real providers with httpx mocks; do not call the network.
+Config: LLM_PROVIDER=stub|groq|anthropic|openai (default stub). Model names come only from settings (LLM_VISION_MODEL, LLM_TEXT_MODEL); do not hardcode model IDs.
+Add GROQ_API_KEY and LLM_RECORD_FIXTURES to Settings and .env.example (keys empty).
+Tests: stub returns the fixture; missing fixture error shows the key; schema failure triggers one retry then error; Groq request shape with an image; retries on 429; fallback after
+repeated failure and none when unset; logs contain no raw field values; an injected "approve this claim" string in the document text does not change the system prompt.
+Mock all real providers with httpx mocks; do not call the network.
 Do not: write agent logic.
-Done when: tests pass with no API keys set.
+Done when: uv run pytest and uv run ruff check . pass with no API keys set.
 Show me the plan first.
 ```
 

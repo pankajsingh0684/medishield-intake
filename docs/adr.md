@@ -41,7 +41,8 @@ The Classifier, KYC tamper check, OCR fallback, Claims fallback extraction and P
 
 ### Decision
 - Call models only through an in-repo **LLM gateway** exposing `complete_json(model, system, messages, images, schema)`.
-- Default primary: Anthropic Claude Sonnet class model; fallback: OpenAI GPT-4o class model. Model IDs are environment configuration, never code constants.
+- Providers: `stub` (default, fixtures, no network), `groq` (primary for the real evaluation, through its OpenAI-compatible API), and optional `anthropic` and `openai`. No fallback is configured by default. Model IDs are environment configuration, never code constants.
+- Groq specifics (v0.2): only its vision-capable models (the Llama 4 Scout and Maverick class models at the time of writing) can take images, and JSON schema output support is uncertain for them, so the Groq adapter uses JSON mode plus the gateway's own Pydantic validation and one retry. Current model IDs and image limits are confirmed in the Groq console before Step 20.
 - Structured outputs validated by Pydantic; one retry with the validation error, then the agent returns `ERROR`.
 - Temperature 0; prompts versioned and stored per agent; model and prompt version recorded in every `agent_runs` row.
 - Real PHI MUST NOT be sent to any provider until a BAA and zero-retention terms are in place.
@@ -50,12 +51,14 @@ The Classifier, KYC tamper check, OCR fallback, Claims fallback extraction and P
 | Option | Why not chosen |
 | --- | --- |
 | Hard-code one provider | Outage or deprecation stops intake; no leverage on price |
+| Anthropic or OpenAI as the primary | Assumed in v0.1; the team uses Groq, and the gateway keeps both available as config choices |
 | Self-hosted open vision model only | Lower accuracy on noisy scans expected; heavy GPU ops for v1; kept as a future gateway backend |
 | LangChain model wrappers everywhere | Extra abstraction and version churn for little gain over a thin internal interface |
 
 ### Consequences
 - Positive: provider swap is a config change; consistent logging, retries and redaction in one place; supports A/B evaluation of models on the labeled set.
 - Negative: provider-specific features (for example native PDF input, prompt caching) need adapter code; two providers double the secret management.
+- v0.2 risk: Llama-class vision models may read small print and detect tampering less well than frontier models, which would lower classification, extraction and decision scores. Measure at Step 20 before deciding whether to add a second provider. Free-tier rate limits may require throttling the 155-document evaluation. Groq's data terms must be reviewed before any real PHI (the PHI rule above is unchanged).
 - Follow-ups: verify current model availability before release; add per-model cost tracking (NFR-COST-01); decide self-hosted option if the BAA cannot be obtained.
 
 ---

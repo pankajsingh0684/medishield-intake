@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version / status | v0.2, in progress (Steps 1 to 6 done) |
+| Version / status | v0.2, in progress (Phases 0 and 0b done, Step 6 done) |
 | Date | 2026-10-31 |
 | Inputs | PRD v0.1, `spec.md` v0.2, `adr.md` v0.2, `prompts.md` v0.2 |
 | Working style | One step at a time; each step ends runnable, tested and committed |
@@ -44,9 +44,9 @@ Plan for about 20 percent extra for prompt tuning after the first real evaluatio
 - [ ] Tesseract OCR installed locally (needed at Step 9)
 - [ ] LLM API key for at least one provider (needed at Step 20; not before)
 - [x] `prd`, `spec.md`, `adr.md`, `prompts.md` copied into `docs/` of the repo
-- [ ] **Replace** `docs/spec.md`, `docs/adr.md`, `docs/prompts.md` and `docs/plan.md` with the v0.2 files (needed before Step 5a)
+- [x] **Replace** `docs/spec.md`, `docs/adr.md`, `docs/prompts.md` and `docs/plan.md` with the v0.2 files (needed before Step 5a)
 - [ ] Decisions on blocking open questions, or agreement to proceed on the defaults (see section 9)
-- [ ] Dataset generator libraries as a separate uv group: `uv add --group data pillow numpy fpdf2` (needed at Step 5a)
+- [x] Dataset generator libraries as a separate uv group: `uv add --group data pillow numpy fpdf2` (needed at Step 5a)
 
 ## 4. Phase and step plan
 
@@ -76,6 +76,7 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 
 | Done | Step | Deliverable | Size | Depends on | Done when |
 | --- | --- | --- | --- | --- | --- |
+| [ ] | 5d | Local credentials for Postgres, Redis, MinIO and Qdrant: secrets in `.env` only, authenticated services, repeatable init script, placeholder guard for production, README local setup | M | 2, 5b | `.env` ignored by git; all four services healthy with credentials; `uv run pytest` 0 skipped; no secret in tracked files |
 | [x] | 6 | Ingestion API: upload, list, get, MinIO storage, SHA-256 duplicate detection | L | 2, 5 | curl upload creates an object in MinIO and a row in Postgres |
 | [ ] | 7 | LLM gateway with stub provider, retries, fallback, redaction, prompt loader | L | 3 | Tests pass with no API keys |
 | [ ] | 8 | Classifier agent and document page renderer | M | 3, 7, 5c | Six types and low-confidence paths tested with stub |
@@ -187,7 +188,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 | ID | Question | Default assumed | Needed by |
 | --- | --- | --- | --- |
-| OQ-02 | Which model and fallback | Anthropic primary, OpenAI fallback, via gateway | Step 7 (confirm current model IDs before Step 20) |
+| OQ-02 | Which model and fallback | Groq primary for the real run, stub until Step 20, Anthropic and OpenAI optional, no fallback by default; confirm current Groq vision model IDs and limits in the console before Step 20 | Step 7 (adapter), Step 20 (model IDs) |
 | OQ-04 | Claim submission standard | Authored `claim_submission_standard.v1.json` | Step 10 |
 | OQ-05 | Routing matrix | Spec 6.2 table | Step 12 |
 | OQ-06 | Rule precedence | R1 reliability, R2 fraud, R3 reject, R4 approve | Step 4 |
@@ -196,6 +197,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | OQ-17 | Policy depends on Claims | Policy runs after Claims | Step 12 |
 | OQ-03, OQ-11 | Compliance, auto-reject policy | Synthetic data only; decisions are recommendations | Before any real data |
 | D1 (confirmed) | Do discharge summaries and prescriptions get a coverage decision? | Decided: no, supporting documents (extraction, member match and fraud only) | Step 5b (engine tests), Step 12 (routing) |
+| LLM provider (confirmed) | Which provider runs during development | `LLM_PROVIDER=stub` in `.env` and `.env.example` until Step 20; real keys only for the evaluation run | Step 7 to Step 19 |
 | D2 (confirmed) | Policy amendments | Decided: always escalate unless KYC fails; report accuracy per category | Step 5c (labels), Step 20 |
 | Clock (new) | Date for expiry and recency checks | `cases.received_at`; evaluation sets it from each label's `reference_date` (the dataset is dated 2025) | Step 5b, Step 11 |
 
@@ -208,10 +210,13 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | 2026-10-30 | Planning (PRD, spec, ADRs, prompts, plan) | Ready to start Step 1 |
 | 2026-10-31 | Steps 1 to 5 (Phase 0) | Done by you with Copilot. Step 3: spec naming won over PRD (`agent_version`, `SKIPPED`, GraphState keys `document`, `ocr`, `audit`) |
 | 2026-11-01 | Steps 5a, 5b, 5c; Gate 0 passed | Dataset fixed (readmission dates, secondary ICD truth, deterministic PDFs) and frozen. Phase 0 code aligned with spec v0.2 (`medishield_test` database, second migration). 155 labels, 94 APPROVE / 43 ESCALATE / 18 REJECT; split 21 dev and 9 holdout clusters. Six single-cluster fraud scenarios are dev-only |
+| 2026-11-01 | Step 6 | Ingestion API done (118 tests). Fixed: app settings no longer read the test bucket; pytest uses `medishield_test` only |
+| 2026-11-02 | Provider decision | Groq recorded as the primary provider for the real evaluation (ADR-001, spec v0.2.3, Step 7 prompt); stub stays the default |
+| 2026-11-02 | Local credentials | Added as Step 5d in `prompts.md` and the plan (not yet run). Secrets for Postgres, Redis, MinIO and Qdrant move to `.env` (gitignored); `.env.example` has placeholders only; `LLM_PROVIDER=stub` until Step 20 |
 | 2026-11-01 | Spec v0.2.1 | `NPI_CHECKSUM` moved to `ClaimsResult.warnings` (not a KYC flag); `claim_history.kind` is TEXT plus CHECK; `policy_exclusions` lookup rule stated |
 | 2026-10-31 | D1 and D2 confirmed | D1: no coverage decision for discharge summaries and prescriptions. D2: policy amendments always escalate unless KYC fails. All docs updated |
 | 2026-10-31 | Docs updated to v0.2 | Dataset review found 15 mismatches; added Steps 5a to 5c; decisions D1, D2 and the clock rule added |
-| 2026-11-01 | Step 6 | Ingestion API verified: 119 tests passed, Ruff passed, live upload and duplicate detection confirmed against development Postgres and MinIO |
+| | | |
 
 ## 11. Definition of done
 
@@ -221,7 +226,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 ## 12. Next action
 
-Phase 0 and Phase 0b (steps 1 to 5c) are done, Gate 0 has passed, and Step 6 is complete. Next: **Step 7 (LLM gateway with stub provider)**. Earlier next-step notes, kept for the record:
+Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Next: **Step 7 (LLM gateway, stub mode, with a Groq provider)**. Earlier next-step notes, kept for the record:
 
 1. Replace the four docs in `docs/` with the v0.2 files.
 2. Run **Step 5a** (fix the generator, regenerate once, freeze). Use the Step 5a prompt in `prompts.md`.
