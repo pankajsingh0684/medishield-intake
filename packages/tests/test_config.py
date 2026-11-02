@@ -66,6 +66,7 @@ def test_documented_threshold_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(_env_file=None)
 
     assert settings.llm_provider == "stub"
+    assert settings.llm_fallback_provider is None
     assert settings.threshold_fraud_escalate == 0.30
     assert settings.threshold_fraud_high == 0.60
     assert settings.threshold_agent_confidence == 0.60

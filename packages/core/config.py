@@ -61,7 +61,7 @@ class Settings(EnvFileSettings):
     llm_provider: Literal["stub", "groq", "anthropic", "openai"] = "stub"
     llm_vision_model: str
     llm_text_model: str
-    llm_fallback_provider: Literal["anthropic", "openai"] = "openai"
+    llm_fallback_provider: Literal["groq", "anthropic", "openai"] | None = None
     llm_fallback_model: str
     groq_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
