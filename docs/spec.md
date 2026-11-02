@@ -236,6 +236,7 @@ class Envelope(BaseModel):
     started_at: datetime
     finished_at: datetime
     error: str | None = None
+    raw_response_ref: str | None = None   # SHA-256 reference of the raw model response (FR-CLS-06); set by the LLM gateway
 
 class Classification(Envelope):
     doc_type: DocType
@@ -371,6 +372,8 @@ Every node is wrapped by `instrument(agent_name)` which: appends `NODE_START`/`N
 - Input: first page image plus one sampled later page for multi-page files (FR-CLS-05), downscaled to a max long edge of 1568 px.
 - Prompt `classifier.v1`: lists the six types with distinguishing cues, asks for `doc_type`, calibrated `confidence` and `routing_tags`, and requires `UNKNOWN` when no type fits.
 - Post-rules: `confidence < THRESH_CLASSIFY_REVIEW` => treated as UNKNOWN for routing; the original label is kept for display.
+- Representation: the classifier keeps the predicted `doc_type` and adds `"NEEDS_REVIEW"` to `routing_tags` when confidence is below `THRESH_CLASSIFY_REVIEW`. The router sends a case to `mark_needs_review` when `doc_type == UNKNOWN` or `"NEEDS_REVIEW" in routing_tags`, and handles `status == ERROR` separately (also to review).
+- Input validation: PNG and JPEG are fully decoded before use; zero-byte, truncated, corrupt or mislabeled files, zero-page PDFs and unsupported types return an ERROR envelope without calling the model.
 - Class guidance in the prompt (from the generated dataset): CMS-1500 and UB-04 forms are both `CLAIM_FORM`; driver's licenses, passports, state IDs, health-plan member cards and Medicare cards are all `ID_DOCUMENT`; typed and handwritten amendments are `POLICY_AMENDMENT`, and a government ID image appended below an amendment does not change that; bank statements, utility bills, blank pages and unreadable scans are `UNKNOWN`.
 - Output: `Classification`. Persists model, prompt version and raw response reference (FR-CLS-06).
 
@@ -712,6 +715,12 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.5**
+- Classifier review representation (`NEEDS_REVIEW` routing tag) and input validation stated in 7.2.
+
+**v0.2.4**
+- `Envelope.raw_response_ref` added (needed to persist the raw response reference, FR-CLS-06).
 
 **v0.2.3**
 - Provider decision: stub by default, Groq for the real evaluation; Anthropic and OpenAI optional. New settings `GROQ_API_KEY` and `LLM_RECORD_FIXTURES`.
