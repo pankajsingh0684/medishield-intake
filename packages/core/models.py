@@ -27,6 +27,7 @@ class Envelope(StrictModel):
     started_at: datetime
     finished_at: datetime
     error: str | None = None
+    raw_response_ref: str | None = None
 
 
 class Classification(Envelope):

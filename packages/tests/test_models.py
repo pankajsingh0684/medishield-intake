@@ -146,6 +146,14 @@ def test_models_round_trip_json_and_produce_schema(model: BaseModel) -> None:
     assert model_type.model_json_schema()["title"] == model_type.__name__
 
 
+def test_envelope_raw_response_reference_is_optional() -> None:
+    envelope = Envelope(**envelope_values())
+    referenced_envelope = Envelope(**envelope_values(), raw_response_ref="sha256:abc123")
+
+    assert envelope.raw_response_ref is None
+    assert referenced_envelope.raw_response_ref == "sha256:abc123"
+
+
 @pytest.mark.parametrize("model", valid_models(), ids=lambda model: type(model).__name__)
 def test_models_forbid_extra_fields(model: BaseModel) -> None:
     payload = model.model_dump(mode="json")

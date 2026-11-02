@@ -1,5 +1,6 @@
 """Schema-validating gateway, offline fixture provider, and settings factory."""
 
+import hashlib
 import json
 import logging
 import random
@@ -146,6 +147,10 @@ class Gateway:
                 tokens = (response.input_tokens, response.output_tokens)
                 if self.record_fixtures and self.fixtures and selected_provider.name != "stub":
                     self.fixtures.write(key, result.model_dump(mode="json"))
+                if "raw_response_ref" in schema.model_fields:
+                    result = result.model_copy(
+                        update={"raw_response_ref": self._response_reference(response.content)}
+                    )
                 return result
             raise LLMSchemaError(f"Response did not match {schema.__name__}")
         except FixtureNotFoundError:
@@ -269,6 +274,19 @@ class Gateway:
         if isinstance(content, (dict, list)):
             return content
         raise TypeError("Provider response must be JSON text or an object")
+
+    @staticmethod
+    def _response_reference(content: Any) -> str:
+        if isinstance(content, str):
+            encoded = content.encode("utf-8")
+        else:
+            encoded = json.dumps(
+                content,
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
 
     @staticmethod
     def _schema_repair_hint(error: Exception) -> str:

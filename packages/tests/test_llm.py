@@ -112,6 +112,19 @@ def test_stub_provider_loads_fixture_for_prompt_and_canonical_input(tmp_path: Pa
     assert result.value == "ID_DOCUMENT"
 
 
+def test_gateway_attaches_raw_response_reference_when_schema_supports_it() -> None:
+    provider = SequenceProvider([{"value": "response"}])
+
+    class ReferencedResult(Result):
+        raw_response_ref: str | None = None
+
+    result = Gateway(provider).complete_json("model", "system", [], None, ReferencedResult)
+
+    assert result.raw_response_ref is not None
+    assert result.raw_response_ref.startswith("sha256:")
+    assert len(result.raw_response_ref.removeprefix("sha256:")) == 64
+
+
 def test_fixture_key_changes_when_canonical_input_changes() -> None:
     original = fixture_key("classifier", [{"role": "user", "content": "one"}], [b"a"])
 
