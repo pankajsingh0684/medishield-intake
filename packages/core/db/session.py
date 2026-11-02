@@ -3,14 +3,16 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from packages.core.config import EnvFileSettings
 
-class DatabaseSettings(BaseSettings):
+
+class DatabaseSettings(EnvFileSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.example"),
+        env_file=".env",
         env_file_encoding="utf-8",
         env_ignore_empty=True,
         extra="ignore",

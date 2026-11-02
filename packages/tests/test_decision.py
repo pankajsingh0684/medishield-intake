@@ -198,6 +198,7 @@ def test_thresholds_are_frozen_and_built_from_settings() -> None:
     settings = Settings(
         database_url="postgresql://localhost/medishield",
         redis_url="redis://localhost:6380/0",
+        redis_password=SecretStr("redis"),
         s3_endpoint="http://localhost:9000",
         s3_access_key=SecretStr("access"),
         s3_secret_key=SecretStr("secret"),
@@ -208,6 +209,7 @@ def test_thresholds_are_frozen_and_built_from_settings() -> None:
         llm_text_model="text-model",
         llm_fallback_model="fallback-model",
         jwt_secret=SecretStr("jwt"),
+        seed_test_user_password=SecretStr("seed-password"),
         threshold_fraud_escalate=0.25,
         threshold_fraud_high=0.70,
         threshold_agent_confidence=0.65,

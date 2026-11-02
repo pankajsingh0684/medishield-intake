@@ -22,13 +22,22 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     ports:
       - "127.0.0.1:6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$${REDIS_PASSWORD}" redis-cli ping | grep -q PONG
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,7 +78,7 @@ services:
         - CMD-SHELL
         - >-
           bash -ec 'exec 3<>/dev/tcp/127.0.0.1/6333;
-          printf "GET /healthz HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3;
+          printf "GET /healthz HTTP/1.1\r\nHost: localhost\r\napi-key: %s\r\nConnection: close\r\n\r\n" "$${QDRANT__SERVICE__API_KEY}" >&3;
           IFS= read -r response <&3;
           [[ "$$response" == *"200 OK"* ]]'
       interval: 10s

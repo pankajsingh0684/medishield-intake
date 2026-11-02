@@ -10,13 +10,14 @@ from uuid import NAMESPACE_URL, uuid5
 from argon2 import PasswordHasher
 from faker import Faker
 from pydantic import SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from packages.core.config import EnvFileSettings
 from packages.core.db.models import ClaimHistory, Member, User
 from packages.core.db.session import create_database_engine
 from packages.core.enums import ClaimHistoryKind, UserRole
@@ -27,9 +28,9 @@ POLICY_ID_NAMESPACE = "medishield:synthetic:policy:"
 MEMBER_ID_PREFIX = "MS-TEST-"
 
 
-class SeedSettings(BaseSettings):
+class SeedSettings(EnvFileSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.example"),
+        env_file=".env",
         env_file_encoding="utf-8",
         env_ignore_empty=True,
         extra="ignore",

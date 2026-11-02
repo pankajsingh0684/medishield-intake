@@ -66,11 +66,18 @@ def ingestion_settings() -> IngestionTestSettings:
 @pytest.fixture(scope="module")
 def api_settings(ingestion_settings: IngestionTestSettings) -> ApiSettings:
     return ApiSettings(
+        app_env="test",
         database_url=ingestion_settings.test_database_url,
+        redis_url="redis://127.0.0.1:6380/0",
+        redis_password="test-redis-password",
         s3_endpoint=ingestion_settings.s3_endpoint,
         s3_access_key=ingestion_settings.s3_access_key,
         s3_secret_key=ingestion_settings.s3_secret_key,
         s3_bucket=ingestion_settings.s3_test_bucket,
+        qdrant_url="http://127.0.0.1:6333",
+        qdrant_api_key="test-qdrant-key",
+        jwt_secret="test-jwt-secret",
+        seed_test_user_password="test-seed-password",
         max_upload_mb=10,
     )
 

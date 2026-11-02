@@ -1,13 +1,13 @@
 # MediShield Intake
 
-MediShield's multi-agent document intake project. The current repository contains
-the Python project skeleton, local infrastructure configuration, shared typed
-contracts, deterministic decision engine, and PostgreSQL schema/repositories.
-API, worker, agents, and the web application are not implemented yet.
+MediShield's multi-agent document intake project. The repository contains shared
+typed contracts, the deterministic decision engine, PostgreSQL schema and
+repositories, and the Step 6 ingestion API. The worker, agents, and web application
+are still in progress.
 
 ## Current progress
 
-- Steps 1–5 are implemented and validated; changes are not committed yet.
+- Steps 1–6 are implemented and validated.
 - PostgreSQL 16, Redis, locally built MinIO, and Qdrant run through Docker Compose.
 - Redis is published on `localhost:6380` because `localhost:6379` is already in use
   on the development machine.
@@ -22,54 +22,46 @@ uv run ruff check .
 uv run pytest packages/tests/test_decision.py --cov=packages.decision --cov-report=term-missing --cov-fail-under=100
 ```
 
-## Local infrastructure
+## Local setup
 
-Create `.env` from `.env.example`. The credentials and model IDs marked
-`replace-with-` are local placeholders; replace them before using external services.
-The MinIO image is compiled locally from a pinned upstream source release, so the
-first Compose startup takes longer.
+Copy `.env.example` to `.env` and replace each `replace-with-` value with a local
+secret. Keep `.env` untracked. `LLM_PROVIDER=stub` works offline and needs no model
+API keys. The MinIO image is compiled locally from a pinned upstream source release,
+so its first Compose startup takes longer.
 
 ```bash
 cp .env.example .env
-docker compose -f infra/docker-compose.yml up -d
-docker compose -f infra/docker-compose.yml ps
+docker compose --env-file .env -f infra/docker-compose.yml up -d --wait
+bash scripts/init_local.sh
 uv run alembic upgrade head
-```
-
-Set a local-only test-user password before seeding. On PowerShell:
-
-```powershell
-$env:SEED_TEST_USER_PASSWORD = "local-only-test-password"
 uv run python scripts/seed.py
 ```
 
-Database integration tests use the separate `medishield_test` database, created by
-the Compose Postgres initialization script on a fresh volume. If the Postgres volume
-already existed before that script was added, create the database once with:
+The initializer is safe to rerun. It creates `medishield_test`, authenticates to
+Redis, creates `medishield-documents` and `medishield-documents-test` if missing,
+and creates the `policy_chunks` Qdrant collection if needed. Redis and Qdrant use
+credentials from `.env`; all service ports are bound to `127.0.0.1`.
+
+Open the services from the repository root:
 
 ```bash
-docker compose -f infra/docker-compose.yml exec postgres createdb -U medishield medishield_test
+docker compose --env-file .env -f infra/docker-compose.yml exec postgres psql -U <user> -d medishield
+docker compose --env-file .env -f infra/docker-compose.yml exec redis redis-cli
+AUTH <password>
 ```
 
-Set `TEST_DATABASE_URL` in `.env` (the `.env.example` value targets this database).
-Then `uv run pytest` runs the PostgreSQL tests; they fail with a configuration error
-instead of skipping if the URL is missing. **The migration test drops and recreates
-the `public` schema in `medishield_test`, so never point `TEST_DATABASE_URL` at a
-database containing data you need.** It tests upgrades from both an empty database
-and revision `762e1c97c741`.
+For MinIO, open http://127.0.0.1:9001 and use the root user and password from
+`.env`. For Qdrant, open http://127.0.0.1:6333/dashboard and provide the API key
+from `.env`.
 
-The compose stack binds service ports to localhost. Endpoints are PostgreSQL
-`localhost:5432`, Redis `localhost:6380`, MinIO `localhost:9000` (console
-`localhost:9001`), and Qdrant `localhost:6333` (gRPC `localhost:6334`).
-
-Install the MinIO Client (`mc`), load the `.env` values in a Bash-compatible shell,
-then create and enable versioning for the configured bucket:
+Database integration tests use `TEST_DATABASE_URL` and the separate
+`medishield-documents-test` bucket. They fail with a configuration error rather than
+skipping if the test database URL is missing. **The migration test drops and
+recreates the `public` schema in `medishield_test`, so never point
+`TEST_DATABASE_URL` at a database containing data you need.** It tests upgrades
+from both an empty database and revision `762e1c97c741`.
 
 ```bash
-set -a
-. ./.env
-set +a
-mc alias set medishield "$S3_ENDPOINT" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
-mc mb --ignore-existing "medishield/$S3_BUCKET"
-mc version enable "medishield/$S3_BUCKET"
+uv run pytest
+uv run ruff check .
 ```

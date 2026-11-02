@@ -6,6 +6,7 @@ from packages.core.config import Settings
 REQUIRED_ENVIRONMENT = {
     "DATABASE_URL": "postgresql://user:password@localhost:5432/medishield",
     "REDIS_URL": "redis://localhost:6379/0",
+    "REDIS_PASSWORD": "test-redis-password",
     "S3_ENDPOINT": "http://localhost:9000",
     "S3_ACCESS_KEY": "test-access-key",
     "S3_SECRET_KEY": "test-secret-key",
@@ -16,6 +17,7 @@ REQUIRED_ENVIRONMENT = {
     "LLM_TEXT_MODEL": "test-text-model",
     "LLM_FALLBACK_MODEL": "test-fallback-model",
     "JWT_SECRET": "test-jwt-secret",
+    "SEED_TEST_USER_PASSWORD": "test-seed-user-password",
 }
 
 
@@ -46,12 +48,14 @@ def test_missing_required_settings_raise_validation_error(
 
     message = str(error.value)
     assert "database_url" in message
+    assert "redis_password" in message
     assert "qdrant_api_key" in message
 
 
 def test_documented_threshold_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     set_required_environment(monkeypatch)
     for name in (
+        "LLM_PROVIDER",
         "THRESH_FRAUD_ESCALATE",
         "THRESH_FRAUD_HIGH",
         "THRESH_AGENT_CONFIDENCE",
@@ -61,6 +65,7 @@ def test_documented_threshold_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
 
     settings = Settings(_env_file=None)
 
+    assert settings.llm_provider == "stub"
     assert settings.threshold_fraud_escalate == 0.30
     assert settings.threshold_fraud_high == 0.60
     assert settings.threshold_agent_confidence == 0.60
@@ -112,3 +117,26 @@ def test_received_at_override_rejected_in_production(monkeypatch: pytest.MonkeyP
             app_env="production",
             allow_received_at_override=True,
         )
+
+
+@pytest.mark.parametrize("app_env", ["development", "test"])
+def test_placeholder_secrets_are_allowed_outside_production(
+    monkeypatch: pytest.MonkeyPatch,
+    app_env: str,
+) -> None:
+    set_required_environment(monkeypatch)
+    monkeypatch.setenv("JWT_SECRET", "replace-with-local-only-secret")
+
+    settings = Settings(_env_file=None, app_env=app_env)
+
+    assert settings.app_env == app_env
+
+
+def test_placeholder_secret_is_rejected_in_production(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    set_required_environment(monkeypatch)
+    monkeypatch.setenv("JWT_SECRET", "replace-with-local-only-secret")
+
+    with pytest.raises(ValidationError, match="must not use replace-with placeholders"):
+        Settings(_env_file=None, app_env="production")
