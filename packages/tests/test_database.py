@@ -27,6 +27,7 @@ from packages.core.db.repositories import (
     CaseRepo,
     ClaimHistoryRepo,
     MemberRepo,
+    code_in_range,
 )
 from packages.core.enums import CaseStatus, ClaimHistoryKind, DocType, UserRole
 from packages.eval.split import load_labels
@@ -408,3 +409,59 @@ def test_seed_is_idempotent_and_passwords_are_argon2_hashed(database_engine) -> 
         )
 
     assert (repeated_member_count, repeated_claim_count, repeated_user_count) == first_counts
+
+
+EXCLUSION_RANGES = [
+    ("15000", "15999"),
+    ("15820", "15829"),
+    ("17000", "17999"),
+    ("0001T", "0099T"),
+    ("V2100", "V2799"),
+    ("D0100", "D9999"),
+]
+
+
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [
+        ("00020", set()),
+        ("0001T", {"0001T"}),
+        ("0050T", {"0001T"}),
+        ("V2100", {"V2100"}),
+        ("V2799", {"V2100"}),
+        ("D0500", {"D0100"}),
+        ("17000", {"17000"}),
+        ("15820", {"15000", "15820"}),
+        ("99999", set()),
+    ],
+)
+def test_code_in_range_requires_same_shape_class(code: str, expected: set[str]) -> None:
+    matches = {start for start, end in EXCLUSION_RANGES if code_in_range(code, start, end)}
+
+    assert matches == expected
+
+
+def test_policy_exclusion_lookup_matches_by_shape_class(database_engine) -> None:
+    policy_id = uuid4()
+    with Session(database_engine) as session, session.begin():
+        session.add(Policy(policy_id=policy_id, name="Shape class policy"))
+        for start, end in EXCLUSION_RANGES:
+            session.add(
+                PolicyExclusion(
+                    exclusion_id=uuid4(),
+                    policy_id=policy_id,
+                    range_start=start,
+                    range_end=end,
+                    category="Test",
+                    basis="Test",
+                    page=1,
+                )
+            )
+
+    with Session(database_engine) as session:
+        repo = PolicyExclusionRepo(session)
+        assert repo.lookup(policy_id, "00020") == []
+        assert {row.range_start for row in repo.lookup(policy_id, "0050t")} == {"0001T"}
+        assert {row.range_start for row in repo.lookup(policy_id, "15820")} == {"15000", "15820"}
+        assert {row.range_start for row in repo.lookup(policy_id, "D0500")} == {"D0100"}
+        assert repo.lookup(policy_id, "99999") == []

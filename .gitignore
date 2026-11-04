@@ -13,3 +13,5 @@ node_modules/
 apps/web/.next/
 apps/web/out/
 .hypothesis/
+# OCR report cache
+reports/.ocr_cache/

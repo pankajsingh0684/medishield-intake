@@ -76,11 +76,12 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 
 | Done | Step | Deliverable | Size | Depends on | Done when |
 | --- | --- | --- | --- | --- | --- |
-| [ ] | 5d | Local credentials for Postgres, Redis, MinIO and Qdrant: secrets in `.env` only, authenticated services, repeatable init script, placeholder guard for production, README local setup | M | 2, 5b | `.env` ignored by git; all four services healthy with credentials; `uv run pytest` 0 skipped; no secret in tracked files |
+| [x] | 5d | Local credentials for Postgres, Redis, MinIO and Qdrant: secrets in `.env` only, authenticated services, repeatable init script, placeholder guard for production, README local setup | M | 2, 5b | `.env` ignored by git; all four services healthy with credentials; `uv run pytest` 0 skipped; no secret in tracked files |
 | [x] | 6 | Ingestion API: upload, list, get, MinIO storage, SHA-256 duplicate detection | L | 2, 5 | curl upload creates an object in MinIO and a row in Postgres |
-| [ ] | 7 | LLM gateway with stub provider, retries, fallback, redaction, prompt loader | L | 3 | Tests pass with no API keys |
-| [ ] | 8 | Classifier agent and document page renderer | M | 3, 7, 5c | Six types and low-confidence paths tested with stub |
-| [ ] | 9 | OCR pre-processor (text layer, Tesseract, LLM fallback) | L | 3, 7 | Skewed sample corrected; fallback triggers; payload validates |
+| [x] | 7 | LLM gateway with stub provider, retries, fallback, redaction, prompt loader | L | 3 | Tests pass with no API keys |
+| [x] | 8 | Classifier agent and document page renderer | M | 3, 7, 5c | Six types and low-confidence paths tested with stub |
+| [x] | 9 | OCR pre-processor (text layer, Tesseract, LLM fallback) | L | 3, 7 | Skewed sample corrected; fallback triggers; payload validates |
+| [ ] | 9b | OCR extractor precision: label-anchored CPT, ICD decimals, plausible dates and amounts, wrong value never beats a missing one; re-measure on the dev split only | S | 9 | `reports/ocr_baseline.md` rerun on dev shows fewer wrong values; no holdout document used |
 | [ ] | 10 | Claims agent, validators, claim standard JSON schema with required fields per document type | M | 3, 7, 9 | Validators at 95% or higher coverage; a missing required field gives `schema_valid=false` at normal confidence (so it can be rejected, not escalated) |
 | [ ] | 11 | KYC agent (lookups incl. DOB plus fuzzy name, any name difference flagged, expiry and expiring-soon from `received_at`, tamper via LLM) | L | 5c, 7, 9 | Every flag tested alone and combined; works on the real dataset IDs |
 | [ ] | 12 | LangGraph wiring (discharge summaries and prescriptions skip Policy, D1), node wrapper, Celery task, audit events | L | 4, 6, 8, 9, 10, 11 | Upload flows to a final status with audit and agent run rows (stubbed) |
@@ -211,6 +212,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | 2026-10-31 | Steps 1 to 5 (Phase 0) | Done by you with Copilot. Step 3: spec naming won over PRD (`agent_version`, `SKIPPED`, GraphState keys `document`, `ocr`, `audit`) |
 | 2026-11-01 | Steps 5a, 5b, 5c; Gate 0 passed | Dataset fixed (readmission dates, secondary ICD truth, deterministic PDFs) and frozen. Phase 0 code aligned with spec v0.2 (`medishield_test` database, second migration). 155 labels, 94 APPROVE / 43 ESCALATE / 18 REJECT; split 21 dev and 9 holdout clusters. Six single-cluster fraud scenarios are dev-only |
 | 2026-11-01 | Step 6 | Ingestion API done (118 tests). Fixed: app settings no longer read the test bucket; pytest uses `medishield_test` only |
+| 2026-11-03 | Steps 5d, 7, 8, 9 | Credentials hardened (Step 5d); LLM gateway with stub and Groq adapter (148 tests); classifier with input validation (184 tests); OCR with real Tesseract 5.5 (217 tests). OCR baseline without fallback: claim CPT 0%, amount 38.7%, ID name 0%, dates mostly garbled; about 9 s per document, fallback expected on nearly every document. Extractor bugs (extra CPT codes, truncated ICD codes, implausible dates) go to Step 9b |
 | 2026-11-02 | Provider decision | Groq recorded as the primary provider for the real evaluation (ADR-001, spec v0.2.3, Step 7 prompt); stub stays the default |
 | 2026-11-02 | Local credentials | Added as Step 5d in `prompts.md` and the plan (not yet run). Secrets for Postgres, Redis, MinIO and Qdrant move to `.env` (gitignored); `.env.example` has placeholders only; `LLM_PROVIDER=stub` until Step 20 |
 | 2026-11-01 | Spec v0.2.1 | `NPI_CHECKSUM` moved to `ClaimsResult.warnings` (not a KYC flag); `claim_history.kind` is TEXT plus CHECK; `policy_exclusions` lookup rule stated |

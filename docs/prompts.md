@@ -36,6 +36,26 @@ MinIO (S3), Qdrant, Docling, LangGraph, Pydantic v2, pytest, ruff. Frontend: Nex
 
 ---
 
+## Output rules (saves tokens)
+
+Add this once to `CLAUDE.md` or `.github/copilot-instructions.md`, so it does not have to be repeated in every prompt:
+
+```
+Output rules: write reports and long listings to a file under reports/ and show me only a summary of at most 15 lines:
+changed file paths, test and ruff results (last lines only), and any deviation from the spec. Do not print file contents,
+per-document tables or full logs. Do one request at a time; if a step also needs a measurement, use --sample N and the cache instead of a full run.
+```
+
+Other habits that save time: start a new chat for each step and attach only the files the step needs; say "Read only spec sections X and Y"; reply "OK, proceed" to a plan instead of re-explaining; use `--sample` for iterations and run the full dataset once at the end of a step.
+
+## Suggested model per step
+
+| Model | Steps |
+| --- | --- |
+| Strong (hard design or many moving parts) | 12 graph wiring, 14 policy agent, 16 orchestrator, 20 evaluation |
+| Standard | 9b, 10, 11, 13, 15, 18, 22 |
+| Fast (mostly mechanical) | 17, 19, 21, 23, and the Phase 4 bonus steps |
+
 ## Reusable step template
 
 ```
@@ -205,7 +225,7 @@ Then, one commit-sized change at a time:
 1. Settings (packages/core/config.py, .env.example): add APP_ENV (development, test or production; default development), NPI_LUHN_STRICT (default false), ALLOW_RECEIVED_AT_OVERRIDE (default false), NEAR_THRESHOLD_LOW (9500), NEAR_THRESHOLD_HIGH (10000), DATE_CONFLICT_DAYS (30), READMISSION_DAYS (30). Settings must fail at startup when APP_ENV=production and ALLOW_RECEIVED_AT_OVERRIDE=true.
 2. Models and enums (packages/core): compare KycFlag codes, ClaimFields and Anomaly detector names with spec section 5. Add what is missing: ID_EXPIRING_SOON in KycFlag; a `warnings: list[str] = []` field on ClaimsResult (NPI_CHECKSUM is a Claims warning, NOT a KycFlag code); a ClaimHistoryKind StrEnum (PRIOR_CLAIM, EPISODE_CLAIM, PRIOR_STAY); and the detector names IDENTITY_MISMATCH, NEAR_THRESHOLD, DATE_CONFLICT, READMISSION_30D. Keep extra="forbid".
 3. Decision engine (packages/decision): compare with spec 7.8. Verify and add tests for: policy amendment always ESCALATE unless KYC fails; discharge summary and prescription (policy SKIPPED) reject only on KYC failure or schema_valid false; low-severity and warning flags never change a decision; a claim with schema_valid false and normal confidence is REJECT, not ESCALATE. Change code only where a test fails. Keep 100% coverage.
-4. Database: do NOT edit the first Alembic migration. Add a second migration for: cases.received_at (timestamptz, defaults to creation time); claim_history.kind as a TEXT column with a CHECK constraint (not a native Postgres enum), mapped to ClaimHistoryKind, claim_number, admit_date, discharge_date; and a policy_exclusions table as in spec section 4. Update the SQLAlchemy models. Add repository methods: ClaimHistoryRepo (by member and kind, by claim_number), PolicyExclusionRepo.lookup(policy_id, cpt_code) where a code matches when range_start <= code <= range_end as upper-case strings of equal length (policy_exclusions columns: exclusion_id, policy_id, range_start, range_end, category, basis, page; no date columns, effective dates come from the policies row).
+4. Database: do NOT edit the first Alembic migration. Add a second migration for: cases.received_at (timestamptz, defaults to creation time); claim_history.kind as a TEXT column with a CHECK constraint (not a native Postgres enum), mapped to ClaimHistoryKind, claim_number, admit_date, discharge_date; and a policy_exclusions table as in spec section 4. Update the SQLAlchemy models. Add repository methods: ClaimHistoryRepo (by member and kind, by claim_number), PolicyExclusionRepo.lookup(policy_id, cpt_code) where a code matches when it has the same shape class as the range (digits only, digits ending in a letter, or a leading letter) and range_start <= code <= range_end as upper-case strings; any matching range counts (policy_exclusions columns: exclusion_id, policy_id, range_start, range_end, category, basis, page; no date columns, effective dates come from the policies row).
 Tests: all earlier tests still pass; model tests for the new fields; the migration applies on a fresh DB and on the DB that already has the first migration; repository tests for the new methods.
 Do not: touch the dataset, build agents, or change the precedence rules R1 to R4.
 Done when: uv run pytest and uv run ruff check . pass and uv run alembic upgrade head works on both a fresh and an existing database.
@@ -354,50 +374,76 @@ Done when: tests pass and `scripts/ocr_file.py <path>` prints fields.
 Show me the plan first.
 ```
 
+## Step 9b: OCR extractor precision (small)
+
+Model: Standard. Dev split only; no preprocessing changes.
+
+```
+Step 9b: OCR extractor precision.
+Read: spec.md 7.3; reports/ocr_baseline.md.
+Goal: a wrong extracted value must never beat a fallback value.
+1. Any extracted value that fails its validator (CPT shape, ICD-10 shape with decimals, plausible date, valid amount) is dropped or given low confidence, so it cannot win the per-field merge. Add a test.
+2. Fix ICD-10 truncation (keep K35.80, G43.909). CPT extraction requires a CPT or procedure label, and rejects numbers equal to the patient ID, ZIP code or claim number.
+3. ocr_report.py: add --sample N (fixed, stratified, dev split only) and an on-disk OCR cache keyed by image hash. Run on a sample of 20, write reports/ocr_9b_sample.md, and show before and after only for the fields you changed.
+Do not: change preprocessing or Tesseract settings, touch holdout documents, or edit the dataset.
+Done when: tests pass (0 skipped) and the sample report shows fewer wrong values.
+Show me the plan first.
+```
+
 ## Step 10: Claims agent
+
+Model: Standard.
 
 ```
 Step 10: Claims agent and validators.
-Read: spec.md section 7.5; PRD FR-CLM-01..06.
-Goal: extract and validate claim fields.
-Create packages/agents/claims/ with validators.py (ICD-10 regex, CPT five-character check, NPI: strip the printed "NPI-" prefix, then the Luhn check only appends NPI_CHECKSUM to ClaimsResult.warnings (not a KYC flag, not a validation error, unless NPI_LUHN_STRICT=true) because the dataset NPIs are synthetic; date rules measured against cases.received_at, not today; amount rules) and agent.py (use OCR fields first, targeted LLM extraction via gateway for missing or low-confidence fields, normalization, validation, confidence rule).
-Create data/schemas/claim_submission_standard.v1.json (JSON Schema) and validate against it. Mark it clearly as an assumed standard (OQ-04). Required fields differ per document type (spec 7.5 table): for example a prescription has no CPT code or amount.
-Tests: table-driven validator tests including edge cases (lowercase codes, bad Luhn, future date, zero amount, missing fields); agent tests with stub; per-field confidence and bounding boxes propagate; a missing required field gives schema_valid=false but confidence stays at normal extraction confidence (it must NOT drop to 0, otherwise rule R1 escalates before R3 can reject); required-field table per document type.
+Read: spec.md 7.5 (including the required-fields table); PRD FR-CLM-01..06.
+Create packages/agents/claims/ (validators.py, agent.py) and data/schemas/claim_submission_standard.v1.json (mark as an assumed standard, OQ-04).
+Rules:
+- Validators: ICD-10 regex; CPT five characters; NPI: strip the "NPI-" prefix, 10 digits, and a failed Luhn check only appends NPI_CHECKSUM to ClaimsResult.warnings (a validation error only if NPI_LUHN_STRICT=true); dates measured against cases.received_at, not today; amount over 0.
+- Use OCR fields first; ask the LLM gateway only for missing or low-confidence fields; normalize; validate.
+- Required fields depend on doc_type. A missing required field gives schema_valid=false at normal confidence (never 0, or rule R1 would escalate before R3 can reject).
+- Per-field confidence and bounding boxes propagate.
+Tests: table-driven validator tests (lowercase codes, bad Luhn, future date, zero amount, missing fields, the NPI prefix); agent tests with the stub; a prescription needs no CPT or amount.
 Do not: touch coverage logic.
-Done when: tests pass with at least 95% coverage on validators.
+Done when: tests pass (0 skipped), at least 95% coverage on validators.
 Show me the plan first.
 ```
 
 ## Step 11: KYC agent
 
+Model: Standard.
+
 ```
 Step 11: KYC agent.
-Read: spec.md section 7.4; PRD FR-KYC-01..06.
-Goal: identity and document checks against the member database.
-Create packages/agents/kyc/ implementing: member lookup (member_id, then policy_number, then date of birth plus fuzzy name for documents that print no identifier), DOB match, fuzzy name match (rapidfuzz token set ratio with thresholds 0.85 and 0.70, but any difference after normalization is still flagged, because the dataset's name mismatch changes one vowel and scores about 95%), policy number and active-on-service-date check, ID expiry and ID_EXPIRING_SOON (LOW, never changes a decision) both measured against cases.received_at, and an LLM tamper check using kyc_tamper.v1.md. Flags use the codes and severities in spec 7.4; kyc_passed = no HIGH flag; tamper-only findings never cause a reject by themselves; confidence rules as in the spec; "member match only" mode for discharge summaries and prescriptions.
-Use MemberRepo from Step 5 (seeded from the dataset in Step 5c); no direct SQL.
-Tests: each flag alone; combined flags; expired ID; expiring-soon ID; Medicare card that prints an EXPIRED banner instead of a date; name variations (middle initial, case, order) and a one-vowel change; lookup by DOB plus name; no confidence cap for an absent field when another identifier matched; member not found; tamper flag with stub; member-match-only mode.
-Do not: implement ELA (bonus, Step 25).
-Done when: tests pass using the seeded database.
+Read: spec.md 7.4; PRD FR-KYC-01..06.
+Create packages/agents/kyc/ using MemberRepo (no direct SQL). Implement:
+- Lookup: member_id, then policy_number, then date of birth plus fuzzy name for documents that print no identifier.
+- DOB match; fuzzy name (rapidfuzz token set ratio, thresholds 0.85 and 0.70) but ANY difference after normalization is flagged, because the dataset's name mismatch changes one vowel and still scores about 95%.
+- Policy number and active-on-service-date check; ID expiry and ID_EXPIRING_SOON (LOW, never changes a decision), both measured against cases.received_at; Medicare cards print an EXPIRED banner instead of a date.
+- LLM tamper check with prompt kyc_tamper.v1.md; tamper-only findings never reject by themselves. kyc_passed = no HIGH flag.
+- "Member match only" mode for discharge summaries and prescriptions.
+Tests: each flag alone and combined; expired and expiring-soon IDs; name variations (middle initial, case, order) and a one-vowel change; lookup by DOB plus name; member not found; tamper flag with the stub; member-match-only mode. Use the seeded dataset members.
+Do not: implement ELA (Step 25).
+Done when: tests pass (0 skipped).
 Show me the plan first.
 ```
 
 ## Step 12: LangGraph wiring and Celery
 
+Model: Strong.
+
 ```
 Step 12: Graph wiring, node wrapper, Celery task.
-Read: spec.md sections 6 and 12 (reliability); ADR-002, ADR-004; PRD FR-ORC-01, FR-ORC-08.
-Goal: upload a file and have it flow through classify -> ocr -> routed claims/kyc -> join, persisted, using stub LLMs.
-Create packages/graph/ (builder.py, routing.py with the routing table, nodes.py, wrapper.py) and apps/worker (Celery app, run_pipeline task).
-Requirements:
-- instrument() wrapper: audit events NODE_START/NODE_END, timeout, 2 retries with backoff, converts exceptions to an ERROR envelope, persists agent_runs, updates case status.
-- Conditional routing by doc_type; UNKNOWN or low confidence goes to mark_needs_review; node failure goes to mark_failed.
-- Policy/Fraud/Orchestrator are placeholder nodes returning SKIPPED for now. Policy will run after Claims (OQ-17).
-- Routing follows spec 6.2 with D1: discharge summaries and prescriptions run Claims extraction and KYC member match but never reach Policy.
-- POST /cases now enqueues run_pipeline; Celery uses acks_late, 3 attempts, dead-letter handling that sets FAILED.
-Tests: routing table for every doc type; fan-in waits for all routed nodes; failure paths; idempotent rerun with a new pipeline_run; integration test uploading a file through the API with a stub provider and an eager Celery.
+Read: spec.md 6 and 12 (reliability); ADR-002, ADR-004; PRD FR-ORC-01, FR-ORC-08.
+Goal: upload a file and have it flow classify -> ocr -> routed claims/kyc -> join, persisted, using the stub provider.
+Create packages/graph/ (builder.py, routing.py with the routing table, nodes.py, wrapper.py) and apps/worker (Celery app, run_pipeline task; Redis with the password from settings).
+- instrument() wrapper: audit events NODE_START and NODE_END, timeout, 2 retries with backoff, exceptions become an ERROR envelope, persists agent_runs, updates case status.
+- Routing by doc_type (spec 6.2, D1: discharge summaries and prescriptions run Claims extraction and KYC member match, never Policy). Route to mark_needs_review when doc_type == UNKNOWN or "NEEDS_REVIEW" is in routing_tags; any ERROR also goes to review; node failure goes to mark_failed.
+- Policy, Fraud and Orchestrator are placeholder nodes returning SKIPPED. Policy will run after Claims (OQ-17).
+- POST /cases now enqueues run_pipeline (replace the Step 6 TODO). Celery: acks_late, 3 attempts, dead-letter handling sets FAILED.
+Tests: routing table for every doc_type; fan-in waits for all routed nodes; failure paths; idempotent rerun with a new pipeline_run; an integration test through the API with the stub and eager Celery, using dataset fixtures.
 Do not: implement Policy, Fraud or decision logic.
-Done when: uploading via curl results in a case moving RECEIVED -> ... -> a final status, with audit_events and agent_runs rows.
+Done when: uploading with curl moves a case from RECEIVED to a final status, with audit_events and agent_runs rows.
 Show me the plan first.
 ```
 
@@ -407,83 +453,96 @@ Show me the plan first.
 
 ## Step 13: Policy ingestion
 
+Model: Standard.
+
 ```
 Step 13: Policy ingestion (Docling + Qdrant).
-Read: spec.md section 7.6 (ingestion); ADR-006; PRD FR-POL-01, 02, 07, 08.
-Goal: upload a policy PDF and have it chunked and indexed.
-Create packages/rag/ (ingest.py, chunking.py, embeddings.py, store.py) and endpoints POST /api/v1/policies and GET /api/v1/policies; Celery task ingest_policy.
-Requirements: Docling parse; heading-based chunking 400-800 tokens with 80 overlap, tables kept whole when under 1000 tokens; chunk_type tagging; payload fields policy_id, version, section_path, page, effective_from, effective_to; local embedding model from settings; Qdrant collection with dense and sparse vectors; status PENDING -> READY or FAILED with chunk_count.
-Do NOT generate sample policies. Use the existing medishield_gold_plan.pdf and medishield_silver_plan.pdf in data/policies/. Each has 10 bookmarked sections and a machine-readable "Excluded CPT Code Ranges" table: parse that table into policy_exclusions rows (exclusion_id, policy_id, range_start, range_end, category, basis, page; ranges may be alphanumeric such as 0001T, V2100, D0100, so keep them as text) during ingestion, in addition to the chunks.
-Tests: chunker unit tests; ingestion of both policies; exclusion table parsed for both (row counts match the PDFs); re-ingestion is idempotent; payload filters work.
+Read: spec.md 7.6 (ingestion); ADR-006; PRD FR-POL-01, 02, 07, 08.
+Create packages/rag/ (ingest.py, chunking.py, embeddings.py, store.py), endpoints POST /api/v1/policies and GET /api/v1/policies, and the Celery task ingest_policy.
+- Do NOT generate policies. Use data/policies/medishield_gold_plan.pdf and medishield_silver_plan.pdf.
+- Docling parse; heading-based chunks of 400 to 800 tokens with 80 overlap; keep tables whole under 1000 tokens; chunk_type tags; payload: policy_id, version, section_path, page, effective_from, effective_to; local embedding model from settings; dense and sparse vectors.
+- Check the policy_chunks collection that scripts/init_local.py created; recreate it if its configuration does not match.
+- Parse each PDF's "Excluded CPT Code Ranges" table into policy_exclusions rows (range_start, range_end, category, basis, page; ranges may be alphanumeric, keep text).
+- Status PENDING -> READY or FAILED with chunk_count.
+Tests: chunker unit tests; both policies ingest; exclusion row counts match the PDFs; re-ingestion is idempotent; payload filters work.
 Do not: implement the Policy agent.
-Done when: both policies show READY with chunk counts and a manual Qdrant query returns relevant chunks.
+Done when: both policies are READY with chunk counts and a manual Qdrant query returns relevant chunks.
 Show me the plan first.
 ```
 
 ## Step 14: Policy agent
 
+Model: Strong.
+
 ```
 Step 14: Policy agent.
-Read: spec.md section 7.6 (retrieval); ADR-006; PRD FR-POL-03..06.
-Goal: decide coverage for the claim's procedure codes using only retrieved clauses.
-Create packages/agents/policy/ and packages/rag/retrieve.py implementing: step 0, a deterministic lookup of each CPT code in policy_exclusions through PolicyExclusionRepo (a hit means covered=False with confidence 0.95, no LLM call); then, for codes not excluded, policy selection from the member's policy number; effective-date filter by service date; per-code queries (CPT lookup table in data/cpt_descriptions.json for ~30 codes); hybrid search with reciprocal rank fusion; rerank to top 5; LLM answer via gateway with prompt policy_decide.v1.md returning covered, coverage_percentage, clause id, exclusions, or null if undecidable; verify the cited text appears verbatim in a retrieved chunk; weak retrieval -> covered=None and low confidence; combine rules across codes (all covered, minimum percentage, exclusions override).
-Tests: covered and uncovered codes on both policies; exclusion-table hit returns confidence 0.95 without calling the LLM; exclusion match; hallucinated citation rejected; no relevant clause -> covered None; wrong policy date -> no match.
-Do not: change the decision engine; run the Policy agent for discharge summaries or prescriptions (D1).
-Done when: tests pass and a script prints the clause and decision for a sample claim.
+Read: spec.md 7.6 (retrieval); ADR-006; PRD FR-POL-03..06.
+Create packages/agents/policy/ and packages/rag/retrieve.py.
+- Step 0, deterministic: look up each CPT code with PolicyExclusionRepo.lookup(policy_id, cpt_code). A hit means covered=False with confidence 0.95 and no LLM call.
+- Other codes: select the policy from the member's policy number; filter by service date; per-code queries (CPT lookup table data/cpt_descriptions.json, about 30 codes); hybrid search with reciprocal rank fusion; rerank to the top 5; LLM answer through the gateway (policy_decide.v1.md) returning covered, coverage_percentage, clause id, exclusions, or null; verify the cited text appears verbatim in a retrieved chunk; weak retrieval gives covered=None and low confidence; combine across codes (all covered, minimum percentage, exclusions override).
+Tests: covered and uncovered codes on both policies; exclusion-table hit gives 0.95 without an LLM call; a numeric code such as 00020 does not match 0001T-0099T; a claim with one excluded code (17000) and one covered code (93306) is not covered; overlapping ranges are handled; hallucinated citation rejected; no relevant clause gives covered None; wrong policy date gives no match; a fabricated Silver member selects the Silver policy.
+Do not: change the decision engine; run Policy for discharge summaries or prescriptions (D1).
+Done when: tests pass (0 skipped) and a script prints the clause and decision for a sample claim.
 Show me the plan first.
 ```
 
 ## Step 15: Fraud agent
 
+Model: Standard.
+
 ```
 Step 15: Fraud agent.
-Read: spec.md section 7.7; ADR-008; PRD FR-FRD-01..06.
-Goal: deterministic fraud score with evidence.
-Create packages/agents/fraud/ with detectors with the weights in spec 7.7: duplicate (0.90; by claim number or provider NPI + service date + CPT set against PRIOR_CLAIM rows and earlier processed cases, because the dataset's _dup file has a different checksum), frequency spike, provider billing outlier, amount outlier, code mismatch (includes an obstetric CPT such as 59400 with a non-obstetric diagnosis), tamper signal, identity mismatch (KYC NAME_MISMATCH, 0.50), near-threshold (amount from NEAR_THRESHOLD_LOW up to but not including NEAR_THRESHOLD_HIGH, 0.35), date conflict (prescription later than the EPISODE_CLAIM service date by more than DATE_CONFLICT_DAYS, 0.45), readmission (admission within READMISSION_DAYS of a PRIOR_STAY discharge, 0.45), each returning strength and evidence; round the score to 4 decimal places before comparing with a threshold; scorer using noisy-OR with configurable weights in packages/agents/fraud/weights.py; risk level mapping; confidence rules (history size, query failure).
-Add data/icd_cpt_plausibility.json (small table). Use ClaimHistoryRepo.
-Tests: each detector alone and combined; one test per dataset fraud scenario using the seeded history from Step 5c (the first submission is never flagged as a duplicate); ID documents use only the tamper and identity detectors; score bounds; exact 0.30 and 0.60 boundaries; cold-start member; query failure -> confidence 0.5; evidence strings; property test that adding an anomaly never lowers the score.
+Read: spec.md 7.7; ADR-008; PRD FR-FRD-01..06.
+Create packages/agents/fraud/ using ClaimHistoryRepo; scorer: noisy-OR with weights in weights.py; round the score to 4 decimal places before comparing with a threshold.
+Detectors and weights (spec 7.7): duplicate 0.90 (same member and claim number, or same NPI, service date and CPT set, as a PRIOR_CLAIM row or an earlier processed case; the first submission is never flagged; the dataset's _dup file has a different hash), frequency spike 0.45, provider billing outlier 0.40, amount outlier 0.35 (skipped for codes without a reference price), code mismatch 0.40 (includes an obstetric CPT such as 59400 with a non-obstetric diagnosis; data/icd_cpt_plausibility.json), tamper signal 0.40, identity mismatch 0.50 (KYC NAME_MISMATCH), near-threshold 0.35 (amount from NEAR_THRESHOLD_LOW up to but not including NEAR_THRESHOLD_HIGH), date conflict 0.45 (prescription later than the EPISODE_CLAIM by more than DATE_CONFLICT_DAYS), readmission 0.45 (admission within READMISSION_DAYS of a PRIOR_STAY discharge).
+ID documents use only the tamper and identity detectors. Risk levels at 0.30 and 0.60. Confidence 0.9 with at least 3 history claims, else 0.7; 0.5 on query failure.
+Tests: each detector alone and combined; one test per dataset fraud scenario using the Step 5c seeds; exact 0.30 and 0.60 boundaries; cold-start member; query failure; a property test that adding an anomaly never lowers the score; clean cases do not trigger frequency or billing detectors.
 Do not: use an LLM for the score.
-Done when: tests pass on seeded data with known duplicates.
+Done when: tests pass (0 skipped).
 Show me the plan first.
 ```
 
 ## Step 16: Orchestrator node and justification
 
+Model: Strong.
+
 ```
 Step 16: Orchestrator node.
-Read: spec.md sections 6.2 and 7.8; ADR-003; PRD FR-ORC-01..09.
+Read: spec.md 6.2 and 7.8; ADR-003, ADR-014; PRD FR-ORC-01..09.
 Goal: replace the placeholder nodes so the full pipeline produces a decision.
-Create the Orchestrator node that calls decide() from packages/decision, then asks the LLM (prompt orchestrator_justify.v1.md) to write a plain-language justification from the rule_trace only; the LLM cannot change the decision (assert in code). Persist decisions with config_snapshot; set final case status; wire Policy and Fraud nodes into the graph (Policy after Claims).
-Tests: end-to-end graph tests with stub fixtures for an APPROVE, a REJECT (not covered), a REJECT (KYC), an ESCALATE (fraud), an ESCALATE (agent error), UNKNOWN document; a policy amendment (ESCALATE, D2); a discharge summary (APPROVE without any policy result, D1); justification text cannot flip the decision.
+- Orchestrator node calls decide() from packages/decision, then asks the LLM (orchestrator_justify.v1.md) to write a justification from the rule_trace only. Assert in code that the LLM cannot change the decision. Persist decisions with a config snapshot and the reference date used; set the final case status.
+- Wire Policy (after Claims) and Fraud into the graph.
+Tests (stub fixtures): APPROVE; REJECT (not covered); REJECT (KYC); ESCALATE (fraud); ESCALATE (agent error); UNKNOWN document; policy amendment (ESCALATE, D2); discharge summary (APPROVE with no policy result, D1); the justification cannot flip the decision.
 Do not: add auth or UI.
 Done when: uploading a sample file yields a decision row with rule_trace and justification.
 Show me the plan first.
 ```
 
-## Step 17: Remaining API endpoints
+## Step 17: Review, audit and override API
+
+Model: Fast.
 
 ```
 Step 17: Review, audit and override API.
-Read: spec.md sections 8.1 and 8.4; PRD FR-UI-04..06.
-Goal: everything the UI needs from the backend.
-Add endpoints: GET /cases/{id}/audit, GET /review-queue, POST /cases/{id}/override (reason at least 10 chars, original decision preserved, status OVERRIDDEN, audit event), POST /cases/{id}/reclassify, POST /cases/{id}/rerun. Include the full agent outputs and a pre-signed document URL (10 minutes) in GET /cases/{id}.
-Tests: override flow keeps the original decision; short reason rejected; review queue contents; rerun creates a new pipeline_run; audit ordering.
-Do not: enforce roles yet (Step 18); write UI.
-Done when: tests pass and OpenAPI docs at /docs list all endpoints.
+Read: spec.md 8.1 and 8.4; PRD FR-UI-04..06.
+Add: GET /cases/{id}/audit, GET /review-queue, POST /cases/{id}/override (reason of at least 10 characters, original decision preserved, status OVERRIDDEN, audit event), POST /cases/{id}/reclassify, POST /cases/{id}/rerun. GET /cases/{id} includes the full agent outputs and a pre-signed document URL (10 minutes).
+Tests: override keeps the original decision; short reason rejected; review queue contents; rerun creates a new pipeline_run; audit ordering.
+Do not: enforce roles (Step 18) or write UI.
+Done when: tests pass (0 skipped) and /docs lists every endpoint.
 Show me the plan first.
 ```
 
 ## Step 18: Authentication and roles
 
+Model: Standard.
+
 ```
 Step 18: Auth and RBAC.
-Read: spec.md sections 8.1, 8.3 and 15; ADR-010; PRD FR-UI-06, FR-UI-07, NFR-SEC-02/03.
-Goal: secure the API.
-Implement POST /auth/login (argon2, rate limiting), JWT access tokens with short TTL, FastAPI dependencies require_role(...), the role matrix from spec 8.3, a scoped service token for uploads, CORS limited to the UI origin, and the PHI log-redaction filter applied to all loggers.
-Attribute overrides to the authenticated user.
-Tests: every endpoint against every role (parametrized matrix); expired and tampered tokens; login rate limit; redaction filter removes member IDs, DOBs and names from log output.
+Read: spec.md 8.1, 8.3 and 15; ADR-010; PRD FR-UI-06, FR-UI-07, NFR-SEC-02/03.
+Implement POST /auth/login (argon2, rate limit), short-TTL JWT, require_role(...) dependencies, the role matrix from spec 8.3, a scoped service token for uploads, CORS limited to the UI origin, and the PHI log-redaction filter on all loggers. Attribute overrides to the authenticated user.
+Tests: every endpoint against every role (parametrized matrix); expired and tampered tokens; login rate limit; the redaction filter removes member IDs, DOBs and names from log output.
 Do not: build the login UI.
-Done when: unauthenticated requests get 401 and role violations get 403 across the test matrix.
+Done when: unauthenticated requests get 401 and role violations get 403 across the matrix.
 Show me the plan first.
 ```
 
@@ -493,75 +552,78 @@ Show me the plan first.
 
 ## Step 19: Dataset review and gap-filling
 
+Model: Fast.
+
 ```
-Step 19: Review the synthetic dataset against the spec.
-Read: spec.md section 11; ADR-012, ADR-013; PRD section 10.
-Context: the generators already exist and the dataset is frozen (Steps 5a to 5c). Do not regenerate or edit existing images.
-Goal: confirm that every scenario the evaluation needs is present, and fill gaps without changing existing files.
-Do:
-1. Build a coverage matrix (scripts/dataset_coverage.py): rows are the scenarios in spec 11 (valid, expired ID, tampered ID, duplicate, missing NPI, missing ICD-10, uncovered CPT, billing outlier, rotated, low DPI, noisy scan, prompt injection "approve this claim", unrelated document, blank page, name mismatch, near-threshold, date conflict, readmission); columns are document counts in dev and holdout. Print rows with zero documents.
-2. For each empty row, add a small deterministic generator script in data/synthetic/generators/extras/ that writes new documents with new IDs, new labels and truth values, appended to labels.jsonl and split.json (new clusters only).
-3. Confirm the split: no cluster in both sets and existing assignments unchanged.
-Tests: coverage script runs; extras are deterministic (checksums); every new label validates; split still has no shared cluster.
-Do not: change the existing generators, images or labels.
-Done when: the coverage matrix has no empty row and the committed split is unchanged for existing clusters.
+Step 19: Dataset review.
+Read: spec.md 11; ADR-012, ADR-013.
+The dataset is frozen. Do not regenerate or edit existing images or labels.
+1. scripts/dataset_coverage.py: a matrix of scenarios (valid, expired ID, tampered ID, duplicate, missing NPI, missing ICD-10, uncovered CPT, billing outlier, rotated, low DPI, noisy scan, prompt injection "approve this claim", unrelated document, blank page, name mismatch, near-threshold, date conflict, readmission) by document counts in dev and holdout. Print rows with zero documents and scenarios with no holdout document.
+2. For each gap, add a small deterministic generator in data/synthetic/generators/extras/ writing NEW documents with new IDs, labels and truth values, appended to labels.jsonl and split.json (new clusters only). Add a second cluster for each single-cluster scenario (amount under 10k, date conflict, duplicate claim, name mismatch, code mismatch, readmission) and assign them to holdout.
+Tests: extras are deterministic; new labels validate; the split keeps no cluster in both sets and existing assignments unchanged.
+Done when: the matrix has no empty row and every scenario has a holdout document.
 Show me the plan first.
 ```
 
 ## Step 20: Evaluation harness and first real run
 
+Model: Strong.
+
 ```
 Step 20: Evaluation harness.
-Read: spec.md section 11; ADR-012; PRD section 10 and acceptance criteria AC-02, AC-03.
-Goal: measure classification, extraction and decision quality.
-Create packages/eval/ with a runner (uploads each dataset file through the real pipeline code path, waits for completion; sets cases.received_at from each label's reference_date with ALLOW_RECEIVED_AT_OVERRIDE=true; processes a cluster's original claim before its _dup file; assigns the member history from Step 5c), metrics (classification accuracy, extraction completeness against truth.json, decision correctness with confusion matrix and per-scenario, per-document-category and per-split (dev, holdout) breakdown, latency p50/p95, optional calibration/ECE), report writers (JSON and Markdown), a manual retrieval-review sheet generator, and a CLI `uv run python -m packages.eval.run --provider stub|anthropic|openai`. Exit non-zero if decision correctness is below 0.60 or weighted score below 0.70.
-Tests: metrics on handcrafted predictions; per-category and per-split breakdown; report generation; exit code logic; runner sets received_at only when the override flag is on.
-Then run it once with stub fixtures and once with a real provider (I will set the API key) and show me the report.
-Do not: tune prompts yet; first show me the baseline numbers. Tuning later uses dev only; the final numbers are reported on holdout.
+Read: spec.md 11; ADR-012, ADR-013; PRD section 10; AC-02, AC-03.
+Create packages/eval/: a runner (uploads each dataset file through the real code path; sets cases.received_at from each label's reference_date with ALLOW_RECEIVED_AT_OVERRIDE=true, DATASET_AS_OF_DATE for unknowns; processes a cluster's original claim before its _dup file; uses the Step 5c history), metrics (classification accuracy; extraction completeness against truth.json; decision correctness with a confusion matrix and per-scenario, per-category and per-split breakdown; latency p50 and p95; optional calibration), report writers (JSON and Markdown), a retrieval review sheet generator, and the CLI `uv run python -m packages.eval.run --provider stub|groq|anthropic|openai --split dev|holdout|all [--sample N]`. Exit non-zero when decision correctness is below 0.60 or the weighted score is below 0.70.
+Add an on-disk cache of model responses keyed by input hash so reruns are cheap.
+Tests: metrics on handcrafted predictions; breakdowns; report generation; exit codes; received_at set only when the override flag is on.
+First run with the stub, then (I will set the key and confirm the model IDs) with the real provider on dev only, and show me the report summary.
+Do not: tune prompts yet. Tuning uses dev; final numbers use holdout.
 Done when: a report file exists with all metrics and sample sizes.
 Show me the plan first.
 ```
 
-After the first real run, iterate with this prompt:
+After the first real run, iterate with:
 
 ```
-Here is the evaluation report: <paste>. Identify the 3 most common failure patterns (use the per-scenario breakdown and the failing case IDs). For each, propose the smallest change (prompt wording, preprocessing, validator rule, threshold) and the expected effect. Wait for my pick, change one thing, rerun the evaluation, and compare against the previous report. Do not change the decision rules in spec section 7.8 without asking me.
+Evaluation summary: <paste the summary only>. Name the 3 most common failure patterns (per-scenario breakdown and failing case IDs). For each, propose the smallest change (prompt wording, preprocessing, validator, threshold) and its expected effect. Wait for my pick, change one thing, rerun on dev with --sample, and compare. Do not change the decision rules in spec 7.8 without asking me.
 ```
 
 ## Step 21: Next.js app: login, dashboard, case detail
 
+Model: Fast. Keep the UI plain; function over polish.
+
 ```
 Step 21: Frontend foundation.
-Read: spec.md section 9; PRD FR-UI-01..03, NFR-UX-01.
-Goal: working dashboard and case detail.
-Create apps/web (Next.js App Router, TypeScript, Tailwind, TanStack Query). Generate API types from the OpenAPI schema with openapi-typescript. Pages: /login, / (dashboard with status badges, filters, search, pagination, counts), /cases/[id] (document viewer with zoom and page navigation on the left; collapsible per-agent panels, decision panel with confidence, justification and rule trace on the right).
-Requirements: badge mapping from spec 9 (icon plus text, not color only); token stored in an httpOnly cookie via a Next route handler; no PHI in localStorage; empty, loading and error states; keyboard accessible.
-Tests: Playwright for login, dashboard load, case detail render (against the running API with seeded data).
+Read: spec.md 9; PRD FR-UI-01..03, NFR-UX-01.
+Create apps/web (Next.js App Router, TypeScript, Tailwind, TanStack Query) with API types generated from the OpenAPI schema. Pages: /login, / (dashboard: status badges with icon plus text, filters, search, pagination, counts), /cases/[id] (document viewer with zoom and page navigation; collapsible per-agent panels; decision panel with confidence, justification and rule trace).
+Token in an httpOnly cookie through a Next route handler; no PHI in localStorage; empty, loading and error states; keyboard accessible.
+Tests: Playwright for login, dashboard load and case detail (against the running API with seeded data).
 Do not: build the review queue or policies pages.
-Done when: I can log in, see cases, and open one with its agent outputs.
+Done when: I can log in, see cases and open one with its agent outputs.
 Show me the plan first.
 ```
 
 ## Step 22: Review queue, override, audit log, policies
 
+Model: Standard.
+
 ```
 Step 22: Remaining UI.
-Read: spec.md section 9; PRD FR-UI-04, 05, 06, 10; AC-06, AC-07.
-Goal: complete the operations workflow.
-Add: /review (queue of ESCALATE, NEEDS_REVIEW, FAILED cases with age and reason), override dialog (approve, reject, reclassify; reason required, at least 10 characters), audit log tab on case detail, click-to-highlight of extracted fields on the document image, /policies (list, upload, ingestion status). Hide actions by role (reviewer, supervisor, auditor read-only, admin).
-Tests: Playwright: escalated case -> override with reason -> status OVERRIDDEN and original decision still visible, audit shows the override; auditor cannot see override buttons; policy upload shows status.
-Do not: add WebSockets yet.
+Read: spec.md 9; PRD FR-UI-04, 05, 06, 10; AC-06, AC-07.
+Add: /review (ESCALATE, NEEDS_REVIEW and FAILED cases with age and reason); override dialog (approve, reject, reclassify; reason of at least 10 characters); audit tab on case detail; click-to-highlight of extracted fields on the document; /policies (list, upload, ingestion status). Hide actions by role (auditor is read-only).
+Tests: Playwright: escalated case -> override with reason -> OVERRIDDEN, original decision still visible, audit shows it; the auditor sees no override buttons; policy upload shows status.
+Do not: add WebSockets.
 Done when: AC-06 and AC-07 pass by hand and in Playwright.
 Show me the plan first.
 ```
 
 ## Step 23: Docs, diagram, CI
 
+Model: Fast.
+
 ```
 Step 23: Documentation and CI.
-Read: PRD deliverables 6 and 7; spec.md section 14.
-Goal: a repo someone else can run.
-Create: README.md (overview, architecture, prerequisites with uv/Node/Docker/Tesseract, environment variables table, setup in under 10 commands, how to run API, worker, web, seed, evaluation, tests, a walkthrough of one end-to-end case with sample commands and expected outputs), docs/architecture.md with a Mermaid diagram showing actual component names, models and data flow, and a GitHub Actions workflow running ruff, mypy on core and decision, pytest, gitleaks and the web build.
+Read: PRD deliverables 6 and 7; spec.md 14.
+Create: README.md (overview, architecture, prerequisites including uv, Node, Docker and Tesseract, environment variables table, setup in under 10 commands, how to run the API, worker, web, seed, evaluation and tests, one end-to-end case with sample commands and expected output); docs/architecture.md with a Mermaid diagram using the real component and model names; a GitHub Actions workflow running ruff, mypy on core and decision, pytest, gitleaks and the web build.
 Check: no secrets in the repo; .env.example is complete.
 Done when: a fresh clone follows the README and reaches a decided case.
 Show me the plan first.

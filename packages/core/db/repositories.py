@@ -4,11 +4,28 @@ from datetime import date
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from packages.core.db.models import AuditEvent, Case, ClaimHistory, Member, PolicyExclusion
 from packages.core.enums import CaseStatus, ClaimHistoryKind
+
+
+def _shape_class(code: str) -> str:
+    """Leading letter (V2100), digits ending in a letter (0001T), or digits only (17000)."""
+    if code[:1].isalpha():
+        return "leading_letter"
+    return "trailing_letter" if code[-1:].isalpha() else "digits"
+
+
+def code_in_range(code: str, range_start: str, range_end: str) -> bool:
+    """Codes only match ranges of their own shape class, compared as upper-case strings."""
+    code, start, end = code.strip().upper(), range_start.strip().upper(), range_end.strip().upper()
+    if not code or not start or not end:
+        return False
+    if not _shape_class(code) == _shape_class(start) == _shape_class(end):
+        return False
+    return start <= code <= end
 
 
 class CaseRepo:
@@ -102,16 +119,12 @@ class PolicyExclusionRepo:
         self._session = session
 
     def lookup(self, policy_id: UUID, cpt_code: str) -> list[PolicyExclusion]:
-        normalized_code = cpt_code.upper()
-        code_length = len(normalized_code)
-        statement = select(PolicyExclusion).where(
-            PolicyExclusion.policy_id == policy_id,
-            func.length(func.upper(PolicyExclusion.range_start)) == code_length,
-            func.length(func.upper(PolicyExclusion.range_end)) == code_length,
-            func.upper(PolicyExclusion.range_start) <= normalized_code,
-            func.upper(PolicyExclusion.range_end) >= normalized_code,
-        )
-        return list(self._session.scalars(statement))
+        statement = select(PolicyExclusion).where(PolicyExclusion.policy_id == policy_id)
+        return [
+            row
+            for row in self._session.scalars(statement)
+            if code_in_range(cpt_code, row.range_start, row.range_end)
+        ]
 
 
 class AuditRepo:

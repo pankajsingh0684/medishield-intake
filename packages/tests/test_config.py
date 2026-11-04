@@ -13,6 +13,7 @@ REQUIRED_ENVIRONMENT = {
     "S3_BUCKET": "test-bucket",
     "QDRANT_URL": "http://localhost:6333",
     "QDRANT_API_KEY": "test-qdrant-key",
+    "TESSERACT_CMD": "C:/tools/tesseract.exe",
     "LLM_VISION_MODEL": "test-vision-model",
     "LLM_TEXT_MODEL": "test-text-model",
     "LLM_FALLBACK_MODEL": "test-fallback-model",
@@ -35,6 +36,7 @@ def test_settings_load_from_environment(monkeypatch: pytest.MonkeyPatch) -> None
     assert settings.database_url == REQUIRED_ENVIRONMENT["DATABASE_URL"]
     assert settings.s3_access_key.get_secret_value() == "test-access-key"
     assert settings.llm_provider == "openai"
+    assert settings.tesseract_cmd == "C:/tools/tesseract.exe"
 
 
 def test_missing_required_settings_raise_validation_error(
@@ -56,6 +58,7 @@ def test_documented_threshold_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     set_required_environment(monkeypatch)
     for name in (
         "LLM_PROVIDER",
+        "LLM_FALLBACK_PROVIDER",
         "THRESH_FRAUD_ESCALATE",
         "THRESH_FRAUD_HIGH",
         "THRESH_AGENT_CONFIDENCE",

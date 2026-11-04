@@ -7,11 +7,27 @@ are still in progress.
 
 ## Current progress
 
-- Steps 1–6 are implemented and validated.
+- Steps 1–8 are implemented and validated.
+- Step 9: OCR pre-processor (three-tier: PDF text layer, Tesseract, LLM fallback).
 - PostgreSQL 16, Redis, locally built MinIO, and Qdrant run through Docker Compose.
 - Redis is published on `localhost:6380` because `localhost:6379` is already in use
   on the development machine.
 - The decision engine has 100% measured coverage.
+
+## Prerequisites
+
+- **Python 3.12** with `uv` package manager
+- **Docker** and **Docker Compose** for local infrastructure
+- **Tesseract 5.0+** for OCR (install before running tests/workers)
+  - **Linux (Ubuntu/Debian):** `sudo apt-get install tesseract-ocr`
+  - **macOS (Homebrew):** `brew install tesseract`
+  - **Windows (Chocolatey):** `choco install tesseract`
+  - Verify with: `tesseract --version`
+- **Application container images:** Any API or worker image that runs OCR must install
+  Tesseract 5 and its English language data in addition to the Python dependencies.
+  The current repository has no API/worker image definition; `infra/minio/Dockerfile`
+  builds MinIO and intentionally does not include OCR tools.
+- **Node.js 20+** (for the frontend, Step 21+)
 
 ## Development checks
 

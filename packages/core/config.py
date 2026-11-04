@@ -57,6 +57,7 @@ class Settings(EnvFileSettings):
     s3_bucket: str
     qdrant_url: str
     qdrant_api_key: SecretStr
+    tesseract_cmd: str | None = None
 
     llm_provider: Literal["stub", "groq", "anthropic", "openai"] = "stub"
     llm_vision_model: str

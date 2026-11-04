@@ -205,7 +205,8 @@ CREATE TABLE policies (
 );
 
 -- parsed from the policy's "Excluded CPT Code Ranges" table at ingestion (7.6, step 0)
--- lookup: range_start <= code <= range_end, compared as upper-case strings of equal length (ranges do not cross letter classes);
+-- lookup: a code matches a range when both have the same shape class (digits only, digits ending in a letter such as 0001T, or a leading letter such as V2100)
+-- and range_start <= code <= range_end as upper-case strings; any matching range counts, overlapping ranges are fine;
 -- effective dates come from the policies row, so there is no date column here
 CREATE TABLE policy_exclusions (
   exclusion_id UUID PRIMARY KEY, policy_id UUID NOT NULL REFERENCES policies,
@@ -715,6 +716,9 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.6**
+- `policy_exclusions` lookup compares only within the same code shape class, so numeric codes (for example 00020) never match `0001T-0099T`.
 
 **v0.2.5**
 - Classifier review representation (`NEEDS_REVIEW` routing tag) and input validation stated in 7.2.

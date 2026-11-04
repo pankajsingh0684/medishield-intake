@@ -20,6 +20,8 @@ dependencies = [
     "pyyaml>=6.0.3",
     "pymupdf>=2.0",
     "pillow>=13.0.0",
+    "opencv-python>=5.0.0.93",
+    "pytesseract>=0.3.13",
 ]
 
 [dependency-groups]
