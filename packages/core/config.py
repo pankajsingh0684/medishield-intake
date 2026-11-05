@@ -1,5 +1,6 @@
 """Environment-backed application settings."""
 
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal
 
@@ -75,6 +76,7 @@ class Settings(EnvFileSettings):
     threshold_agent_confidence: float = Field(default=0.60, ge=0.0, le=1.0)
     threshold_classify_review: float = Field(default=0.60, ge=0.0, le=1.0)
     npi_luhn_strict: bool = False
+    claim_amount_max: Decimal = Field(default=Decimal(1_000_000), gt=0)
     allow_received_at_override: bool = False
     near_threshold_low: int = Field(default=9500, ge=0)
     near_threshold_high: int = Field(default=10000, ge=0)

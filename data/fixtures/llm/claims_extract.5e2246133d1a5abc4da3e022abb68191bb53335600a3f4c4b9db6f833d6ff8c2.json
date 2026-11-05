@@ -1,0 +1,86 @@
+{
+  "fields": {
+    "claim_amount": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "1250.00",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "1250.00"
+    },
+    "cpt_codes": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "['99213']",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": [
+        "99213"
+      ]
+    },
+    "icd10_codes": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "['I25.10']",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": [
+        "I25.10"
+      ]
+    },
+    "provider_npi": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "1234567893",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "1234567893"
+    },
+    "service_date": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "2025-01-15",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "2025-01-15"
+    },
+    "signature_present": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "True",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": true
+    }
+  }
+}

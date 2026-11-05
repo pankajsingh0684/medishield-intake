@@ -81,6 +81,7 @@ def test_step_5b_setting_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in (
         "APP_ENV",
         "NPI_LUHN_STRICT",
+        "CLAIM_AMOUNT_MAX",
         "ALLOW_RECEIVED_AT_OVERRIDE",
         "NEAR_THRESHOLD_LOW",
         "NEAR_THRESHOLD_HIGH",
@@ -93,6 +94,7 @@ def test_step_5b_setting_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert settings.app_env == "development"
     assert settings.npi_luhn_strict is False
+    assert settings.claim_amount_max == 1_000_000
     assert settings.allow_received_at_override is False
     assert settings.near_threshold_low == 9500
     assert settings.near_threshold_high == 10000

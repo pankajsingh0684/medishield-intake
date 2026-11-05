@@ -1,0 +1,58 @@
+{
+  "fields": {
+    "admit_date": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "2025-01-10",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "2025-01-10"
+    },
+    "discharge_date": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "2025-01-15",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "2025-01-15"
+    },
+    "icd10_codes": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "['I25.10']",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": [
+        "I25.10"
+      ]
+    },
+    "signature_present": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "True",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": true
+    }
+  }
+}

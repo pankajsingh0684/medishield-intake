@@ -1,0 +1,82 @@
+{
+  "fields": {
+    "dea_number": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "AB1234563",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "AB1234563"
+    },
+    "drug_name": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "Example Medication",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "Example Medication"
+    },
+    "prescriber_npi": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "1234567893",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "1234567893"
+    },
+    "refills": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "1",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": 1
+    },
+    "rx_date": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "2025-01-15",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "2025-01-15"
+    },
+    "sig": {
+      "bbox": {
+        "h": 0.03,
+        "page": 1,
+        "text": "Take one tablet daily",
+        "w": 0.2,
+        "x": 0.1,
+        "y": 0.1
+      },
+      "confidence": 0.95,
+      "page": 1,
+      "value": "Take one tablet daily"
+    }
+  }
+}

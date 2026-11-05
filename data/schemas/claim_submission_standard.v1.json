@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://medishield.example/schemas/claim_submission_standard.v1.json",
+  "title": "MediShield Assumed Claim Submission Standard v1",
+  "description": "Assumed internal claim schema pending OQ-04 confirmation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["doc_type", "extracted_fields"],
+  "properties": {
+    "doc_type": {
+      "enum": ["CLAIM_FORM", "DISCHARGE_SUMMARY", "PRESCRIPTION"]
+    },
+    "extracted_fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "claim_amount": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "icd10_codes": {"type": "array", "items": {"type": "string"}},
+        "cpt_codes": {"type": "array", "items": {"type": "string"}},
+        "provider_npi": {"type": ["string", "null"]},
+        "service_date": {"type": ["string", "null"], "format": "date"},
+        "admit_date": {"type": ["string", "null"], "format": "date"},
+        "discharge_date": {"type": ["string", "null"], "format": "date"},
+        "signature_present": {"type": ["boolean", "null"]},
+        "extra": {"type": "object"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"doc_type": {"const": "CLAIM_FORM"}}},
+      "then": {
+        "properties": {
+          "extracted_fields": {
+            "required": ["claim_amount", "service_date", "icd10_codes", "cpt_codes", "provider_npi", "signature_present"],
+            "properties": {
+              "icd10_codes": {"minItems": 1},
+              "cpt_codes": {"minItems": 1},
+              "provider_npi": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"doc_type": {"const": "DISCHARGE_SUMMARY"}}},
+      "then": {
+        "properties": {
+          "extracted_fields": {
+            "required": ["admit_date", "discharge_date", "icd10_codes", "signature_present"],
+            "properties": {"icd10_codes": {"minItems": 1}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"doc_type": {"const": "PRESCRIPTION"}}},
+      "then": {
+        "properties": {
+          "extracted_fields": {
+            "required": ["extra"],
+            "properties": {
+              "extra": {
+                "required": ["drug_name", "sig", "refills", "prescriber_npi", "dea_number", "rx_date"],
+                "properties": {
+                  "drug_name": {"type": "string", "minLength": 1},
+                  "sig": {"type": "string", "minLength": 1},
+                  "refills": {"type": ["integer", "string"]},
+                  "prescriber_npi": {"type": "string"},
+                  "dea_number": {"type": "string", "minLength": 1},
+                  "rx_date": {"type": "string", "format": "date"}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
