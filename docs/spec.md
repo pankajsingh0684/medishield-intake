@@ -338,6 +338,8 @@ join -> fraud -> aggregate -> orchestrate -> persist -> END
 any node error after retries -> mark_failed -> END   (status FAILED, routed to review)
 ```
 
+**Error handling (v0.2.7).** The wrapper turns an exhausted exception into an `ERROR` envelope, so an agent failure is data, not a crash. An `ERROR` in `classify` or `ocr` goes to `mark_needs_review` (nothing to decide on). An `ERROR` in a routed specialist (kyc, claims, policy) is recorded and the graph continues to `join`, so the decision engine applies rule R1 and escalates with a trace; until the Orchestrator exists (Step 12), such a case ends as `NEEDS_REVIEW`. `mark_failed` is only for infrastructure failures in the graph itself (the stored document or state cannot be loaded or persisted). Until Step 16, a case with no errors ends at `AGGREGATED`; Step 16 sets `DECIDED`.
+
 Routing is a pure function `route(doc_type) -> set[AgentName]` backed by a table **[Default, OQ-05]**:
 
 | doc_type | kyc | claims | policy | fraud |
@@ -716,6 +718,9 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.7**
+- 6.2: error handling stated (agent errors continue to join and escalate under R1; `mark_failed` only for infrastructure failures).
 
 **v0.2.6**
 - `policy_exclusions` lookup compares only within the same code shape class, so numeric codes (for example 00020) never match `0001T-0099T`.

@@ -67,5 +67,12 @@ class S3Storage:
         except (BotoCoreError, ClientError) as error:
             raise StorageUnavailable("Object storage is unavailable") from error
 
+    def get(self, key: str) -> bytes:
+        try:
+            response = self._client.get_object(Bucket=self.bucket, Key=key)
+            return response["Body"].read()
+        except (BotoCoreError, ClientError, KeyError) as error:
+            raise StorageUnavailable("The stored document is unavailable") from error
+
     def close(self) -> None:
         self._client.close()

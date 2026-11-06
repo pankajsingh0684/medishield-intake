@@ -22,6 +22,7 @@ def create_app(
     *,
     engine: Engine | None = None,
     storage: S3Storage | None = None,
+    pipeline_task=None,
 ) -> FastAPI:
     api_settings = settings or ApiSettings()
     owns_engine = engine is None
@@ -46,6 +47,13 @@ def create_app(
     app.state.settings = api_settings
     app.state.engine = db_engine
     app.state.storage = object_storage
+    if pipeline_task is None:
+        from apps.worker.celery_app import configure_celery
+        from apps.worker.tasks import run_pipeline
+
+        configure_celery(api_settings.redis_url, api_settings.redis_password.get_secret_value())
+        pipeline_task = run_pipeline
+    app.state.pipeline_task = pipeline_task
     app.include_router(health_router)
     app.include_router(cases_router)
 

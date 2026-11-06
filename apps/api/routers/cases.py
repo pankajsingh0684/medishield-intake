@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from sqlalchemy import String, cast, func, or_, select, text
 from sqlalchemy.orm import Session
 
@@ -41,6 +41,7 @@ def _error(status_code: int, code: str, message: str) -> HTTPException:
 
 @router.post("", response_model=CaseResponse, status_code=202)
 def upload_case(
+    request: Request,
     file: Annotated[UploadFile, File()],
     session: Annotated[Session, Depends(get_session)],
     settings: Annotated[ApiSettings, Depends(get_settings)],
@@ -63,6 +64,7 @@ def upload_case(
     created_at = datetime.now(UTC)
     case_response: CaseResponse
     status_code = 202
+    enqueue_case_id: UUID | None = None
 
     try:
         with session.begin():
@@ -103,9 +105,15 @@ def upload_case(
                 )
                 CaseRepo(session).add(case)
                 case_response = CaseResponse.model_validate(case)
-                # TODO(Step 12): enqueue the processing pipeline after the case is committed.
+                enqueue_case_id = case_id
     except StorageUnavailable as error:
         raise _error(503, "STORAGE_UNAVAILABLE", "The document could not be stored.") from error
+
+    if enqueue_case_id is not None:
+        request.app.state.pipeline_task.apply_async(
+            args=[str(enqueue_case_id), str(uuid4())],
+            queue="pipeline",
+        )
 
     from fastapi.responses import JSONResponse
 

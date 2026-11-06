@@ -7,7 +7,15 @@ from uuid import UUID
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from packages.core.db.models import AuditEvent, Case, ClaimHistory, Member, PolicyExclusion
+from packages.core.db.models import (
+    AgentRun,
+    AuditEvent,
+    Case,
+    ClaimHistory,
+    Member,
+    Policy,
+    PolicyExclusion,
+)
 from packages.core.enums import CaseStatus, ClaimHistoryKind
 
 
@@ -40,6 +48,22 @@ class CaseRepo:
     def get(self, case_id: UUID) -> Case | None:
         return self._session.get(Case, case_id)
 
+    def update_status(self, case_id: UUID, status: CaseStatus) -> Case:
+        case = self.get(case_id)
+        if case is None:
+            raise LookupError(f"Case not found: {case_id}")
+        case.status = status
+        self._session.flush()
+        return case
+
+    def update_classification(self, case_id: UUID, doc_type: Any) -> Case:
+        case = self.get(case_id)
+        if case is None:
+            raise LookupError(f"Case not found: {case_id}")
+        case.doc_type = doc_type
+        self._session.flush()
+        return case
+
     def list(
         self,
         *,
@@ -51,6 +75,40 @@ class CaseRepo:
         if status is not None:
             statement = statement.where(Case.status == status)
         return list(self._session.scalars(statement.limit(limit).offset(offset)))
+
+
+class AgentRunRepo:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def save(self, run: AgentRun) -> AgentRun:
+        existing = self._session.scalar(
+            select(AgentRun).where(
+                AgentRun.case_id == run.case_id,
+                AgentRun.pipeline_run == run.pipeline_run,
+                AgentRun.agent == run.agent,
+            )
+        )
+        if existing is None:
+            self._session.add(run)
+            self._session.flush()
+            return run
+        for attribute in (
+            "agent_version",
+            "status",
+            "model",
+            "prompt_version",
+            "confidence",
+            "output",
+            "error",
+            "tokens_in",
+            "tokens_out",
+            "started_at",
+            "finished_at",
+        ):
+            setattr(existing, attribute, getattr(run, attribute))
+        self._session.flush()
+        return existing
 
 
 class MemberRepo:
@@ -68,6 +126,17 @@ class MemberRepo:
     def get_by_policy_number(self, policy_number: str) -> Member | None:
         statement = select(Member).where(Member.policy_number == policy_number).limit(1)
         return self._session.scalar(statement)
+
+    def get_by_date_of_birth(self, date_of_birth: date) -> list[Member]:
+        statement = (
+            select(Member).where(Member.date_of_birth == date_of_birth).order_by(Member.member_id)
+        )
+        return list(self._session.scalars(statement))
+
+    def get_policy(self, member: Member) -> Policy | None:
+        if member.policy_id is None:
+            return None
+        return self._session.get(Policy, member.policy_id)
 
 
 class ClaimHistoryRepo:

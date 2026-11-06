@@ -23,6 +23,9 @@ dependencies = [
     "pillow>=13.0.0",
     "opencv-python>=5.0.0.93",
     "pytesseract>=0.3.13",
+    "rapidfuzz>=3.14.6",
+    "langgraph>=1.2.20",
+    "celery[redis]>=5.7.0",
 ]
 
 [dependency-groups]

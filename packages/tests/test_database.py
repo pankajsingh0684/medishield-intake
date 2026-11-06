@@ -195,9 +195,11 @@ def test_repositories_round_trip_case_member_claim_and_audit(database_engine) ->
             full_name="Synthetic Test Member",
             date_of_birth=date(1980, 1, 1),
             policy_number=policy_number,
+            policy_id=uuid4(),
             status="ACTIVE",
         )
         MemberRepo(session).add(member)
+        session.add(Policy(policy_id=member.policy_id, name="Repository policy"))
 
         claim = ClaimHistory(
             claim_id=uuid4(),
@@ -253,6 +255,13 @@ def test_repositories_round_trip_case_member_claim_and_audit(database_engine) ->
         assert CaseRepo(session).list(status=CaseStatus.RECEIVED, limit=100)
         assert MemberRepo(session).get(member_id) is not None
         assert MemberRepo(session).get_by_policy_number(policy_number) is not None
+        assert MemberRepo(session).get_by_date_of_birth(date(1980, 1, 1))[0].member_id == member_id
+        stored_member = MemberRepo(session).get(member_id)
+        assert stored_member is not None
+        stored_policy = MemberRepo(session).get_policy(stored_member)
+        assert stored_policy is not None
+        assert stored_policy.effective_from is None
+        assert stored_policy.effective_to is None
         history = ClaimHistoryRepo(session).for_member(
             member_id,
             service_date_from=date(2026, 1, 1),

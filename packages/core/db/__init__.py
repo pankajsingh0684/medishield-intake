@@ -13,6 +13,7 @@ from packages.core.db.models import (
     User,
 )
 from packages.core.db.repositories import (
+    AgentRunRepo,
     AuditRepo,
     CaseRepo,
     ClaimHistoryRepo,
@@ -22,6 +23,7 @@ from packages.core.db.repositories import (
 
 __all__ = [
     "AgentRun",
+    "AgentRunRepo",
     "AuditEvent",
     "AuditRepo",
     "Base",

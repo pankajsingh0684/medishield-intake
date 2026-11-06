@@ -1,8 +1,11 @@
 import io
 import json
 from collections.abc import Iterator
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from pathlib import Path
-from uuid import UUID
+from types import SimpleNamespace
+from uuid import UUID, uuid4
 
 import boto3
 import pytest
@@ -18,9 +21,24 @@ from sqlalchemy.orm import Session
 
 from apps.api.factory import create_app
 from apps.api.settings import ApiSettings
-from packages.core.db.models import Case
-from packages.core.enums import DecisionKind, DocType
+from apps.worker import tasks as worker_tasks
+from apps.worker.celery_app import celery_app
+from packages.core.config import Settings
+from packages.core.db.models import AgentRun, AuditEvent, Case, Member
+from packages.core.enums import AgentStatus, CaseStatus, DecisionKind, DocType
+from packages.core.llm.gateway import build_gateway
+from packages.core.models import (
+    ClaimFields,
+    ClaimsResult,
+    Classification,
+    KycResult,
+    OcrField,
+    OcrPayload,
+)
 from packages.core.storage import S3Storage, StorageUnavailable
+from packages.graph.builder import build_graph, initial_state
+from packages.graph.nodes import GraphRuntime
+from packages.graph.routing import route
 
 ROOT = Path(__file__).resolve().parents[3]
 DATASET_DIR = ROOT / "data" / "synthetic" / "dataset"
@@ -119,7 +137,16 @@ def client(
     test_engine,
     test_storage: S3Storage,
 ) -> Iterator[TestClient]:
-    app = create_app(api_settings, engine=test_engine, storage=test_storage)
+    class NoopPipelineTask:
+        def apply_async(self, **_: object) -> None:
+            return None
+
+    app = create_app(
+        api_settings,
+        engine=test_engine,
+        storage=test_storage,
+        pipeline_task=NoopPipelineTask(),
+    )
     with TestClient(app) as test_client:
         yield test_client
 
@@ -306,3 +333,330 @@ def test_storage_failure_returns_clean_error_without_case_row(
     }
     with Session(test_engine) as session:
         assert session.scalar(select(func.count()).select_from(Case)) == 0
+
+
+def _insert_graph_case(engine, *, doc_type: DocType = DocType.CLAIM_FORM) -> UUID:
+    case_id = uuid4()
+    with Session(engine) as session, session.begin():
+        session.add(
+            Case(
+                case_id=case_id,
+                status=CaseStatus.RECEIVED,
+                doc_type=doc_type,
+                object_key="raw/graph/test.png",
+                sha256=str(case_id).replace("-", "")[:64].ljust(64, "a"),
+                mime_type="image/png",
+                received_at=datetime(2025, 12, 15, tzinfo=UTC),
+            )
+        )
+        session.add(
+            Member(
+                member_id="PT_19116",
+                full_name="Christopher Harris I.",
+                date_of_birth=date(1954, 4, 25),
+                policy_number="MED-GLD-6770619",
+                status="ACTIVE",
+                id_doc_expiry=date(2030, 1, 1),
+            )
+        )
+    return case_id
+
+
+def _graph_payloads(*, classifier_status: AgentStatus = AgentStatus.OK):
+    now = datetime.now(UTC)
+    classification = Classification(
+        agent="classifier",
+        agent_version="1.0.0",
+        status=classifier_status,
+        confidence=0.99 if classifier_status == AgentStatus.OK else 0.0,
+        started_at=now,
+        finished_at=now,
+        error="fixture error" if classifier_status == AgentStatus.ERROR else None,
+        doc_type=DocType.CLAIM_FORM if classifier_status == AgentStatus.OK else DocType.UNKNOWN,
+        routing_tags=[] if classifier_status == AgentStatus.OK else ["NEEDS_REVIEW"],
+    )
+    ocr = OcrPayload(
+        agent="ocr",
+        agent_version="1.0.0",
+        status=AgentStatus.OK,
+        confidence=0.95,
+        started_at=now,
+        finished_at=now,
+        fields=[
+            OcrField(key="claim_amount", value="1250.00", confidence=0.95, page=1),
+            OcrField(key="service_date", value="12/10/2025", confidence=0.95, page=1),
+            OcrField(key="icd10", value="I25.10", confidence=0.95, page=1),
+            OcrField(key="cpt", value="99213", confidence=0.95, page=1),
+            OcrField(key="provider_npi", value="NPI-5610293847", confidence=0.95, page=1),
+            OcrField(key="signature_present", value="Yes", confidence=0.95, page=1),
+            OcrField(key="member_id", value="PT_19116", confidence=0.95, page=1),
+            OcrField(key="member_name", value="Christopher Harris I.", confidence=0.95, page=1),
+            OcrField(key="dob", value="04/25/1954", confidence=0.95, page=1),
+            OcrField(key="policy_number", value="MED-GLD-6770619", confidence=0.95, page=1),
+        ],
+        raw_text="",
+        bounding_boxes=[],
+        pages=1,
+        used_text_layer=True,
+    )
+    claims = ClaimsResult(
+        agent="claims",
+        agent_version="1.0.0",
+        status=AgentStatus.OK,
+        confidence=0.95,
+        started_at=now,
+        finished_at=now,
+        extracted_fields=ClaimFields(
+            claim_amount=Decimal("1250.00"),
+            icd10_codes=["I25.10"],
+            cpt_codes=["99213"],
+            provider_npi="5610293847",
+            service_date=date(2025, 12, 10),
+        ),
+        schema_valid=True,
+        validation_errors=[],
+    )
+    kyc_error = KycResult(
+        agent="kyc",
+        agent_version="1.0.0",
+        status=AgentStatus.ERROR,
+        confidence=0.0,
+        started_at=now,
+        finished_at=now,
+        error="fixture KYC error",
+        kyc_passed=False,
+        flags=[],
+        member_ref=None,
+    )
+    return classification, ocr, claims, kyc_error
+
+
+def _graph_runtime(engine, storage, overrides) -> GraphRuntime:
+    return GraphRuntime(
+        engine=engine,
+        storage=storage,
+        settings=SimpleNamespace(
+            agent_timeout_s=2,
+            threshold_classify_review=0.6,
+            llm_vision_model="test-vision",
+            npi_luhn_strict=False,
+            claim_amount_max=Decimal(1000000),
+        ),
+        gateway=None,
+        agent_overrides=overrides,
+        retry_backoff_seconds=0,
+    )
+
+
+def test_routing_table_has_expected_targets_for_every_document_type():
+    assert route(DocType.CLAIM_FORM) == {"kyc", "claims", "policy", "fraud"}
+    assert route(DocType.ID_DOCUMENT) == {"kyc", "fraud"}
+    assert route(DocType.DISCHARGE_SUMMARY) == {"kyc", "claims", "fraud"}
+    assert route(DocType.PRESCRIPTION) == {"kyc", "claims", "fraud"}
+    assert route(DocType.POLICY_AMENDMENT) == {"kyc", "policy"}
+    assert route(DocType.UNKNOWN) == set()
+
+
+def test_kyc_error_still_joins_claims_and_ends_needs_review(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    classification, ocr, claims, kyc_error = _graph_payloads()
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    completed: list[str] = []
+    overrides = {
+        "classifier": lambda _: classification,
+        "ocr": lambda _: ocr,
+        "kyc": lambda _: kyc_error,
+        "claims": lambda _: completed.append("claims") or claims,
+    }
+    runtime = _graph_runtime(test_engine, FakeStorage(), overrides)
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert completed == ["claims"]
+    assert state["terminal_status"] == CaseStatus.NEEDS_REVIEW.value
+    with Session(test_engine) as session:
+        assert session.get(Case, case_id).status == CaseStatus.NEEDS_REVIEW
+        runs = list(session.scalars(select(AgentRun).where(AgentRun.case_id == case_id)))
+        events = list(session.scalars(select(AuditEvent).where(AuditEvent.case_id == case_id)))
+    assert {run.agent for run in runs} >= {"classifier", "ocr", "kyc", "claims", "policy"}
+    assert {(event.actor, event.event_type) for event in events} >= {
+        ("classifier", "NODE_START"),
+        ("classifier", "NODE_END"),
+        ("ocr", "NODE_START"),
+        ("ocr", "NODE_END"),
+        ("kyc", "NODE_START"),
+        ("kyc", "NODE_END"),
+        ("claims", "NODE_START"),
+        ("claims", "NODE_END"),
+    }
+
+
+def test_classifier_error_routes_to_review_without_ocr(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    classification, ocr, _, _ = _graph_payloads(classifier_status=AgentStatus.ERROR)
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+
+    calls: list[str] = []
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classification,
+            "ocr": lambda _: calls.append("ocr") or ocr,
+        },
+    )
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert calls == []
+    assert state["terminal_status"] == CaseStatus.NEEDS_REVIEW.value
+    with Session(test_engine) as session:
+        assert session.get(Case, case_id).status == CaseStatus.NEEDS_REVIEW
+        agents = list(session.scalars(select(AgentRun.agent).where(AgentRun.case_id == case_id)))
+    assert agents == ["classifier"]
+
+
+def test_document_load_failure_ends_failed(test_engine):
+    case_id = _insert_graph_case(test_engine)
+
+    class MissingStorage:
+        def get(self, _: str) -> bytes:
+            raise StorageUnavailable("missing object")
+
+    runtime = _graph_runtime(test_engine, MissingStorage(), {})
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert state["terminal_status"] == CaseStatus.FAILED.value
+    with Session(test_engine) as session:
+        assert session.get(Case, case_id).status == CaseStatus.FAILED
+
+
+def test_upload_runs_eager_pipeline_with_stub_fixtures(
+    api_settings: ApiSettings,
+    test_engine,
+    test_storage: S3Storage,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    image_path = DATASET_DIR / "id_documents" / "id_PT_15075.png"
+    image = image_path.read_bytes()
+    metadata = json.loads((DATASET_DIR / "metadata.json").read_text(encoding="utf-8"))
+    dataset_row = next(row for row in metadata if row["doc_id"] == "id_PT_15075")
+    with Session(test_engine) as session, session.begin():
+        session.add(
+            Member(
+                member_id="PT_15075",
+                full_name="Christopher Harris I.",
+                date_of_birth=date(1954, 4, 25),
+                policy_number=dataset_row["policy_number"],
+                status="ACTIVE",
+                id_doc_expiry=date(2029, 12, 14),
+            )
+        )
+
+    settings = Settings(
+        _env_file=None,
+        app_env="test",
+        database_url=api_settings.database_url,
+        redis_url=api_settings.redis_url,
+        redis_password=api_settings.redis_password,
+        s3_endpoint=api_settings.s3_endpoint,
+        s3_access_key=api_settings.s3_access_key,
+        s3_secret_key=api_settings.s3_secret_key,
+        s3_bucket=api_settings.s3_bucket,
+        qdrant_url=api_settings.qdrant_url,
+        qdrant_api_key=api_settings.qdrant_api_key,
+        llm_vision_model="test-vision",
+        llm_text_model="test-text",
+        llm_fallback_model="test-fallback",
+        jwt_secret=api_settings.jwt_secret,
+        seed_test_user_password=api_settings.seed_test_user_password,
+    )
+    gateway = build_gateway(settings)
+    ocr_result = OcrPayload(
+        agent="ocr",
+        agent_version="1.0.0",
+        status=AgentStatus.OK,
+        confidence=0.95,
+        model="dataset-test",
+        started_at=datetime.now(UTC),
+        finished_at=datetime.now(UTC),
+        fields=[
+            OcrField(key="member_id", value="PT_15075", confidence=0.95, page=1),
+            OcrField(key="member_name", value="Christopher Harris I.", confidence=0.95, page=1),
+            OcrField(key="dob", value="04/25/1954", confidence=0.95, page=1),
+            OcrField(
+                key="policy_number",
+                value=dataset_row["policy_number"],
+                confidence=0.95,
+                page=1,
+            ),
+            OcrField(key="id_expiry", value="12/14/2029", confidence=0.95, page=1),
+        ],
+        raw_text="MEDICARE MEMBER ID",
+        bounding_boxes=[],
+        pages=1,
+        used_text_layer=False,
+    )
+    kyc_result = KycResult(
+        agent="kyc",
+        agent_version="1.0.0",
+        status=AgentStatus.OK,
+        confidence=0.95,
+        model="dataset-test",
+        started_at=datetime.now(UTC),
+        finished_at=datetime.now(UTC),
+        kyc_passed=True,
+        flags=[],
+        member_ref="PT_15075",
+    )
+    runtime_settings = SimpleNamespace(
+        agent_timeout_s=api_settings.agent_timeout_s
+        if hasattr(api_settings, "agent_timeout_s")
+        else 90,
+        threshold_classify_review=0.6,
+        llm_vision_model="test-vision",
+        npi_luhn_strict=False,
+        claim_amount_max=Decimal(1_000_000),
+    )
+    monkeypatch.setitem(celery_app.conf, "task_always_eager", True)
+    monkeypatch.setitem(celery_app.conf, "task_eager_propagates", True)
+    monkeypatch.setattr(
+        worker_tasks,
+        "runtime_factory",
+        lambda: SimpleNamespace(
+            graph=GraphRuntime(
+                engine=test_engine,
+                storage=test_storage,
+                settings=runtime_settings,
+                gateway=gateway,
+                agent_overrides={
+                    "ocr": lambda _: ocr_result,
+                    "kyc": lambda _: kyc_result,
+                },
+                retry_backoff_seconds=0,
+            ),
+            close=lambda: None,
+        ),
+    )
+    app = create_app(api_settings, engine=test_engine, storage=test_storage)
+    with TestClient(app) as eager_client:
+        response = post_file(eager_client, image_path.name, image)
+
+    assert response.status_code == 202
+    case_id = UUID(response.json()["case_id"])
+    with Session(test_engine) as session:
+        case = session.get(Case, case_id)
+        runs = list(session.scalars(select(AgentRun).where(AgentRun.case_id == case_id)))
+        events = list(session.scalars(select(AuditEvent).where(AuditEvent.case_id == case_id)))
+    assert case is not None and case.status == CaseStatus.AGGREGATED, [
+        (run.agent, run.status, run.error) for run in runs
+    ]
+    assert {run.agent for run in runs} >= {"classifier", "ocr", "kyc", "claims", "policy"}
+    assert any(event.event_type == "NODE_START" and event.actor == "classifier" for event in events)
+    assert any(event.event_type == "NODE_END" and event.actor == "kyc" for event in events)
