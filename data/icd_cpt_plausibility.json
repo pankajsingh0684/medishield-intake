@@ -1,0 +1,16 @@
+{
+  "source": "data/synthetic/generators/generate_docs.py CPT_POOL, UNCOVERED_CPT, and ICD10_POOL scenario definitions",
+  "cpt_codes": [
+    "99213", "99214", "99215", "71046", "85025", "80053", "44970", "27447",
+    "99284", "93000", "71250", "70553", "36415", "43239", "99291", "93306",
+    "72148", "90837", "33533", "47562", "29827", "15822", "17000", "58300",
+    "86849", "21120", "59400", "99999"
+  ],
+  "icd10_codes": [
+    "E11.9", "I10", "J01.90", "M54.5", "K35.80", "J18.9", "I25.10", "M17.11",
+    "N39.0", "S52.501A", "F32.1", "G43.909", "K21.0", "M75.100"
+  ],
+  "obstetric_cpt_codes": ["59400"],
+  "obstetric_icd10_prefixes": ["O"],
+  "rule": "An obstetric CPT code requires at least one obstetric ICD-10 diagnosis; all generator-defined non-obstetric CPT/ICD pairs remain plausible because the synthetic generator samples those pools independently."
+}

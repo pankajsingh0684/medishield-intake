@@ -93,8 +93,8 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 | Done | Step | Deliverable | Size | Depends on | Done when |
 | --- | --- | --- | --- | --- | --- |
 | [x] | 13 | Policy ingestion: Docling, chunking, Qdrant, `POST /policies`; use the existing Gold and Silver PDFs; load their "Excluded CPT Code Ranges" table into `policy_exclusions` | L | 2, 5b, 6 | Both policies `READY`; manual query returns relevant chunks; exclusion rows loaded |
-| [ ] | 14 | Policy agent: step 0 deterministic CPT exclusion lookup, then hybrid retrieval, rerank, grounded answer, citation check | L | 10, 13 | Covered, uncovered, exclusion-table hit (confidence 0.95) and no-clause cases tested |
-| [ ] | 15 | Fraud agent: ten detectors (adds identity mismatch, near-threshold, date conflict, readmission), noisy-OR scoring, 4 dp rounding, risk levels | M | 5c, 10, 11 | Boundary tests at 0.30 and 0.60; property test passes; each dataset fraud scenario fires its detector |
+| [x] | 14 | Policy agent: step 0 deterministic CPT exclusion lookup, then hybrid retrieval, rerank, grounded answer, citation check | L | 10, 13 | Covered, uncovered, exclusion-table hit (confidence 0.95) and no-clause cases tested |
+| [x] | 15 | Fraud agent: ten detectors (adds identity mismatch, near-threshold, date conflict, readmission), noisy-OR scoring, 4 dp rounding, risk levels | M | 5c, 10, 11 | Boundary tests at 0.30 and 0.60; property test passes; each dataset fraud scenario fires its detector |
 | [ ] | 16 | Orchestrator node, justification text, full graph wiring | M | 4, 12, 14, 15 | Six scenario graph tests produce the expected decisions |
 | [ ] | 17 | Audit, review queue, override, reclassify, rerun endpoints | M | 16 | Override keeps the original decision; tests pass |
 | [ ] | 18 | JWT auth, RBAC, rate limiting, PHI log redaction | M | 17 | Role matrix test passes (401 and 403 cases) |
@@ -200,6 +200,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | D1 (confirmed) | Do discharge summaries and prescriptions get a coverage decision? | Decided: no, supporting documents (extraction, member match and fraud only) | Step 5b (engine tests), Step 12 (routing) |
 | LLM provider (confirmed) | Which provider runs during development | `LLM_PROVIDER=stub` in `.env` and `.env.example` until Step 20; real keys only for the evaluation run | Step 7 to Step 19 |
 | D2 (confirmed) | Policy amendments | Decided: always escalate unless KYC fails; report accuracy per category | Step 5c (labels), Step 20 |
+| Known divergence KD-1 | `claim_PT_16658` is labelled REJECT (uncovered procedure) but its $9,950 total is in the near-threshold band, so R2 escalates first | Keep the detector and dataset as is; report as one expected mismatch | Step 20 report |
 | Clock (new) | Date for expiry and recency checks | `cases.received_at`; evaluation sets it from each label's `reference_date` (the dataset is dated 2025) | Step 5b, Step 11 |
 
 **D1 and D2 are both confirmed (2026-10-31).** To reverse either later, change the matching rows in spec 6.2 and 7.8 and the expected-decision table in spec section 11 before running Step 5c.
@@ -219,6 +220,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | 2026-10-31 | D1 and D2 confirmed | D1: no coverage decision for discharge summaries and prescriptions. D2: policy amendments always escalate unless KYC fails. All docs updated |
 | 2026-10-31 | Docs updated to v0.2 | Dataset review found 15 mismatches; added Steps 5a to 5c; decisions D1, D2 and the clock rule added |
 | 2026-11-07 | Steps 9b, 10, 11, 12, 13 | OCR precision, Claims agent, KYC agent, LangGraph wiring with Celery (two production bugs found by tests and fixed), policy ingestion (Gold 43 and Silver 34 chunks, 18 exclusion ranges each, `plan_code` migration, rule-based chunk_type, hashed sparse vectors). 324 tests pass. Spec v0.2.9 (chunk-size rule). Step 12 manual worker check still to do |
+| 2026-11-07 | Steps 14, 15 | Policy agent (hybrid retrieval, ADR-015: evidence gate by citation check, description-only queries; real cross-encoder scores were unusable as a gate) and fraud agent (ten detectors, noisy-OR, spec v0.2.11). 403 tests pass. All 6 fraud scenarios reach MEDIUM or higher on dev; all 13 clean dev claims score below 0.30. Known divergence: `claim_PT_16658` (uncovered procedure, $9,950 inside the near-threshold band) is labelled REJECT but the engine gives ESCALATE via R2; kept, to be listed in the Step 20 report |
 | | | |
 
 ## 11. Definition of done
@@ -229,7 +231,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 ## 12. Next action
 
-Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Steps 1 to 13 are done. Next: **Step 14 (Policy agent)**. Earlier next-step notes, kept for the record:
+Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Steps 1 to 15 are done. Next: **Step 16 (Orchestrator node, justification text, full graph wiring)**. Earlier next-step notes, kept for the record:
 
 1. Replace the four docs in `docs/` with the v0.2 files.
 2. Run **Step 5a** (fix the generator, regenerate once, freeze). Use the Step 5a prompt in `prompts.md`.

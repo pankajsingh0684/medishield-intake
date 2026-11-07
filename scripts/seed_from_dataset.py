@@ -7,7 +7,7 @@ from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 from argon2 import PasswordHasher
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -71,6 +71,8 @@ def seed_dataset(session: Session, test_user_password: str) -> None:
     labels, unmatched = build_labels(metadata_rows, truth_by_doc)
     if unmatched:
         raise ValueError(f"Cannot seed labels with unmatched scenarios: {unmatched}")
+    dataset_source_ids = [_source_id(label.doc_id) for label in labels]
+    session.execute(delete(ClaimHistory).where(ClaimHistory.source_case_id.in_(dataset_source_ids)))
 
     labels_by_cluster: dict[str, dict[DocType, LabelRecord]] = {}
     for label in labels:
@@ -159,13 +161,6 @@ def seed_dataset(session: Session, test_user_password: str) -> None:
             row = _history_values(claim, member_id, ClaimHistoryKind.EPISODE_CLAIM)
             row["claim_number"] = cluster["claim_number"]
             history.append(row)
-        elif fraud_reason == "duplicate_claim" or (
-            fraud_reason is None and claim.scenario == "valid_clean"
-        ):
-            row = _history_values(claim, member_id, ClaimHistoryKind.PRIOR_CLAIM)
-            row["claim_number"] = cluster["claim_number"]
-            history.append(row)
-
         if fraud_reason == "readmission_30d":
             discharge = cluster_labels[DocType.DISCHARGE_SUMMARY]
             prior_discharge_date = _date(truth_by_doc[discharge.doc_id].get("prior_discharge_date"))

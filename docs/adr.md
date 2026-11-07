@@ -264,6 +264,7 @@ The Fraud agent must score claims against patient history, frequency and provide
 | Isolation forest or other unsupervised model only | Hard to explain per claim; needs sufficient history |
 
 ### Consequences
+- Known divergence (2026-11-07): the dataset claim `claim_PT_16658` (uncovered procedure, amount $9,950) falls in the near-threshold band, so R2 escalates it where the label expects REJECT. The detector follows the spec; the case is reported as a known mismatch in the evaluation, not tuned away.
 - Positive: transparent, testable, tunable; works with small seeded data; satisfies the 0.3 rule exactly.
 - Negative: weights are expert guesses until validated; cold-start members have weaker baselines (confidence is reduced).
 - Follow-ups: validate weights against labeled outcomes; fairness review (NFR-AI-02); define SIU workflow (OQ-10).

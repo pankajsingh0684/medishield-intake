@@ -1,6 +1,6 @@
 """Typed persistence interfaces for core database records."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -204,6 +204,30 @@ class ClaimHistoryRepo:
     def by_claim_number(self, claim_number: str) -> list[ClaimHistory]:
         statement = select(ClaimHistory).where(ClaimHistory.claim_number == claim_number)
         return list(self._session.scalars(statement))
+
+    def all_prior_claims(self, *, since: date | None = None) -> list[ClaimHistory]:
+        statement: Select[tuple[ClaimHistory]] = select(ClaimHistory).where(
+            ClaimHistory.kind == ClaimHistoryKind.PRIOR_CLAIM
+        )
+        if since is not None:
+            statement = statement.where(ClaimHistory.service_date >= since)
+        return list(self._session.scalars(statement))
+
+    def earlier_processed_claims(
+        self, member_id: str, before: datetime
+    ) -> list[tuple[Case, AgentRun]]:
+        statement = (
+            select(Case, AgentRun)
+            .join(AgentRun, AgentRun.case_id == Case.case_id)
+            .where(
+                Case.member_ref == member_id,
+                Case.created_at < before,
+                AgentRun.agent == "claims",
+                AgentRun.status == "OK",
+            )
+            .order_by(Case.created_at.asc(), Case.case_id.asc())
+        )
+        return list(self._session.execute(statement).all())
 
 
 class PolicyExclusionRepo:

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from packages.agents.claims.agent import CLAIMS_VERSION, ClaimsAgent
 from packages.agents.classifier.agent import CLASSIFIER_VERSION, ClassifierAgent
+from packages.agents.fraud.agent import FRAUD_VERSION, FraudAgent
 from packages.agents.kyc.agent import KYC_VERSION, KycAgent
 from packages.agents.ocr.agent import OCR_VERSION, OCRAgent
 from packages.agents.policy.agent import POLICY_VERSION, PolicyAgent
@@ -20,6 +21,7 @@ from packages.core.clients import create_qdrant_client
 from packages.core.db.repositories import (
     AuditRepo,
     CaseRepo,
+    ClaimHistoryRepo,
     MemberRepo,
     PolicyExclusionRepo,
 )
@@ -209,6 +211,24 @@ def _placeholder_fraud() -> FraudResult:
     now = datetime.now(UTC)
     return FraudResult(
         **_envelope_values("fraud", "0.1.0", AgentStatus.SKIPPED, now, now, None, 1.0),
+        fraud_score=0.0,
+        anomalies=[],
+        risk_level=RiskLevel.LOW,
+    )
+
+
+def _error_fraud(start: datetime, finish: datetime, error: Exception) -> FraudResult:
+    return FraudResult(
+        **_envelope_values(
+            "fraud",
+            FRAUD_VERSION,
+            AgentStatus.ERROR,
+            start,
+            finish,
+            None,
+            0.5,
+            type(error).__name__,
+        ),
         fraud_score=0.0,
         anomalies=[],
         risk_level=RiskLevel.LOW,
@@ -477,10 +497,30 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
     )
+
+    def fraud_call(state: GraphState) -> FraudResult:
+        selected = ROUTING_TABLE[state["classification"].doc_type].fraud
+        if not selected:
+            return _placeholder_fraud()
+        override = runtime.agent_overrides.get("fraud")
+        if override is not None:
+            return override(state)
+        with Session(runtime.engine) as session:
+            agent = FraudAgent(ClaimHistoryRepo(session), runtime.settings)
+            member_id = state.get("kyc").member_ref if state.get("kyc") else None
+            return agent.score(
+                state["classification"].doc_type,
+                member_id,
+                state["claims"],
+                state["kyc"],
+                state["ocr"],
+                state["received_at"],
+            )
+
     fraud_node = instrument(
         "fraud",
-        lambda state: _placeholder_fraud(),
-        lambda start, finish, error: _placeholder_fraud(),
+        fraud_call,
+        _error_fraud,
         engine=runtime.engine,
         redis_client=runtime.redis_client,
         timeout_seconds=timeout,
@@ -523,8 +563,6 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         return {"routed_agents": routed_agents}
 
     def fraud(state: GraphState) -> dict[str, Any]:
-        if not ROUTING_TABLE[state["classification"].doc_type].fraud:
-            return fraud_node(state)
         return fraud_node(state)
 
     def orchestrator(state: GraphState) -> dict[str, Any]:

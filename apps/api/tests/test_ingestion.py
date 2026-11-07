@@ -34,6 +34,7 @@ from packages.core.models import (
     ClaimFields,
     ClaimsResult,
     Classification,
+    KycFlag,
     KycResult,
     OcrField,
     OcrPayload,
@@ -462,18 +463,27 @@ def _graph_payloads(*, classifier_status: AgentStatus = AgentStatus.OK):
 
 
 def _graph_runtime(engine, storage, overrides) -> GraphRuntime:
+    from packages.graph.nodes import _placeholder_fraud
+
+    agent_overrides = {"fraud": lambda _: _placeholder_fraud(), **overrides}
     return GraphRuntime(
         engine=engine,
         storage=storage,
         settings=SimpleNamespace(
             agent_timeout_s=2,
             threshold_classify_review=0.6,
+            threshold_fraud_escalate=0.30,
+            threshold_fraud_high=0.60,
+            near_threshold_low=9500,
+            near_threshold_high=10000,
+            date_conflict_days=30,
+            readmission_days=30,
             llm_vision_model="test-vision",
             npi_luhn_strict=False,
             claim_amount_max=Decimal(1000000),
         ),
         gateway=None,
-        agent_overrides=overrides,
+        agent_overrides=agent_overrides,
         retry_backoff_seconds=0,
     )
 
@@ -485,6 +495,46 @@ def test_routing_table_has_expected_targets_for_every_document_type():
     assert route(DocType.PRESCRIPTION) == {"kyc", "claims", "fraud"}
     assert route(DocType.POLICY_AMENDMENT) == {"kyc", "policy"}
     assert route(DocType.UNKNOWN) == set()
+
+
+def test_graph_runs_real_fraud_agent_for_id_name_mismatch(test_engine):
+    case_id = _insert_graph_case(test_engine, doc_type=DocType.ID_DOCUMENT)
+    classification, ocr, _, _ = _graph_payloads()
+    classification = classification.model_copy(update={"doc_type": DocType.ID_DOCUMENT})
+    kyc = KycResult(
+        agent="kyc",
+        agent_version="1.0.0",
+        status=AgentStatus.OK,
+        confidence=0.9,
+        started_at=datetime.now(UTC),
+        finished_at=datetime.now(UTC),
+        kyc_passed=True,
+        flags=[KycFlag(code="NAME_MISMATCH", severity="LOW", evidence="printed name differs")],
+        member_ref="FRAUD-GRAPH-MEMBER",
+    )
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return (DATASET_DIR / "id_documents" / "id_PT_15075.png").read_bytes()
+
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classification,
+            "ocr": lambda _: ocr,
+            "kyc": lambda _: kyc,
+            "claims": lambda _: (
+                worker_tasks._skipped_claims() if hasattr(worker_tasks, "_skipped_claims") else None
+            ),
+        },
+    )
+    runtime.agent_overrides.pop("fraud", None)
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert state["fraud"].status == AgentStatus.OK
+    assert state["fraud"].fraud_score == 0.5
+    assert [item.type for item in state["fraud"].anomalies] == ["IDENTITY_MISMATCH"]
 
 
 def test_kyc_error_still_joins_claims_and_ends_needs_review(test_engine):
@@ -967,6 +1017,12 @@ def test_upload_runs_eager_pipeline_with_stub_fixtures(
         if hasattr(api_settings, "agent_timeout_s")
         else 90,
         threshold_classify_review=0.6,
+        threshold_fraud_escalate=0.30,
+        threshold_fraud_high=0.60,
+        near_threshold_low=9500,
+        near_threshold_high=10000,
+        date_conflict_days=30,
+        readmission_days=30,
         llm_vision_model="test-vision",
         npi_luhn_strict=False,
         claim_amount_max=Decimal(1_000_000),

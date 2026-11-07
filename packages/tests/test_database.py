@@ -1,5 +1,8 @@
+import json
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -12,6 +15,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
+from packages.agents.fraud.agent import FraudAgent
 from packages.core.db import PolicyExclusionRepo
 from packages.core.db.models import (
     AuditEvent,
@@ -29,7 +33,8 @@ from packages.core.db.repositories import (
     MemberRepo,
     code_in_range,
 )
-from packages.core.enums import CaseStatus, ClaimHistoryKind, DocType, UserRole
+from packages.core.enums import AgentStatus, CaseStatus, ClaimHistoryKind, DocType, UserRole
+from packages.core.models import ClaimFields, ClaimsResult, KycFlag, KycResult, OcrPayload
 from packages.eval.split import load_labels
 from scripts.seed import MEMBER_ID_PREFIX, seed_database
 from scripts.seed_from_dataset import SILVER_MEMBER_ID
@@ -381,8 +386,9 @@ def test_seed_is_idempotent_and_passwords_are_argon2_hashed(database_engine) -> 
     assert readmission.discharge_date is not None
     assert readmission.admit_date is not None
     assert 0 < (readmission.admit_date - readmission.discharge_date).days <= 30
-    duplicate_original = next(row for row in history if row.member_id == "PT_20322")
-    assert duplicate_original.kind is ClaimHistoryKind.PRIOR_CLAIM
+    assert not any(
+        row.member_id == "PT_20322" and row.kind is ClaimHistoryKind.PRIOR_CLAIM for row in history
+    )
 
     dataset_history = [row for row in history if row.member_id and row.member_id.startswith("PT_")]
     normal_prior_claims = [
@@ -422,6 +428,233 @@ def test_seed_is_idempotent_and_passwords_are_argon2_hashed(database_engine) -> 
         )
 
     assert (repeated_member_count, repeated_claim_count, repeated_user_count) == first_counts
+
+
+@pytest.mark.parametrize(
+    ("scenario", "expected_detector"),
+    [
+        ("duplicate_claim", "DUPLICATE_CLAIM"),
+        ("date_conflict", "DATE_CONFLICT"),
+        ("proc_diag_mismatch", "CODE_MISMATCH"),
+        ("readmission_30d", "READMISSION_30D"),
+        ("amount_under_10k", "NEAR_THRESHOLD"),
+        ("name_mismatch", "IDENTITY_MISMATCH"),
+    ],
+)
+def test_fraud_agent_detects_each_step_5c_seeded_scenario(
+    database_engine, scenario: str, expected_detector: str
+) -> None:
+    with Session(database_engine) as seed_session, seed_session.begin():
+        seed_database(seed_session, "fraud-seed-test-password")
+    labels = load_labels()
+    label = next(
+        row for row in labels if row.fraud_expected == "FLAGGED" and row.fraud_reason == scenario
+    )
+    clusters = json.loads(
+        (Path(__file__).resolve().parents[2] / "data/synthetic/dataset/clusters.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    cluster = next(row for row in clusters if row["patient_id"] == label.patient_id)
+    member_id = label.patient_id
+    fields = ClaimFields(
+        claim_amount=label.fields.claim_amount,
+        icd10_codes=label.fields.icd10_codes or [],
+        cpt_codes=label.fields.cpt_codes or [],
+        provider_npi=label.fields.provider_npi,
+        service_date=label.fields.service_date,
+        claim_number=cluster.get("claim_number"),
+        admit_date=label.fields.admit_date,
+        discharge_date=label.fields.discharge_date,
+        extra={"rx_date": label.fields.rx_date.isoformat()} if label.fields.rx_date else {},
+    )
+    now = datetime.combine(
+        label.reference_date or date(2025, 1, 1), datetime.min.time(), tzinfo=UTC
+    )
+    claims = ClaimsResult(
+        agent="claims",
+        agent_version="test",
+        status=AgentStatus.OK,
+        confidence=0.9,
+        started_at=now,
+        finished_at=now,
+        extracted_fields=fields,
+        schema_valid=True,
+        validation_errors=[],
+    )
+    flags = (
+        [KycFlag(code="NAME_MISMATCH", severity="HIGH", evidence="seeded name mismatch")]
+        if scenario == "name_mismatch"
+        else []
+    )
+    kyc = KycResult(
+        agent="kyc",
+        agent_version="test",
+        status=AgentStatus.OK,
+        confidence=0.9,
+        started_at=now,
+        finished_at=now,
+        kyc_passed=True,
+        flags=flags,
+        member_ref=member_id,
+    )
+    ocr = OcrPayload(
+        agent="ocr",
+        agent_version="test",
+        status=AgentStatus.OK,
+        confidence=0.9,
+        started_at=now,
+        finished_at=now,
+        fields=[],
+        raw_text="",
+        bounding_boxes=[],
+        pages=1,
+        used_text_layer=True,
+    )
+    with Session(database_engine) as session:
+        agent = FraudAgent(ClaimHistoryRepo(session), _fraud_test_settings())
+        prior_processed = (
+            [
+                {
+                    "member_id": label.patient_id,
+                    "claim_number": cluster["claim_number"],
+                    "case_id": "seeded-original",
+                }
+            ]
+            if scenario == "duplicate_claim"
+            else None
+        )
+        result = agent.score(
+            label.doc_type,
+            member_id,
+            claims,
+            kyc,
+            ocr,
+            now,
+            prior_processed_claims=prior_processed,
+        )
+
+    assert result.status == AgentStatus.OK
+    assert expected_detector in {anomaly.type for anomaly in result.anomalies}
+
+
+def _fraud_test_settings():
+    return SimpleNamespace(
+        near_threshold_low=9500,
+        near_threshold_high=10000,
+        date_conflict_days=30,
+        readmission_days=30,
+        threshold_fraud_escalate=0.30,
+        threshold_fraud_high=0.60,
+    )
+
+
+@pytest.mark.parametrize(
+    ("scenario", "detector"),
+    [
+        ("duplicate_claim", "DUPLICATE_CLAIM"),
+        ("date_conflict", "DATE_CONFLICT"),
+        ("proc_diag_mismatch", "CODE_MISMATCH"),
+        ("readmission_30d", "READMISSION_30D"),
+        ("amount_under_10k", "NEAR_THRESHOLD"),
+        ("name_mismatch", "IDENTITY_MISMATCH"),
+    ],
+)
+def test_fraud_agent_detects_step_5c_seeded_scenarios(
+    database_engine, scenario: str, detector: str
+) -> None:
+    with Session(database_engine) as seed_session, seed_session.begin():
+        seed_database(seed_session, "fraud-seeded-scenario-test")
+
+    labels = load_labels()
+    label = next(
+        item
+        for item in labels
+        if item.fraud_expected == "FLAGGED" and item.fraud_reason == scenario
+    )
+    cluster_rows = json.loads(
+        (Path(__file__).resolve().parents[2] / "data/synthetic/dataset/clusters.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    cluster = next(item for item in cluster_rows if item["patient_id"] == label.patient_id)
+    values = label.fields
+    fields = ClaimFields(
+        claim_amount=values.claim_amount,
+        icd10_codes=values.icd10_codes or [],
+        cpt_codes=values.cpt_codes or [],
+        provider_npi=values.provider_npi,
+        service_date=values.service_date,
+        claim_number=cluster.get("claim_number"),
+        admit_date=values.admit_date,
+        discharge_date=values.discharge_date,
+        extra={"rx_date": values.rx_date.isoformat()} if values.rx_date else {},
+    )
+    reference_date = label.reference_date or date(2025, 1, 1)
+    received_at = datetime.combine(reference_date, datetime.min.time(), tzinfo=UTC)
+    claims = ClaimsResult(
+        agent="claims",
+        agent_version="seed-test",
+        status=AgentStatus.OK,
+        confidence=0.9,
+        started_at=received_at,
+        finished_at=received_at,
+        extracted_fields=fields,
+        schema_valid=True,
+        validation_errors=[],
+    )
+    kyc_flags = (
+        [KycFlag(code="NAME_MISMATCH", severity="HIGH", evidence="seeded name mismatch")]
+        if scenario == "name_mismatch"
+        else []
+    )
+    kyc = KycResult(
+        agent="kyc",
+        agent_version="seed-test",
+        status=AgentStatus.OK,
+        confidence=0.9,
+        started_at=received_at,
+        finished_at=received_at,
+        kyc_passed=True,
+        flags=kyc_flags,
+        member_ref=label.patient_id,
+    )
+    ocr = OcrPayload(
+        agent="ocr",
+        agent_version="seed-test",
+        status=AgentStatus.OK,
+        confidence=0.9,
+        started_at=received_at,
+        finished_at=received_at,
+        fields=[],
+        raw_text="",
+        bounding_boxes=[],
+        pages=1,
+        used_text_layer=True,
+    )
+    with Session(database_engine) as session:
+        result = FraudAgent(ClaimHistoryRepo(session), _fraud_test_settings()).score(
+            label.doc_type,
+            label.patient_id,
+            claims,
+            kyc,
+            ocr,
+            received_at,
+            prior_processed_claims=(
+                [
+                    {
+                        "member_id": label.patient_id,
+                        "claim_number": cluster["claim_number"],
+                        "case_id": "seeded-original-claim",
+                    }
+                ]
+                if scenario == "duplicate_claim"
+                else None
+            ),
+        )
+
+    assert result.status == AgentStatus.OK
+    assert detector in {anomaly.type for anomaly in result.anomalies}
 
 
 EXCLUSION_RANGES = [

@@ -140,6 +140,7 @@ class FraudResult(Envelope):
     fraud_score: Score
     anomalies: list[Anomaly]
     risk_level: RiskLevel
+    warnings: list[str] = Field(default_factory=list)
 
 
 class RuleStep(StrictModel):

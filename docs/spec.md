@@ -477,7 +477,7 @@ Deterministic scoring; the LLM MAY write explanatory text only (FR-FRD-06).
 | DATE_CONFLICT | Prescription date more than `DATE_CONFLICT_DAYS` after the member's `EPISODE_CLAIM` service date | 0.45 |
 | READMISSION_30D | Admission date within `READMISSION_DAYS` after a `PRIOR_STAY` discharge date | 0.45 |
 
-The binary detectors (identity, near-threshold, date conflict, readmission, code mismatch, tamper, duplicate) use strength 1 when they fire. Scores are rounded to 4 decimal places before comparison with a threshold, so a single detector with weight 0.30 is not decided by floating-point noise. A reference-price table in `data/` backs `AMOUNT_OUTLIER`; the detector is skipped for codes without a reference price (for example the placeholder code 99999).
+The binary detectors (identity, near-threshold, date conflict, readmission, code mismatch, tamper, duplicate) use strength 1 when they fire. The statistical detectors (frequency spike, provider billing outlier, amount outlier) also use strength 1 when their threshold is exceeded and 0 otherwise (v0.2.11), so a real anomaly is never diluted below the escalate threshold. Scores are rounded to 4 decimal places before comparison with a threshold, so a single detector with weight 0.30 is not decided by floating-point noise. A reference-price table in `data/` backs `AMOUNT_OUTLIER`; the detector is skipped for codes without a reference price (for example the placeholder code 99999).
 
 Risk level: `LOW < THRESH_FRAUD_ESCALATE (0.30)`, `MEDIUM` from 0.30 to below `THRESH_FRAUD_HIGH (0.60)`, `HIGH` at or above 0.60 **[Default, FR-FRD-04]**. Each anomaly records evidence (for example matching `claim_id`) and its contribution. Agent confidence is 0.9 when at least 3 historical claims exist for the member, else 0.7; it is 0.5 if the claim history query fails (case escalates).
 
@@ -718,6 +718,9 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.11**
+- 7.7: statistical detectors use strength 1 when fired, 0 otherwise.
 
 **v0.2.10**
 - 7.6 retrieval: description-only queries; evidence gate uses LLM null and verbatim-citation check instead of a rerank-score threshold (ADR-015).
