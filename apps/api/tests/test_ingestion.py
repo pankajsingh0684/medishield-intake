@@ -7,7 +7,7 @@ from pathlib import Path
 from threading import Event
 from time import sleep
 from types import SimpleNamespace
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import boto3
 import pytest
@@ -515,7 +515,7 @@ def test_kyc_error_still_joins_claims_and_ends_needs_review(test_engine):
     run_statuses = {run.agent: run.status for run in runs}
     assert run_statuses["kyc"] == AgentStatus.ERROR.value
     assert run_statuses["claims"] == AgentStatus.OK.value
-    assert run_statuses["policy"] == AgentStatus.SKIPPED.value
+    assert run_statuses["policy"] == AgentStatus.ERROR.value
     assert run_statuses["fraud"] == AgentStatus.SKIPPED.value
     assert run_statuses["orchestrator"] == AgentStatus.SKIPPED.value
     event_pairs = {(event.actor, event.event_type) for event in events}
@@ -569,7 +569,9 @@ def test_ocr_error_routes_to_review_without_specialists(test_engine):
     assert agents == {"classifier", "ocr"}
 
 
-@pytest.mark.parametrize("doc_type", [DocType.CLAIM_FORM, DocType.DISCHARGE_SUMMARY])
+@pytest.mark.parametrize(
+    "doc_type", [DocType.CLAIM_FORM, DocType.DISCHARGE_SUMMARY, DocType.PRESCRIPTION]
+)
 def test_fan_in_waits_for_routed_nodes_before_join_and_downstream(
     test_engine, monkeypatch: pytest.MonkeyPatch, doc_type: DocType
 ):
@@ -605,6 +607,7 @@ def test_fan_in_waits_for_routed_nodes_before_join_and_downstream(
             "ocr": lambda _: ocr,
             "kyc": lambda _: (sleep(0.03), order.append("kyc"), kyc_ok)[-1],
             "claims": lambda _: (order.append("claims"), completed.set(), claims)[-1],
+            "policy": lambda _: graph_nodes_module._placeholder_policy(),
         },
     )
     original_factory = graph_builder_module.build_nodes
@@ -654,6 +657,189 @@ def test_fan_in_waits_for_routed_nodes_before_join_and_downstream(
         assert policy_run is not None and policy_run.status == AgentStatus.SKIPPED.value
     assert order.index("join") < order.index("fraud") < order.index("orchestrator")
     assert state["terminal_status"] == CaseStatus.AGGREGATED.value
+
+
+def test_stub_gateway_runs_policy_decision_from_fixture(
+    api_settings: ApiSettings,
+    test_engine,
+    test_storage: S3Storage,
+    tmp_path: Path,
+):
+    from packages.agents.policy.agent import PolicyAgent, build_policy_message
+    from packages.core.db.repositories import MemberRepo, PolicyExclusionRepo
+    from packages.core.llm.fixtures import FixtureStore, fixture_key
+    from packages.core.llm.gateway import Gateway, StubProvider
+    from packages.rag.retrieve import DeterministicReranker, RetrievedChunk
+
+    case_id = _insert_graph_case(test_engine)
+    image_path = DATASET_DIR / "claim_forms" / "claim_PT_15075.png"
+    image = image_path.read_bytes()
+    metadata = json.loads((DATASET_DIR / "metadata.json").read_text(encoding="utf-8"))
+    dataset_row = next(row for row in metadata if row["doc_id"] == "claim_PT_15075")
+    policy_id = uuid5(NAMESPACE_URL, "medishield:plan:GOLD:synthetic-v1")
+    with Session(test_engine) as session, session.begin():
+        session.add(
+            Policy(
+                policy_id=policy_id,
+                plan_code="GOLD",
+                name="MediShield Gold Plan",
+                version="synthetic-v1",
+                effective_from=date(2024, 1, 1),
+                effective_to=date(2026, 12, 31),
+            )
+        )
+        session.add(
+            Member(
+                member_id="PT_15075",
+                full_name="Christopher Harris I.",
+                date_of_birth=date(1954, 4, 25),
+                policy_number=dataset_row["policy_number"],
+                policy_id=policy_id,
+                status="ACTIVE",
+                id_doc_expiry=date(2029, 12, 14),
+            )
+        )
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    settings = Settings(
+        _env_file=None,
+        app_env="test",
+        database_url=api_settings.database_url,
+        redis_url=api_settings.redis_url,
+        redis_password=api_settings.redis_password,
+        s3_endpoint=api_settings.s3_endpoint,
+        s3_access_key=api_settings.s3_access_key,
+        s3_secret_key=api_settings.s3_secret_key,
+        s3_bucket=api_settings.s3_bucket,
+        qdrant_url=api_settings.qdrant_url,
+        qdrant_api_key=api_settings.qdrant_api_key,
+        llm_provider="stub",
+        llm_vision_model="test-vision",
+        llm_text_model="test-policy-text",
+        llm_fallback_model="test-fallback",
+        jwt_secret=api_settings.jwt_secret,
+        seed_test_user_password=api_settings.seed_test_user_password,
+    )
+
+    class FakeRetriever:
+        def search(self, query, policy_id, effective_date):
+            return [
+                RetrievedChunk(
+                    point_id="stub-policy-clause",
+                    text=(
+                        "Coverage for CPT 93306 complete transthoracic echocardiography is "
+                        "covered at 80 percent."
+                    ),
+                    policy_id=policy_id,
+                    version="synthetic-v1",
+                    section_path="3. Inclusions (Covered Services)",
+                    page=5,
+                    chunk_type="coverage",
+                    rrf_score=0.03,
+                )
+            ]
+
+    retrieved = RetrievedChunk(
+        point_id="stub-policy-clause",
+        text=(
+            "Coverage for CPT 93306 complete transthoracic echocardiography is "
+            "covered at 80 percent."
+        ),
+        policy_id=policy_id,
+        version="synthetic-v1",
+        section_path="3. Inclusions (Covered Services)",
+        page=5,
+        chunk_type="coverage",
+        rrf_score=0.03,
+    )
+    message = build_policy_message(
+        mode="claim",
+        code_type="CPT",
+        code="93306",
+        description="Complete transthoracic echocardiography",
+        chunks=[retrieved],
+    )
+    fixture_store = FixtureStore(tmp_path)
+    fixture_store.write(
+        fixture_key("policy_decide", [message], []),
+        {
+            "covered": True,
+            "coverage_percentage": 80,
+            "clause_id": retrieved.point_id,
+            "policy_clause": retrieved.text,
+            "exclusions": [],
+            "certainty": 0.9,
+        },
+    )
+    gateway = Gateway(StubProvider(fixture_store))
+    classification, ocr, claims, _ = _graph_payloads()
+    claims = claims.model_copy(
+        update={
+            "extracted_fields": claims.extracted_fields.model_copy(
+                update={"cpt_codes": ["93306"], "icd10_codes": []}
+            )
+        }
+    )
+    ocr = ocr.model_copy(
+        update={
+            "fields": [
+                OcrField(key="member_id", value="PT_15075", confidence=0.95, page=1),
+                OcrField(key="member_name", value="Christopher Harris I.", confidence=0.95, page=1),
+                OcrField(key="dob", value="04/25/1954", confidence=0.95, page=1),
+                OcrField(
+                    key="policy_number", value=dataset_row["policy_number"], confidence=0.95, page=1
+                ),
+            ]
+        }
+    )
+    kyc = KycResult(
+        agent="kyc",
+        agent_version="1.0.0",
+        status=AgentStatus.OK,
+        confidence=0.95,
+        started_at=datetime.now(UTC),
+        finished_at=datetime.now(UTC),
+        kyc_passed=True,
+        flags=[],
+        member_ref="PT_15075",
+    )
+
+    def policy_override(state):
+        with Session(test_engine) as session:
+            return PolicyAgent(
+                MemberRepo(session),
+                PolicyExclusionRepo(session),
+                gateway,
+                settings,
+                FakeRetriever(),
+                DeterministicReranker(),
+            ).evaluate(
+                state["classification"].doc_type,
+                state["kyc"],
+                state["claims"],
+                state["ocr"],
+                state["received_at"],
+            )
+
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classification,
+            "ocr": lambda _: ocr,
+            "kyc": lambda _: kyc,
+            "claims": lambda _: claims,
+            "policy": policy_override,
+        },
+    )
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert state["policy"].status == AgentStatus.OK
+    assert state["policy"].covered is True
+    assert state["policy"].coverage_percentage == 80
 
 
 def test_classifier_error_routes_to_review_without_ocr(test_engine):
@@ -841,6 +1027,8 @@ def _successful_kyc() -> KycResult:
 def test_pipeline_rerun_uses_new_pipeline_run_and_latest_status(
     test_engine, monkeypatch: pytest.MonkeyPatch
 ):
+    from packages.graph import nodes as graph_nodes_module
+
     case_id = _insert_graph_case(test_engine)
     classification, ocr, claims, _ = _graph_payloads()
     image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
@@ -858,6 +1046,7 @@ def test_pipeline_rerun_uses_new_pipeline_run_and_latest_status(
             "ocr": lambda _: ocr,
             "kyc": lambda _: _successful_kyc(),
             "claims": lambda _: claims,
+            "policy": lambda _: graph_nodes_module._placeholder_policy(),
         },
     )
     monkeypatch.setattr(

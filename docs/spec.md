@@ -450,10 +450,10 @@ The generated forms mark absent values with explicit text such as `[DOB MISSING]
 **Retrieval (`Policy Agent`)**
 
 1. Resolve `policy_id` from the member's policy number via KYC `member_ref`; filter by `effective_from <= service_date <= effective_to` (FR-POL-05/08).
-2. Build queries per CPT code (`"coverage for CPT {code} {description}"`, with description from a small CPT lookup table in `data/`) and per ICD-10 code; run hybrid search (dense + BM25 over chunk text via Qdrant sparse vectors), top 8 each, merged with reciprocal rank fusion, then a cross-encoder or LLM rerank to top 5.
+2. Build queries per CPT code (`"{description} covered service"` (v0.2.10: description only; the bare code number scored as noise against policy prose, ADR-015), with description from a small CPT lookup table in `data/`) and per ICD-10 code; run hybrid search (dense + BM25 over chunk text via Qdrant sparse vectors), top 8 each, merged with reciprocal rank fusion, then a cross-encoder or LLM rerank to top 5.
 3. Ask the text LLM (prompt `policy_decide.v1`) with only the retrieved chunks to return `covered`, `coverage_percentage`, supporting clause id and exclusions, with an instruction to answer `null` when the text does not decide coverage.
 4. Verify that the cited clause text is a substring of a retrieved chunk; reject hallucinated citations.
-5. Confidence = rerank score of the cited clause adjusted by LLM self-reported certainty (min of the two). If top rerank score is below 0.35, return `covered=None` with confidence 0.3, which forces escalation (FR-POL-06).
+5. Confidence (v0.2.10, ADR-015): the rerank score is used only to order candidates, not to gate evidence. If the LLM answers `null`, or its citation is not a verbatim substring of a retrieved chunk, return `covered=None` with confidence 0.3 (forces escalation, FR-POL-06). Otherwise confidence = the LLM self-reported certainty, multiplied by 0.9 when the cited clause ranked 3rd to 5th after rerank, and capped at 0.9. Exclusion hits stay at 0.95.
 6. A claim is `covered` only when every CPT code is covered; coverage percentage is the minimum across codes; exclusions that match any ICD-10 or CPT code set `covered=false`.
 
 For POLICY_AMENDMENT documents the agent compares amendment fields to the current policy and reports a consistency result using the same output schema **[Default, OQ-15]**.
@@ -718,6 +718,9 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.10**
+- 7.6 retrieval: description-only queries; evidence gate uses LLM null and verbatim-citation check instead of a rerank-score threshold (ADR-015).
 
 **v0.2.9**
 - 7.6 chunking: 400-800 is a target; sub-60-token text chunks are merged; tables stay whole.

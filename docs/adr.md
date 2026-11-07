@@ -452,6 +452,31 @@ ADR-014 (D1, D2) ──> ADR-003 (variants), ADR-012 (expected decisions)
 
 ## Process
 
+## ADR-015: Policy evidence gate uses citation verification, not the cross-encoder score
+
+**Status:** Proposed  **Date:** 2026-11-07  **Owners:** ML engineering
+
+### Context
+Spec 7.6 gated evidence on a rerank score below 0.35. On the 22 dev claims (19 covered, 3 not covered) the real cross-encoder gave claim-level top scores of 0.0005 to 0.17, so every claim would have returned `covered=None` and escalated. With a description-only query the annotated clause was in the hybrid top 8 and the reranked top 5 for 22 of 22 claims, so retrieval works. A dev-only Platt calibration did not help: relevant clauses had a median of 0.31 and irrelevant ones reached 0.95.
+
+### Decision
+- Queries use the service description only (`"{description} covered service"`).
+- The rerank score orders candidates only.
+- `covered=None` with confidence 0.3 when the LLM answers null or the citation is not a verbatim substring of a retrieved chunk. Otherwise confidence is the LLM certainty (times 0.9 for rank 3 to 5, capped at 0.9). Exclusion hits keep 0.95.
+- R1 (0.6) and the decision engine are unchanged.
+
+### Alternatives considered
+| Option | Why not |
+| --- | --- |
+| Lower the 0.35 threshold | Irrelevant clauses score as high as relevant ones, so no threshold separates them |
+| Platt calibration on the logit | Dev fit left relevant median at 0.31 with overlap |
+| Swap the cross-encoder | Possible later; costs a model download and re-measurement, and the verbatim check already gives exact grounding |
+
+### Consequences
+- Positive: evidence strength rests on an exact check, not an uncalibrated score.
+- Negative: LLM self-reported certainty is itself uncalibrated; it must be measured on the real Groq run (Step 20) and, if needed, tuned on dev only.
+- Follow-up: record the confidence distribution of covered and not-covered claims in the Step 20 evaluation report.
+
 - New decisions use the template below and the next number; superseded records are kept with status **Superseded by ADR-NNN**.
 - A record moves from Proposed to Accepted when its owner and the named stakeholder (Operations for ADR-003 and ADR-008, Compliance for ADR-005, 009, 010) approve.
 

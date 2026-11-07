@@ -138,6 +138,29 @@ class MemberRepo:
             return None
         return self._session.get(Policy, member.policy_id)
 
+    def get_policy_for_number(self, policy_number: str, service_date: date) -> Policy | None:
+        normalized = policy_number.strip().upper()
+        plan_code = (
+            "GOLD"
+            if normalized.startswith(("MED-GLD-", "POL-TEST-"))
+            else "SILVER"
+            if normalized.startswith("MED-SLV-")
+            else None
+        )
+        if plan_code is None:
+            return None
+        statement = (
+            select(Policy)
+            .where(
+                Policy.plan_code == plan_code,
+                (Policy.effective_from.is_(None)) | (Policy.effective_from <= service_date),
+                (Policy.effective_to.is_(None)) | (Policy.effective_to >= service_date),
+            )
+            .order_by(Policy.effective_from.desc().nullslast(), Policy.created_at.desc())
+            .limit(1)
+        )
+        return self._session.scalar(statement)
+
 
 class ClaimHistoryRepo:
     def __init__(self, session: Session) -> None:

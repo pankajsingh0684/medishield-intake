@@ -1,0 +1,8 @@
+{
+  "certainty": 0.85,
+  "clause_id": "13cf6310-d083-5e3e-829c-e22b6ab91074",
+  "coverage_percentage": null,
+  "covered": true,
+  "exclusions": [],
+  "policy_clause": "Invasive cancer (excluding skin cancer unless melanoma).\n\nAcute myocardial infarction (heart attack) of specified severity.\n\nStroke resulting in permanent neurological deficit.\n\nCoronary artery bypass graft (CABG) surgery.\n\nKidney failure requiring permanent dialysis.\n\nMajor organ transplant (heart, lung, liver, kidney, pancreas).\n\nComa of specified severity lasting >96 continuous hours.\n\n* Loss of limbs (permanent loss of use of two or more limbs).\n\nBlindness (permanent and irrecoverable loss of sight in both eyes).\n\nAlzheimer's disease (resulting in total dependency) -- subject to 6-month survival."
+}

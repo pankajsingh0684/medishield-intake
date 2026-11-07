@@ -15,7 +15,14 @@ from packages.agents.claims.agent import CLAIMS_VERSION, ClaimsAgent
 from packages.agents.classifier.agent import CLASSIFIER_VERSION, ClassifierAgent
 from packages.agents.kyc.agent import KYC_VERSION, KycAgent
 from packages.agents.ocr.agent import OCR_VERSION, OCRAgent
-from packages.core.db.repositories import AuditRepo, CaseRepo, MemberRepo
+from packages.agents.policy.agent import POLICY_VERSION, PolicyAgent
+from packages.core.clients import create_qdrant_client
+from packages.core.db.repositories import (
+    AuditRepo,
+    CaseRepo,
+    MemberRepo,
+    PolicyExclusionRepo,
+)
 from packages.core.documents import render_document
 from packages.core.enums import AgentStatus, CaseStatus, DecisionKind, DocType, RiskLevel
 from packages.core.llm.protocol import LLMGateway
@@ -34,6 +41,12 @@ from packages.core.storage import S3Storage
 from packages.graph.routing import ROUTING_TABLE, route
 from packages.graph.state import GraphState
 from packages.graph.wrapper import InfrastructureFailure, instrument
+from packages.rag.embeddings import LocalSentenceTransformerEmbedder
+from packages.rag.retrieve import (
+    CrossEncoderReranker,
+    DeterministicReranker,
+    QdrantHybridRetriever,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +178,26 @@ def _skipped_claims() -> ClaimsResult:
 def _placeholder_policy() -> PolicyResult:
     now = datetime.now(UTC)
     return PolicyResult(
-        **_envelope_values("policy", "0.1.0", AgentStatus.SKIPPED, now, now, None, 1.0),
+        **_envelope_values("policy", POLICY_VERSION, AgentStatus.SKIPPED, now, now, None, 1.0),
+        covered=None,
+        coverage_percentage=None,
+        policy_clause=None,
+        exclusions=[],
+    )
+
+
+def _error_policy(start: datetime, finish: datetime, error: Exception) -> PolicyResult:
+    return PolicyResult(
+        **_envelope_values(
+            "policy",
+            POLICY_VERSION,
+            AgentStatus.ERROR,
+            start,
+            finish,
+            None,
+            0.0,
+            type(error).__name__,
+        ),
         covered=None,
         coverage_percentage=None,
         policy_clause=None,
@@ -403,10 +435,43 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         prompt_version="v1",
     )
 
+    def policy_call(state: GraphState) -> PolicyResult:
+        selected = ROUTING_TABLE[state["classification"].doc_type].policy
+        if not selected:
+            return _placeholder_policy()
+        override = runtime.agent_overrides.get("policy")
+        if override is not None:
+            return override(state)
+        client = create_qdrant_client(runtime.settings)
+        try:
+            embedder = LocalSentenceTransformerEmbedder(runtime.settings.embedding_model)
+            with Session(runtime.engine) as session:
+                agent = PolicyAgent(
+                    MemberRepo(session),
+                    PolicyExclusionRepo(session),
+                    runtime.gateway,
+                    runtime.settings,
+                    QdrantHybridRetriever(client, embedder),
+                    (
+                        DeterministicReranker()
+                        if runtime.settings.llm_provider == "stub"
+                        else CrossEncoderReranker()
+                    ),
+                )
+                return agent.evaluate(
+                    state["classification"].doc_type,
+                    state["kyc"],
+                    state["claims"],
+                    state["ocr"],
+                    state["received_at"],
+                )
+        finally:
+            client.close()
+
     policy_node = instrument(
         "policy",
-        lambda state: _placeholder_policy(),
-        lambda start, finish, error: _placeholder_policy(),
+        policy_call,
+        _error_policy,
         engine=runtime.engine,
         redis_client=runtime.redis_client,
         timeout_seconds=timeout,
@@ -438,9 +503,6 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         return claims_node(state)
 
     def policy(state: GraphState) -> dict[str, Any]:
-        selection = ROUTING_TABLE[state["classification"].doc_type]
-        if not selection.policy:
-            return policy_node(state)
         return policy_node(state)
 
     def join(state: GraphState) -> dict[str, Any]:

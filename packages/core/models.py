@@ -116,6 +116,7 @@ class PolicyResult(Envelope):
     coverage_percentage: CoveragePercentage | None
     policy_clause: PolicyClause | None
     exclusions: list[PolicyClause] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
 
 class Anomaly(StrictModel):
