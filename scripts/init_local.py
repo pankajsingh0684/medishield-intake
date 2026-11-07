@@ -1,6 +1,6 @@
 """Idempotently initialize local databases, buckets, and the policy vector collection."""
 
-from qdrant_client.http.models import Distance, SparseVectorParams, VectorParams
+from qdrant_client.http.models import Distance, Modifier, SparseVectorParams, VectorParams
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
@@ -65,18 +65,31 @@ def ensure_buckets(settings: Settings) -> None:
 def ensure_policy_collection(settings: Settings) -> None:
     client = create_qdrant_client(settings)
     try:
+        recreate = False
+        if client.collection_exists(POLICY_COLLECTION):
+            config = client.get_collection(POLICY_COLLECTION).config.params
+            dense = config.vectors
+            sparse = config.sparse_vectors or {}
+            dense_valid = (
+                isinstance(dense, dict)
+                and dense.get("dense") is not None
+                and dense["dense"].size == EMBEDDING_DIMENSION
+                and dense["dense"].distance == Distance.COSINE
+            )
+            sparse_valid = "text" in sparse and sparse["text"].modifier == Modifier.IDF
+            recreate = not (dense_valid and sparse_valid)
+            if recreate:
+                client.delete_collection(POLICY_COLLECTION)
+                print("Recreated incompatible policy_chunks collection.")
         if not client.collection_exists(POLICY_COLLECTION):
             client.create_collection(
                 collection_name=POLICY_COLLECTION,
-                vectors_config=VectorParams(
-                    size=EMBEDDING_DIMENSION,
-                    distance=Distance.COSINE,
-                ),
-                sparse_vectors_config={"text": SparseVectorParams()},
+                vectors_config={
+                    "dense": VectorParams(size=EMBEDDING_DIMENSION, distance=Distance.COSINE)
+                },
+                sparse_vectors_config={"text": SparseVectorParams(modifier=Modifier.IDF)},
             )
             print("Created policy_chunks collection.")
-        else:
-            print("policy_chunks collection already exists.")
     finally:
         client.close()
 

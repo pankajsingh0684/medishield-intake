@@ -18,13 +18,14 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from packages.core.config import EnvFileSettings
-from packages.core.db.models import ClaimHistory, Member, User
+from packages.core.db.models import ClaimHistory, Member, Policy, User
 from packages.core.db.session import create_database_engine
 from packages.core.enums import ClaimHistoryKind, UserRole
 from scripts.seed_from_dataset import seed_dataset
 
 SEED = 20261031
 POLICY_ID_NAMESPACE = "medishield:synthetic:policy:"
+GOLD_POLICY_ID = uuid5(NAMESPACE_URL, "medishield:plan:GOLD:synthetic-v1")
 MEMBER_ID_PREFIX = "MS-TEST-"
 
 
@@ -52,7 +53,7 @@ def seed_random_population(session: Session, test_user_password: str) -> None:
                 "full_name": fake.name(),
                 "date_of_birth": fake.date_of_birth(minimum_age=18, maximum_age=80),
                 "policy_number": f"POL-TEST-{member_number:05d}",
-                "policy_id": uuid5(NAMESPACE_URL, f"{POLICY_ID_NAMESPACE}{member_number}"),
+                "policy_id": GOLD_POLICY_ID,
                 "status": "ACTIVE",
                 "id_doc_expiry": date(2028, 12, 31),
             }
@@ -70,6 +71,15 @@ def seed_random_population(session: Session, test_user_password: str) -> None:
                 "status": member_insert.excluded.status,
                 "id_doc_expiry": member_insert.excluded.id_doc_expiry,
             },
+        )
+    )
+
+    session.merge(
+        Policy(
+            policy_id=GOLD_POLICY_ID,
+            plan_code="GOLD",
+            name="MediShield Gold Plan",
+            version="synthetic-v1",
         )
     )
 

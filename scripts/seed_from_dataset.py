@@ -17,11 +17,11 @@ from packages.eval.labels import LabelRecord
 from scripts.build_labels import DATASET_DIR, build_labels
 
 ROOT = Path(__file__).resolve().parents[1]
-POLICY_NAMESPACE = "medishield:dataset:policy:"
 HISTORY_NAMESPACE = "medishield:dataset:history:"
 SILVER_MEMBER_ID = "MS-SILVER-RETRIEVAL"
 SILVER_POLICY_NUMBER = "MED-SLV-RETRIEVAL"
-SILVER_POLICY_ID = uuid5(NAMESPACE_URL, f"{POLICY_NAMESPACE}{SILVER_POLICY_NUMBER}")
+GOLD_POLICY_ID = uuid5(NAMESPACE_URL, "medishield:plan:GOLD:synthetic-v1")
+SILVER_POLICY_ID = uuid5(NAMESPACE_URL, "medishield:plan:SILVER:synthetic-v1")
 
 
 def _date(value: str | None) -> date | None:
@@ -79,16 +79,18 @@ def seed_dataset(session: Session, test_user_password: str) -> None:
             if label.doc_type not in documents or not label.doc_id.endswith("_dup"):
                 documents[label.doc_type] = label
 
-    policies_by_number: dict[str, dict[str, Any]] = {}
-    members: list[dict[str, Any]] = []
-    for cluster in clusters:
-        policy_number = cluster["policy"]
-        policy_id = uuid5(NAMESPACE_URL, f"{POLICY_NAMESPACE}{policy_number}")
-        policies_by_number[policy_number] = {
-            "policy_id": policy_id,
+    policies_by_number: dict[str, dict[str, Any]] = {
+        "GOLD": {
+            "policy_id": GOLD_POLICY_ID,
+            "plan_code": "GOLD",
             "name": "MediShield Gold Plan",
             "version": "synthetic-v1",
         }
+    }
+    members: list[dict[str, Any]] = []
+    for cluster in clusters:
+        policy_number = cluster["policy"]
+        policy_id = GOLD_POLICY_ID
         id_label = labels_by_cluster[cluster["cluster_id"]][DocType.ID_DOCUMENT]
         members.append(
             {
@@ -102,8 +104,9 @@ def seed_dataset(session: Session, test_user_password: str) -> None:
             }
         )
 
-    policies_by_number[SILVER_POLICY_NUMBER] = {
+    policies_by_number["SILVER"] = {
         "policy_id": SILVER_POLICY_ID,
+        "plan_code": "SILVER",
         "name": "MediShield Silver Plan",
         "version": "synthetic-v1",
     }
@@ -123,7 +126,11 @@ def seed_dataset(session: Session, test_user_password: str) -> None:
     session.execute(
         policy_insert.on_conflict_do_update(
             index_elements=[Policy.policy_id],
-            set_={"name": policy_insert.excluded.name, "version": policy_insert.excluded.version},
+            set_={
+                "plan_code": policy_insert.excluded.plan_code,
+                "name": policy_insert.excluded.name,
+                "version": policy_insert.excluded.version,
+            },
         )
     )
     member_insert = insert(Member).values(members)

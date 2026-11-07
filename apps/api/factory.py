@@ -13,6 +13,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from apps.api.routers.cases import router as cases_router
 from apps.api.routers.health import router as health_router
+from apps.api.routers.policies import router as policies_router
 from apps.api.settings import ApiSettings
 from packages.core.storage import S3Storage
 
@@ -23,6 +24,7 @@ def create_app(
     engine: Engine | None = None,
     storage: S3Storage | None = None,
     pipeline_task=None,
+    policy_task=None,
 ) -> FastAPI:
     api_settings = settings or ApiSettings()
     owns_engine = engine is None
@@ -47,15 +49,18 @@ def create_app(
     app.state.settings = api_settings
     app.state.engine = db_engine
     app.state.storage = object_storage
-    if pipeline_task is None:
+    if pipeline_task is None or policy_task is None:
         from apps.worker.celery_app import configure_celery
-        from apps.worker.tasks import run_pipeline
+        from apps.worker.tasks import ingest_policy, run_pipeline
 
         configure_celery(api_settings.redis_url, api_settings.redis_password.get_secret_value())
-        pipeline_task = run_pipeline
+        pipeline_task = pipeline_task or run_pipeline
+        policy_task = policy_task or ingest_policy
     app.state.pipeline_task = pipeline_task
+    app.state.policy_task = policy_task
     app.include_router(health_router)
     app.include_router(cases_router)
+    app.include_router(policies_router)
 
     @app.middleware("http")
     async def request_id_middleware(request: Request, call_next):

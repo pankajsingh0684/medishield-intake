@@ -24,7 +24,7 @@ from apps.api.settings import ApiSettings
 from apps.worker import tasks as worker_tasks
 from apps.worker.celery_app import celery_app
 from packages.core.config import Settings
-from packages.core.db.models import AgentRun, AuditEvent, Case, Member
+from packages.core.db.models import AgentRun, AuditEvent, Case, Member, Policy
 from packages.core.enums import AgentStatus, CaseStatus, DecisionKind, DocType
 from packages.core.llm.gateway import build_gateway
 from packages.core.models import (
@@ -141,11 +141,16 @@ def client(
         def apply_async(self, **_: object) -> None:
             return None
 
+    class NoopPolicyTask:
+        def apply_async(self, **_: object) -> None:
+            return None
+
     app = create_app(
         api_settings,
         engine=test_engine,
         storage=test_storage,
         pipeline_task=NoopPipelineTask(),
+        policy_task=NoopPolicyTask(),
     )
     with TestClient(app) as test_client:
         yield test_client
@@ -311,6 +316,28 @@ def test_list_filters_paginates_and_case_detail_is_retrievable(
 def test_health_and_ready(client: TestClient) -> None:
     assert client.get("/health").json() == {"status": "ok"}
     assert client.get("/ready").json() == {"status": "ready"}
+
+
+def test_policy_upload_and_list(client: TestClient, test_engine) -> None:
+    content = (ROOT / "data" / "policies" / "medishield_gold_plan.pdf").read_bytes()
+    response = client.post(
+        "/api/v1/policies",
+        data={"version": "api-test-v1", "effective_from": "2024-01-01"},
+        files={"file": ("medishield_gold_plan.pdf", content, "application/pdf")},
+    )
+
+    assert response.status_code == 202
+    assert response.json()["plan_code"] == "GOLD"
+    assert response.json()["effective_from"] == "2024-01-01"
+    assert response.json()["effective_to"] is None
+    assert response.json()["ingest_status"] == "PENDING"
+    listed = client.get("/api/v1/policies")
+    assert listed.status_code == 200
+    assert listed.json()["total"] == 1
+    with Session(test_engine) as session:
+        policy = session.get(Policy, UUID(response.json()["policy_id"]))
+        assert policy is not None
+        assert policy.object_key.startswith("policies/gold/api-test-v1/")
 
 
 def test_storage_failure_returns_clean_error_without_case_row(

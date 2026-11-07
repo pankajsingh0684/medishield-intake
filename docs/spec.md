@@ -442,7 +442,7 @@ The generated forms mark absent values with explicit text such as `[DOB MISSING]
 
 1. Store PDF in MinIO; insert `policies` row with `ingest_status=PENDING`.
 2. Celery task `ingest_policy(policy_id)`: parse with Docling into a structured document (headings, tables, page numbers).
-3. Chunk by section: split on heading boundaries, target 400 to 800 tokens, 80-token overlap, keeping tables as single chunks where under 1,000 tokens. Each chunk carries `policy_id`, `version`, `section_path`, `page`, `effective_from/to`, `chunk_type` (`coverage`, `exclusion`, `definition`, `schedule`, `other`) assigned by a lightweight classifier prompt.
+3. Chunk by section: split on heading boundaries, target 400 to 800 tokens, 80-token overlap, keeping tables as single chunks where under 1,000 tokens. Each chunk carries `policy_id`, `version`, `section_path`, `page`, `effective_from/to`, `chunk_type` (`coverage`, `exclusion`, `definition`, `schedule`, `other`) assigned by rules on the section heading (v0.2.8: no LLM call, so ingestion needs no fixtures). Sparse vectors are hashed token counts with the Qdrant IDF modifier. A null `effective_to` means open-ended. Chunk size: 400-800 tokens is a target for long sections; text chunks under 60 tokens are merged into a compatible adjacent chunk in the same top-level section (v0.2.9), while whole tables and singleton sections may stay small.
 4. Embed with `EMBEDDING_MODEL` and upsert into Qdrant collection `policy_chunks` (cosine). Set status `READY` and `chunk_count`.
 
 **Step 0: deterministic exclusion lookup.** Both sample policies contain a machine-readable table of excluded CPT ranges (section 4.1 of each policy). Ingestion parses it into `policy_exclusions` rows (`range_start`, `range_end`, `category`, `basis`, `page`) alongside the vector chunks. Before any retrieval, each CPT code is checked against the member policy's ranges: a hit returns `covered=false`, cites the matching table row, and has confidence 0.95, with no LLM call. Ranges include alphanumeric codes (`0001T-0099T`, `V2100-V2799`, `D0100-D9999`), so compare by prefix then number. A code not in the table is covered only if retrieval finds a matching inclusion clause (for example surgical services or diagnostic imaging); if none is found the result is `covered=None`, which escalates.
@@ -718,6 +718,12 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.9**
+- 7.6 chunking: 400-800 is a target; sub-60-token text chunks are merged; tables stay whole.
+
+**v0.2.8**
+- 7.6 ingestion: rule-based `chunk_type`, hashed sparse vectors, null `effective_to` is open-ended.
 
 **v0.2.7**
 - 6.2: error handling stated (agent errors continue to join and escalate under R1; `mark_failed` only for infrastructure failures).

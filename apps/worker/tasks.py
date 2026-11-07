@@ -8,9 +8,17 @@ from sqlalchemy.orm import Session
 
 from apps.worker.celery_app import celery_app
 from apps.worker.runtime import WorkerRuntime, build_runtime
+from packages.core.clients import create_qdrant_client
+from packages.core.config import Settings
+from packages.core.db.models import Policy
 from packages.core.db.repositories import AuditRepo, CaseRepo
+from packages.core.db.session import create_database_engine
 from packages.core.enums import CaseStatus
+from packages.core.storage import S3Storage
 from packages.graph.builder import build_graph, initial_state
+from packages.rag.embeddings import LocalSentenceTransformerEmbedder
+from packages.rag.ingest import ingest_policy_document
+from packages.rag.store import QdrantPolicyStore
 
 logger = logging.getLogger(__name__)
 runtime_factory = build_runtime
@@ -77,3 +85,41 @@ def dead_letter_pipeline(case_id: str, pipeline_run: str, reason: str) -> None:
         _mark_failed(runtime, UUID(case_id), UUID(pipeline_run), reason)
     finally:
         runtime.close()
+
+
+@celery_app.task(name="apps.worker.tasks.ingest_policy", acks_late=True)
+def ingest_policy(policy_id: str) -> dict[str, str | int]:
+    settings = Settings()
+    engine = create_database_engine(settings.database_url)
+    storage = S3Storage(
+        endpoint_url=settings.s3_endpoint,
+        access_key=settings.s3_access_key.get_secret_value(),
+        secret_key=settings.s3_secret_key.get_secret_value(),
+        bucket=settings.s3_bucket,
+    )
+    client = create_qdrant_client(settings)
+    try:
+        with Session(engine) as session, session.begin():
+            policy = session.get(Policy, UUID(policy_id))
+            if policy is None:
+                raise ValueError(f"Unknown policy {policy_id}")
+            content = storage.get(policy.object_key or "")
+            count = ingest_policy_document(
+                session,
+                UUID(policy_id),
+                content,
+                QdrantPolicyStore(client),
+                LocalSentenceTransformerEmbedder(settings.embedding_model),
+            )
+        return {"policy_id": policy_id, "status": "READY", "chunk_count": count}
+    except Exception:
+        with Session(engine) as session, session.begin():
+            policy = session.get(Policy, UUID(policy_id))
+            if policy is not None:
+                policy.ingest_status = "FAILED"
+                policy.chunk_count = 0
+        raise
+    finally:
+        client.close()
+        storage.close()
+        engine.dispose()

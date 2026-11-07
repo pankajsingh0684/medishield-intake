@@ -213,6 +213,7 @@ class Policy(Base):
     __tablename__ = "policies"
 
     policy_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), primary_key=True)
+    plan_code: Mapped[str | None] = mapped_column(Text)
     name: Mapped[str | None] = mapped_column(Text)
     version: Mapped[str | None] = mapped_column(Text)
     effective_from: Mapped[date | None] = mapped_column(Date)

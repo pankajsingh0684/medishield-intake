@@ -102,7 +102,7 @@ def database_engine():
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "5b20261101"
+    assert version == "20261107_plan_code"
 
     with engine.begin() as connection:
         connection.exec_driver_sql("DROP SCHEMA public CASCADE")
@@ -114,16 +114,16 @@ def database_engine():
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "5b20261101"
+    assert version == "20261107_plan_code"
 
     command.downgrade(alembic_config, "-1")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "762e1c97c741"
+    assert version == "5b20261101"
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "5b20261101"
+    assert version == "20261107_plan_code"
     yield engine
     engine.dispose()
 
@@ -144,6 +144,10 @@ def test_migrations_create_all_spec_tables_and_step_5b_columns(database_engine) 
         "users",
         "alembic_version",
     } <= table_names
+    policies_columns = {
+        column["name"] for column in inspect(database_engine).get_columns("policies")
+    }
+    assert "plan_code" in policies_columns
     cases_columns = {column["name"] for column in inspect(database_engine).get_columns("cases")}
     history_columns = {
         column["name"] for column in inspect(database_engine).get_columns("claim_history")

@@ -1,6 +1,6 @@
 """HTTP response schemas for case ingestion and retrieval."""
 
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -22,4 +22,22 @@ class CaseResponse(BaseModel):
 
 class CaseListResponse(BaseModel):
     items: list[CaseResponse]
+    total: int
+
+
+class PolicyResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    policy_id: UUID
+    plan_code: str | None
+    name: str | None
+    version: str | None
+    effective_from: date | None
+    effective_to: date | None
+    ingest_status: str | None
+    chunk_count: int | None
+
+
+class PolicyListResponse(BaseModel):
+    items: list[PolicyResponse]
     total: int
