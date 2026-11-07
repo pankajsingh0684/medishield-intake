@@ -47,13 +47,18 @@ def _mark_failed(runtime: WorkerRuntime, case_id: UUID, pipeline_run: UUID, reas
     acks_late=True,
     reject_on_worker_lost=True,
 )
-def run_pipeline(self: Task, case_id: str, pipeline_run: str | None = None) -> dict[str, str]:
+def run_pipeline(
+    self: Task,
+    case_id: str,
+    pipeline_run: str | None = None,
+    fixed_doc_type: str | None = None,
+) -> dict[str, str]:
     case_uuid = UUID(case_id)
     pipeline_uuid = UUID(pipeline_run) if pipeline_run else uuid4()
     runtime = runtime_factory()
     try:
         result = build_graph(runtime.graph).invoke(
-            initial_state(str(case_uuid), str(pipeline_uuid))
+            initial_state(str(case_uuid), str(pipeline_uuid), fixed_doc_type)
         )
         return {
             "case_id": str(case_uuid),
@@ -62,11 +67,14 @@ def run_pipeline(self: Task, case_id: str, pipeline_run: str | None = None) -> d
         }
     except Exception as error:
         if self.request.retries < self.max_retries:
-            raise self.retry(
-                exc=error,
-                args=[str(case_uuid), str(pipeline_uuid)],
-                countdown=2**self.request.retries,
-            )
+            retry_options = {
+                "exc": error,
+                "args": [str(case_uuid), str(pipeline_uuid)],
+                "countdown": 2**self.request.retries,
+            }
+            if fixed_doc_type:
+                retry_options["kwargs"] = {"fixed_doc_type": fixed_doc_type}
+            raise self.retry(**retry_options)
         logger.exception("Pipeline exhausted retries for case %s", case_uuid)
         _mark_failed(runtime, case_uuid, pipeline_uuid, type(error).__name__)
         return {

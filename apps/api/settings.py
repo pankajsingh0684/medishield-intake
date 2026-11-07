@@ -27,6 +27,7 @@ class ApiSettings(EnvFileSettings):
     s3_bucket: str
     qdrant_url: str
     qdrant_api_key: SecretStr
+    minio_public_url: str = "http://localhost:9000"
     jwt_secret: SecretStr
     seed_test_user_password: SecretStr
     groq_api_key: SecretStr | None = None

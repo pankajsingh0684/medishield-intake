@@ -4,6 +4,7 @@ import operator
 from datetime import datetime
 from typing import Annotated, TypedDict
 
+from packages.core.enums import DocType
 from packages.core.models import (
     AuditEvent,
     ClaimsResult,
@@ -20,6 +21,7 @@ from packages.core.models import (
 class GraphState(TypedDict, total=False):
     case_id: str
     pipeline_run: str
+    fixed_doc_type: DocType
     document: DocumentRef
     received_at: datetime
     content: bytes

@@ -27,8 +27,18 @@ from apps.api.settings import ApiSettings
 from apps.worker import tasks as worker_tasks
 from apps.worker.celery_app import celery_app
 from packages.core.config import Settings
-from packages.core.db.models import AgentRun, AuditEvent, Case, Decision, Member, Policy
-from packages.core.enums import AgentStatus, CaseStatus, DecisionKind, DocType, RiskLevel
+from packages.core.db.models import (
+    AgentRun,
+    AuditEvent,
+    Case,
+    Decision,
+    Member,
+    Override,
+    Policy,
+    User,
+)
+from packages.core.db.repositories import CaseRepo
+from packages.core.enums import AgentStatus, CaseStatus, DecisionKind, DocType, RiskLevel, UserRole
 from packages.core.llm.gateway import build_gateway
 from packages.core.models import (
     ClaimFields,
@@ -110,6 +120,7 @@ def test_storage(
 ) -> Iterator[S3Storage]:
     storage = S3Storage(
         endpoint_url=ingestion_settings.s3_endpoint,
+        public_endpoint_url="http://localhost:9000",
         access_key=ingestion_settings.s3_access_key,
         secret_key=ingestion_settings.s3_secret_key,
         bucket=ingestion_settings.s3_test_bucket,
@@ -131,6 +142,15 @@ def test_engine(ingestion_settings: IngestionTestSettings):
         "sqlalchemy.url", ingestion_settings.test_database_url.replace("%", "%%")
     )
     command.upgrade(config, "head")
+    with Session(engine) as session, session.begin():
+        session.add(
+            User(
+                user_id=uuid5(NAMESPACE_URL, "medishield:test-user:REVIEWER"),
+                email="reviewer@medishield.test",
+                password_hash="test-hash",
+                role=UserRole.REVIEWER,
+            )
+        )
     yield engine
     engine.dispose()
 
@@ -380,16 +400,17 @@ def _insert_graph_case(engine, *, doc_type: DocType = DocType.CLAIM_FORM) -> UUI
                 received_at=datetime(2025, 12, 15, tzinfo=UTC),
             )
         )
-        session.add(
-            Member(
-                member_id="PT_19116",
-                full_name="Christopher Harris I.",
-                date_of_birth=date(1954, 4, 25),
-                policy_number="MED-GLD-6770619",
-                status="ACTIVE",
-                id_doc_expiry=date(2030, 1, 1),
+        if session.get(Member, "PT_19116") is None:
+            session.add(
+                Member(
+                    member_id="PT_19116",
+                    full_name="Christopher Harris I.",
+                    date_of_birth=date(1954, 4, 25),
+                    policy_number="MED-GLD-6770619",
+                    status="ACTIVE",
+                    id_doc_expiry=date(2030, 1, 1),
+                )
             )
-        )
     return case_id
 
 
@@ -1315,6 +1336,397 @@ def test_claim_pt_16658_fraud_035_escalates_before_uncovered_rejection(test_engi
     trace = {step["rule"]: step for step in decision.rule_trace}
     assert trace["R2_FRAUD_SCORE"]["fired"] is True
     assert trace["R3_REJECTION"]["fired"] is True
+
+
+def _add_decision(engine, case_id: UUID, decision_kind: DecisionKind) -> UUID:
+    pipeline_run = uuid4()
+    now = datetime.now(UTC)
+    with Session(engine) as session, session.begin():
+        case = session.get(Case, case_id)
+        case.status = CaseStatus.DECIDED
+        session.add(
+            Decision(
+                case_id=case_id,
+                pipeline_run=pipeline_run,
+                decision=decision_kind,
+                confidence=Decimal("0.91"),
+                justification="Fixture decision.",
+                rule_trace=[{"rule": "R4_APPROVE", "fired": True, "inputs": {}}],
+                config_snapshot={"reference_date": "2026-11-07"},
+            )
+        )
+        session.add(
+            AgentRun(
+                case_id=case_id,
+                pipeline_run=pipeline_run,
+                agent="classifier",
+                agent_version="1.0.0",
+                status=AgentStatus.OK.value,
+                model="fixture-model",
+                prompt_version="v1",
+                confidence=Decimal("0.95"),
+                output={"agent": "classifier", "doc_type": DocType.CLAIM_FORM.value},
+                started_at=now,
+                finished_at=now,
+            )
+        )
+    return pipeline_run
+
+
+def test_case_detail_returns_latest_decision_overrides_and_signed_url(client, test_engine):
+    case_id = _insert_graph_case(test_engine)
+    _add_decision(test_engine, case_id, DecisionKind.ESCALATE)
+    latest_pipeline_run = _add_decision(test_engine, case_id, DecisionKind.APPROVE)
+    older = datetime(2026, 11, 6, tzinfo=UTC)
+    newer = datetime(2026, 11, 7, tzinfo=UTC)
+    with Session(test_engine) as session, session.begin():
+        session.add_all(
+            [
+                AuditEvent(
+                    case_id=case_id,
+                    ts=newer,
+                    actor_type="AGENT",
+                    actor="later",
+                    event_type="NODE_END",
+                    payload={"status": "OK"},
+                ),
+                AuditEvent(
+                    case_id=case_id,
+                    ts=newer,
+                    actor_type="AGENT",
+                    actor="later-2",
+                    event_type="NODE_END",
+                    payload={"status": "OK"},
+                ),
+                AuditEvent(
+                    case_id=case_id,
+                    ts=older,
+                    actor_type="AGENT",
+                    actor="earlier",
+                    event_type="NODE_START",
+                    payload={},
+                ),
+            ]
+        )
+
+    detail = client.get(f"/api/v1/cases/{case_id}")
+    audit = client.get(f"/api/v1/cases/{case_id}/audit")
+
+    assert detail.status_code == 200
+    body = detail.json()
+    assert body["original_decision"]["decision"] == DecisionKind.APPROVE.value
+    assert body["original_decision"]["pipeline_run"] == str(latest_pipeline_run)
+    assert body["effective_decision"] == DecisionKind.APPROVE.value
+    assert [run["agent"] for run in body["agent_runs"]] == ["classifier"]
+    assert body["agent_runs"][0]["pipeline_run"] == str(latest_pipeline_run)
+    assert "localhost:9000" in body["document_url"]
+    assert "X-Amz-Expires=600" in body["document_url"]
+    assert audit.status_code == 200
+    assert [event["actor"] for event in audit.json()] == ["earlier", "later", "later-2"]
+    assert all("document_url" not in event["payload"] for event in audit.json())
+
+
+def test_step_17_routes_are_in_openapi(client):
+    paths = client.get("/openapi.json").json()["paths"]
+
+    assert {
+        "/api/v1/cases/{case_id}",
+        "/api/v1/cases/{case_id}/audit",
+        "/api/v1/review-queue",
+        "/api/v1/cases/{case_id}/override",
+        "/api/v1/cases/{case_id}/reclassify",
+        "/api/v1/cases/{case_id}/rerun",
+    } <= set(paths)
+
+
+def test_review_queue_uses_latest_decision_and_excludes_overridden(client, test_engine):
+    needs_review = _insert_graph_case(test_engine)
+    failed = _insert_graph_case(test_engine)
+    escalated = _insert_graph_case(test_engine)
+    overridden = _insert_graph_case(test_engine)
+    superseded_escalate = _insert_graph_case(test_engine)
+    with Session(test_engine) as session, session.begin():
+        CaseRepo(session).update_status(needs_review, CaseStatus.NEEDS_REVIEW)
+        CaseRepo(session).update_status(failed, CaseStatus.FAILED)
+        CaseRepo(session).update_status(overridden, CaseStatus.OVERRIDDEN)
+    _add_decision(test_engine, escalated, DecisionKind.ESCALATE)
+    _add_decision(test_engine, overridden, DecisionKind.ESCALATE)
+    old_run = _add_decision(test_engine, superseded_escalate, DecisionKind.ESCALATE)
+    new_run = uuid4()
+    with Session(test_engine) as session, session.begin():
+        session.add(
+            Decision(
+                case_id=superseded_escalate,
+                pipeline_run=new_run,
+                decision=DecisionKind.APPROVE,
+                confidence=Decimal("0.9"),
+                justification="Latest run approved.",
+                rule_trace=[],
+                config_snapshot={},
+            )
+        )
+        session.add(
+            Override(
+                case_id=overridden,
+                user_id=uuid5(NAMESPACE_URL, "medishield:test-user:REVIEWER"),
+                from_decision=DecisionKind.ESCALATE,
+                to_decision=DecisionKind.APPROVE,
+                reason="Reviewed and approved.",
+            )
+        )
+    response = client.get("/api/v1/review-queue")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 3
+    assert {item["case_id"] for item in response.json()["items"]} == {
+        str(needs_review),
+        str(failed),
+        str(escalated),
+    }
+    assert str(old_run) != str(new_run)
+
+
+def test_override_returns_expected_404_409_and_422(client, test_engine):
+    unknown = uuid4()
+    assert (
+        client.post(
+            f"/api/v1/cases/{unknown}/override",
+            json={"to_decision": "APPROVE", "reason": "A sufficiently long reason"},
+        ).status_code
+        == 404
+    )
+
+    no_decision = _insert_graph_case(test_engine)
+    with Session(test_engine) as session, session.begin():
+        CaseRepo(session).update_status(no_decision, CaseStatus.NEEDS_REVIEW)
+    assert (
+        client.post(
+            f"/api/v1/cases/{no_decision}/override",
+            json={"to_decision": "APPROVE", "reason": "A sufficiently long reason"},
+        ).status_code
+        == 409
+    )
+
+    decided = _insert_graph_case(test_engine)
+    _add_decision(test_engine, decided, DecisionKind.ESCALATE)
+    short_reason = client.post(
+        f"/api/v1/cases/{decided}/override",
+        json={"to_decision": "APPROVE", "reason": "   short   "},
+    )
+    invalid_decision = client.post(
+        f"/api/v1/cases/{decided}/override",
+        json={"to_decision": "MAYBE", "reason": "A sufficiently long reason"},
+    )
+    assert short_reason.status_code == 422
+    assert invalid_decision.status_code == 422
+
+
+def test_repeated_overrides_keep_original_and_effective_latest(client, test_engine):
+    case_id = _insert_graph_case(test_engine)
+    _add_decision(test_engine, case_id, DecisionKind.ESCALATE)
+
+    first = client.post(
+        f"/api/v1/cases/{case_id}/override",
+        json={"to_decision": "APPROVE", "reason": "First review decision."},
+    )
+    second = client.post(
+        f"/api/v1/cases/{case_id}/override",
+        json={"to_decision": "REJECT", "reason": "Second review decision."},
+    )
+    detail = client.get(f"/api/v1/cases/{case_id}").json()
+
+    assert first.status_code == second.status_code == 200
+    assert detail["status"] == CaseStatus.OVERRIDDEN.value
+    assert detail["original_decision"]["decision"] == DecisionKind.ESCALATE.value
+    assert detail["effective_decision"] == DecisionKind.REJECT.value
+    assert [item["to_decision"] for item in detail["overrides"]] == ["APPROVE", "REJECT"]
+    with Session(test_engine) as session:
+        original = session.scalar(select(Decision).where(Decision.case_id == case_id))
+        overrides = list(session.scalars(select(Override).where(Override.case_id == case_id)))
+        events = list(
+            session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.case_id == case_id,
+                    AuditEvent.event_type == "OVERRIDE",
+                )
+            )
+        )
+    assert original is not None and original.decision == DecisionKind.ESCALATE
+    assert len(overrides) == len(events) == 2
+    assert all(event.actor_type == "USER" for event in events)
+
+
+def test_override_and_audit_event_roll_back_together(client, test_engine, monkeypatch):
+    from packages.core.db.repositories import AuditRepo
+
+    case_id = _insert_graph_case(test_engine)
+    _add_decision(test_engine, case_id, DecisionKind.ESCALATE)
+
+    def fail_append(*args, **kwargs):
+        raise RuntimeError("audit unavailable")
+
+    monkeypatch.setattr(AuditRepo, "append", fail_append)
+    safe_client = TestClient(client.app, raise_server_exceptions=False)
+    response = safe_client.post(
+        f"/api/v1/cases/{case_id}/override",
+        json={"to_decision": "APPROVE", "reason": "Rollback this override."},
+    )
+
+    assert response.status_code == 500
+    with Session(test_engine) as session:
+        case = session.get(Case, case_id)
+        overrides = list(session.scalars(select(Override).where(Override.case_id == case_id)))
+        original = session.scalar(select(Decision).where(Decision.case_id == case_id))
+        events = list(
+            session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.case_id == case_id,
+                    AuditEvent.event_type == "OVERRIDE",
+                )
+            )
+        )
+    assert case.status == CaseStatus.DECIDED
+    assert overrides == events == []
+    assert original.decision == DecisionKind.ESCALATE
+
+
+def test_rerun_rejects_processing_and_uses_new_pipeline_run(client, test_engine):
+    case_id = _insert_graph_case(test_engine)
+    with Session(test_engine) as session, session.begin():
+        CaseRepo(session).update_status(case_id, CaseStatus.PROCESSING)
+    assert client.post(f"/api/v1/cases/{case_id}/rerun").status_code == 409
+
+    with Session(test_engine) as session, session.begin():
+        CaseRepo(session).update_status(case_id, CaseStatus.DECIDED)
+    old_pipeline_run = _add_decision(test_engine, case_id, DecisionKind.APPROVE)
+
+    class CaptureTask:
+        def __init__(self):
+            self.kwargs = None
+
+        def apply_async(self, **kwargs):
+            self.kwargs = kwargs
+
+    task = CaptureTask()
+    client.app.state.pipeline_task = task
+    response = client.post(f"/api/v1/cases/{case_id}/rerun")
+
+    assert response.status_code == 202
+    new_pipeline_run = response.json()["pipeline_run"]
+    assert new_pipeline_run != str(old_pipeline_run)
+    assert task.kwargs["args"] == [str(case_id), new_pipeline_run]
+    with Session(test_engine) as session:
+        assert (
+            session.scalar(
+                select(func.count()).select_from(Decision).where(Decision.case_id == case_id)
+            )
+            == 1
+        )
+        assert (
+            session.scalar(
+                select(func.count()).select_from(AgentRun).where(AgentRun.case_id == case_id)
+            )
+            == 1
+        )
+
+
+def test_reclassify_records_types_and_forwards_fixed_type(client, test_engine):
+    case_id = _insert_graph_case(test_engine)
+    with Session(test_engine) as session, session.begin():
+        CaseRepo(session).update_status(case_id, CaseStatus.NEEDS_REVIEW)
+
+    class CaptureTask:
+        kwargs = None
+
+        def apply_async(self, **kwargs):
+            self.kwargs = kwargs
+
+    task = CaptureTask()
+    client.app.state.pipeline_task = task
+    response = client.post(
+        f"/api/v1/cases/{case_id}/reclassify",
+        json={"doc_type": "ID_DOCUMENT"},
+    )
+    assert response.status_code == 202
+    assert task.kwargs["kwargs"] == {"fixed_doc_type": "ID_DOCUMENT"}
+    event = client.get(f"/api/v1/cases/{case_id}/audit").json()[-1]
+    assert event["event_type"] == "RECLASSIFY"
+    assert event["actor_type"] == "USER"
+    assert event["payload"]["old_doc_type"] == DocType.CLAIM_FORM.value
+    assert event["payload"]["new_doc_type"] == DocType.ID_DOCUMENT.value
+    assert "document_url" not in event["payload"]
+    invalid = client.post(
+        f"/api/v1/cases/{case_id}/reclassify",
+        json={"doc_type": "NOT_A_DOCUMENT"},
+    )
+    assert invalid.status_code == 422
+
+
+def test_fixed_type_graph_path_bypasses_classifier(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    _, ocr_result, _, kyc_error = _graph_payloads()
+    kyc_result = kyc_error.model_copy(
+        update={"status": AgentStatus.OK, "confidence": 0.95, "error": None, "kyc_passed": True}
+    )
+    image = (DATASET_DIR / "id_documents" / "id_PT_15075.png").read_bytes()
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    classifier_calls: list[str] = []
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classifier_calls.append("called"),
+            "ocr": lambda _: ocr_result,
+            "kyc": lambda _: kyc_result,
+        },
+    )
+    state = build_graph(runtime).invoke(
+        initial_state(str(case_id), str(uuid4()), DocType.ID_DOCUMENT.value)
+    )
+
+    assert classifier_calls == []
+    assert state["classification"].doc_type == DocType.ID_DOCUMENT
+    assert state["decision"].decision == DecisionKind.APPROVE
+    with Session(test_engine) as session:
+        assert session.get(Case, case_id).doc_type == DocType.ID_DOCUMENT
+        classifier_runs = list(
+            session.scalars(
+                select(AgentRun).where(
+                    AgentRun.case_id == case_id,
+                    AgentRun.agent == "classifier",
+                )
+            )
+        )
+    assert classifier_runs == []
+
+
+def test_fixed_unknown_type_routes_to_review_without_decision(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    _, ocr_result, _, _ = _graph_payloads()
+    image = (DATASET_DIR / "unknown" / "unknown_utility_bill_001.png").read_bytes()
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {"classifier": lambda _: pytest.fail("fixed type must bypass classifier")},
+    )
+    runtime.agent_overrides["ocr"] = lambda _: ocr_result
+    state = build_graph(runtime).invoke(
+        initial_state(str(case_id), str(uuid4()), DocType.UNKNOWN.value)
+    )
+
+    assert state["terminal_status"] == CaseStatus.NEEDS_REVIEW.value
+    assert "decision" not in state
+    with Session(test_engine) as session:
+        assert session.scalar(select(Decision).where(Decision.case_id == case_id)) is None
 
 
 class RetryRequested(Exception):

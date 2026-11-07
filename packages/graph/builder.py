@@ -44,8 +44,14 @@ def build_graph(runtime: GraphRuntime):
     graph.add_edge(START, "load_document")
     graph.add_conditional_edges(
         "load_document",
-        lambda state: "mark_failed" if state.get("infrastructure_error") else "classify",
-        {"mark_failed": "mark_failed", "classify": "classify"},
+        lambda state: (
+            "mark_failed"
+            if state.get("infrastructure_error")
+            else "ocr"
+            if state.get("fixed_doc_type")
+            else "classify"
+        ),
+        {"mark_failed": "mark_failed", "ocr": "ocr", "classify": "classify"},
     )
     graph.add_conditional_edges(
         "classify",
@@ -68,6 +74,7 @@ def build_graph(runtime: GraphRuntime):
             if state.get("infrastructure_error")
             else "mark_needs_review"
             if state["ocr"].status == AgentStatus.ERROR
+            or state["classification"].doc_type.value == "UNKNOWN"
             else "route_specialists"
         ),
         {
@@ -110,5 +117,19 @@ def build_graph(runtime: GraphRuntime):
     return graph.compile()
 
 
-def initial_state(case_id: str, pipeline_run: str) -> GraphState:
-    return {"case_id": case_id, "pipeline_run": pipeline_run, "errors": [], "audit": []}
+def initial_state(
+    case_id: str,
+    pipeline_run: str,
+    fixed_doc_type: str | None = None,
+) -> GraphState:
+    state: GraphState = {
+        "case_id": case_id,
+        "pipeline_run": pipeline_run,
+        "errors": [],
+        "audit": [],
+    }
+    if fixed_doc_type is not None:
+        from packages.core.enums import DocType
+
+        state["fixed_doc_type"] = DocType(fixed_doc_type)
+    return state

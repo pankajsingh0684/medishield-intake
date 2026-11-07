@@ -18,15 +18,24 @@ class S3Storage:
         secret_key: str,
         bucket: str,
         region_name: str = "us-east-1",
+        public_endpoint_url: str | None = None,
     ) -> None:
         self.bucket = bucket
+        client_options = {
+            "aws_access_key_id": access_key,
+            "aws_secret_access_key": secret_key,
+            "region_name": region_name,
+            "config": Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+        }
         self._client = boto3.client(
             "s3",
             endpoint_url=endpoint_url,
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
-            region_name=region_name,
-            config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+            **client_options,
+        )
+        self._presign_client = (
+            self._client
+            if public_endpoint_url is None or public_endpoint_url == endpoint_url
+            else boto3.client("s3", endpoint_url=public_endpoint_url, **client_options)
         )
 
     def ensure_bucket(self) -> None:
@@ -74,5 +83,17 @@ class S3Storage:
         except (BotoCoreError, ClientError, KeyError) as error:
             raise StorageUnavailable("The stored document is unavailable") from error
 
+    def generate_presigned_url(self, key: str, *, expires_in: int = 600) -> str:
+        try:
+            return self._presign_client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": self.bucket, "Key": key},
+                ExpiresIn=expires_in,
+            )
+        except (BotoCoreError, ClientError) as error:
+            raise StorageUnavailable("A document URL could not be generated") from error
+
     def close(self) -> None:
         self._client.close()
+        if self._presign_client is not self._client:
+            self._presign_client.close()

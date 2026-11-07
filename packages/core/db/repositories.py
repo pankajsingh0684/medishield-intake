@@ -295,6 +295,6 @@ class AuditRepo:
         statement = (
             select(AuditEvent)
             .where(AuditEvent.case_id == case_id)
-            .order_by(AuditEvent.event_id.asc())
+            .order_by(AuditEvent.ts.asc(), AuditEvent.event_id.asc())
         )
         return list(self._session.scalars(statement))

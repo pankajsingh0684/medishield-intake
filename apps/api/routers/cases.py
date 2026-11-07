@@ -9,15 +9,27 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from sqlalchemy import String, cast, func, or_, select, text
 from sqlalchemy.orm import Session
 
-from apps.api.dependencies import get_session, get_settings, get_storage
-from apps.api.schemas import CaseListResponse, CaseResponse
+from apps.api.dependencies import current_user, get_session, get_settings, get_storage
+from apps.api.schemas import (
+    AuditEventResponse,
+    CaseDetailResponse,
+    CaseListResponse,
+    CaseResponse,
+    DecisionResponse,
+    OverrideRequest,
+    OverrideResponse,
+    PipelineActionResponse,
+    ReclassifyRequest,
+    ReviewQueueResponse,
+)
 from apps.api.settings import ApiSettings
-from packages.core.db.models import Case, Decision
-from packages.core.db.repositories import CaseRepo
+from packages.core.db.models import AgentRun, Case, Decision, Override, User
+from packages.core.db.repositories import AuditRepo, CaseRepo
 from packages.core.enums import CaseStatus, DecisionKind, DocType
 from packages.core.storage import S3Storage, StorageUnavailable
 
 router = APIRouter(prefix="/api/v1/cases", tags=["cases"])
+review_router = APIRouter(prefix="/api/v1", tags=["cases"])
 
 _MAGIC_TYPES: tuple[tuple[bytes, str, str], ...] = (
     (b"\xff\xd8\xff", "image/jpeg", "jpg"),
@@ -37,6 +49,66 @@ def _detect_media(content: bytes) -> tuple[str, str] | None:
 
 def _error(status_code: int, code: str, message: str) -> HTTPException:
     return HTTPException(status_code=status_code, detail={"code": code, "message": message})
+
+
+def _case_detail(
+    session: Session,
+    case: Case,
+    storage: S3Storage,
+) -> CaseDetailResponse:
+    runs = list(
+        session.scalars(
+            select(AgentRun)
+            .where(AgentRun.case_id == case.case_id)
+            .order_by(AgentRun.started_at.asc(), AgentRun.run_id.asc())
+        )
+    )
+    latest_run = max(
+        runs,
+        key=lambda run: (run.started_at, run.run_id),
+        default=None,
+    )
+    latest_run_id = latest_run.pipeline_run if latest_run is not None else None
+    latest_runs = [run for run in runs if run.pipeline_run == latest_run_id]
+    original_decision = None
+    if latest_run_id is not None:
+        original_decision_row = session.scalar(
+            select(Decision).where(
+                Decision.case_id == case.case_id,
+                Decision.pipeline_run == latest_run_id,
+            )
+        )
+        if original_decision_row is not None:
+            original_decision = DecisionResponse.model_validate(original_decision_row)
+    overrides = list(
+        session.scalars(
+            select(Override)
+            .where(Override.case_id == case.case_id)
+            .order_by(Override.created_at.asc(), Override.override_id.asc())
+        )
+    )
+    latest_override = overrides[-1] if overrides else None
+    effective_decision = (
+        latest_override.to_decision
+        if latest_override is not None
+        else original_decision.decision
+        if original_decision is not None
+        else None
+    )
+    try:
+        document_url = storage.generate_presigned_url(case.object_key, expires_in=600)
+    except StorageUnavailable as error:
+        raise _error(
+            503, "STORAGE_UNAVAILABLE", "The document URL could not be generated."
+        ) from error
+    return CaseDetailResponse(
+        **CaseResponse.model_validate(case).model_dump(),
+        agent_runs=latest_runs,
+        original_decision=original_decision,
+        overrides=overrides,
+        effective_decision=effective_decision,
+        document_url=document_url,
+    )
 
 
 @router.post("", response_model=CaseResponse, status_code=202)
@@ -170,12 +242,203 @@ def list_cases(
     )
 
 
-@router.get("/{case_id}", response_model=CaseResponse)
+@router.get("/{case_id}", response_model=CaseDetailResponse)
 def get_case(
     case_id: UUID,
     session: Annotated[Session, Depends(get_session)],
-) -> CaseResponse:
+    storage: Annotated[S3Storage, Depends(get_storage)],
+) -> CaseDetailResponse:
     case = CaseRepo(session).get(case_id)
     if case is None:
         raise _error(404, "CASE_NOT_FOUND", "The requested case was not found.")
-    return CaseResponse.model_validate(case)
+    return _case_detail(session, case, storage)
+
+
+@router.get("/{case_id}/audit", response_model=list[AuditEventResponse])
+def get_case_audit(
+    case_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+) -> list[AuditEventResponse]:
+    if CaseRepo(session).get(case_id) is None:
+        raise _error(404, "CASE_NOT_FOUND", "The requested case was not found.")
+    return [
+        AuditEventResponse.model_validate(event) for event in AuditRepo(session).for_case(case_id)
+    ]
+
+
+@review_router.get("/review-queue", response_model=ReviewQueueResponse)
+def get_review_queue(
+    session: Annotated[Session, Depends(get_session)],
+    storage: Annotated[S3Storage, Depends(get_storage)],
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=100),
+) -> ReviewQueueResponse:
+    latest_decisions = select(
+        Decision.case_id.label("case_id"),
+        Decision.decision.label("decision"),
+        func.row_number()
+        .over(
+            partition_by=Decision.case_id,
+            order_by=(Decision.created_at.desc(), Decision.decision_id.desc()),
+        )
+        .label("position"),
+    ).subquery()
+    has_override = select(Override.override_id).where(Override.case_id == Case.case_id).exists()
+    queue_filter = or_(
+        Case.status.in_([CaseStatus.NEEDS_REVIEW, CaseStatus.FAILED]),
+        (latest_decisions.c.position == 1)
+        & (latest_decisions.c.decision == DecisionKind.ESCALATE)
+        & ~has_override,
+    )
+    total = (
+        session.scalar(
+            select(func.count())
+            .select_from(Case)
+            .outerjoin(
+                latest_decisions,
+                (latest_decisions.c.case_id == Case.case_id) & (latest_decisions.c.position == 1),
+            )
+            .where(queue_filter)
+        )
+        or 0
+    )
+    cases = list(
+        session.scalars(
+            select(Case)
+            .outerjoin(
+                latest_decisions,
+                (latest_decisions.c.case_id == Case.case_id) & (latest_decisions.c.position == 1),
+            )
+            .where(queue_filter)
+            .order_by(Case.created_at.desc(), Case.case_id.desc())
+            .limit(page_size)
+            .offset((page - 1) * page_size)
+        )
+    )
+    return ReviewQueueResponse(
+        items=[_case_detail(session, case, storage) for case in cases],
+        total=total,
+    )
+
+
+@router.post("/{case_id}/override", response_model=OverrideResponse)
+def override_case(
+    case_id: UUID,
+    payload: OverrideRequest,
+    request: Request,
+    session: Annotated[Session, Depends(get_session)],
+    user: Annotated[User, Depends(current_user)],
+) -> OverrideResponse:
+    with session.begin():
+        case = CaseRepo(session).get(case_id)
+        if case is None:
+            raise _error(404, "CASE_NOT_FOUND", "The requested case was not found.")
+        latest_decision = session.scalar(
+            select(Decision)
+            .where(Decision.case_id == case_id)
+            .order_by(Decision.created_at.desc(), Decision.decision_id.desc())
+        )
+        if latest_decision is None:
+            raise _error(409, "DECISION_NOT_AVAILABLE", "A decision is required before override.")
+        override = Override(
+            case_id=case_id,
+            user_id=user.user_id,
+            from_decision=latest_decision.decision,
+            to_decision=payload.to_decision,
+            reason=payload.reason,
+        )
+        session.add(override)
+        session.flush()
+        case.status = CaseStatus.OVERRIDDEN
+        AuditRepo(session).append(
+            case_id=case_id,
+            actor_type="USER",
+            actor=str(user.user_id),
+            event_type="OVERRIDE",
+            payload={
+                "override_id": str(override.override_id),
+                "from_decision": latest_decision.decision.value,
+                "to_decision": payload.to_decision.value,
+                "reason": payload.reason,
+            },
+        )
+        response = OverrideResponse.model_validate(override)
+    return response
+
+
+@router.post("/{case_id}/rerun", response_model=PipelineActionResponse, status_code=202)
+def rerun_case(
+    case_id: UUID,
+    request: Request,
+    session: Annotated[Session, Depends(get_session)],
+    user: Annotated[User, Depends(current_user)],
+) -> PipelineActionResponse:
+    with session.begin():
+        case = CaseRepo(session).get(case_id)
+        if case is None:
+            raise _error(404, "CASE_NOT_FOUND", "The requested case was not found.")
+        if case.status in {
+            CaseStatus.RECEIVED,
+            CaseStatus.CLASSIFIED,
+            CaseStatus.PROCESSING,
+            CaseStatus.FRAUD_CHECK,
+            CaseStatus.AGGREGATED,
+        }:
+            raise _error(409, "CASE_PROCESSING", "The case is still processing.")
+        pipeline_run = uuid4()
+        AuditRepo(session).append(
+            case_id=case_id,
+            actor_type="USER",
+            actor=str(user.user_id),
+            event_type="RERUN",
+            payload={"pipeline_run": str(pipeline_run)},
+        )
+    request.app.state.pipeline_task.apply_async(
+        args=[str(case_id), str(pipeline_run)], queue="pipeline"
+    )
+    return PipelineActionResponse(
+        case_id=case_id, pipeline_run=pipeline_run, status=CaseStatus.RECEIVED
+    )
+
+
+@router.post("/{case_id}/reclassify", response_model=PipelineActionResponse, status_code=202)
+def reclassify_case(
+    case_id: UUID,
+    payload: ReclassifyRequest,
+    request: Request,
+    session: Annotated[Session, Depends(get_session)],
+    user: Annotated[User, Depends(current_user)],
+) -> PipelineActionResponse:
+    with session.begin():
+        case = CaseRepo(session).get(case_id)
+        if case is None:
+            raise _error(404, "CASE_NOT_FOUND", "The requested case was not found.")
+        if case.status in {
+            CaseStatus.RECEIVED,
+            CaseStatus.CLASSIFIED,
+            CaseStatus.PROCESSING,
+            CaseStatus.FRAUD_CHECK,
+            CaseStatus.AGGREGATED,
+        }:
+            raise _error(409, "CASE_PROCESSING", "The case is still processing.")
+        old_doc_type = case.doc_type
+        pipeline_run = uuid4()
+        AuditRepo(session).append(
+            case_id=case_id,
+            actor_type="USER",
+            actor=str(user.user_id),
+            event_type="RECLASSIFY",
+            payload={
+                "old_doc_type": old_doc_type.value if old_doc_type else None,
+                "new_doc_type": payload.doc_type.value,
+                "pipeline_run": str(pipeline_run),
+            },
+        )
+    request.app.state.pipeline_task.apply_async(
+        args=[str(case_id), str(pipeline_run)],
+        kwargs={"fixed_doc_type": payload.doc_type.value},
+        queue="pipeline",
+    )
+    return PipelineActionResponse(
+        case_id=case_id, pipeline_run=pipeline_run, status=CaseStatus.RECEIVED
+    )

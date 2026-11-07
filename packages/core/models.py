@@ -171,5 +171,14 @@ class AuditEvent(StrictModel):
     ts: datetime
     actor_type: Literal["SYSTEM", "AGENT", "USER"]
     actor: str
-    event_type: Literal["NODE_START", "NODE_END", "DECISION", "OVERRIDE", "STATUS", "ERROR"]
+    event_type: Literal[
+        "NODE_START",
+        "NODE_END",
+        "DECISION",
+        "OVERRIDE",
+        "RECLASSIFY",
+        "RERUN",
+        "STATUS",
+        "ERROR",
+    ]
     payload: dict[str, JsonValue]

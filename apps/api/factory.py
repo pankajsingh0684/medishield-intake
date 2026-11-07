@@ -11,6 +11,7 @@ from sqlalchemy import Engine
 from sqlalchemy.engine import create_engine
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from apps.api.routers.cases import review_router
 from apps.api.routers.cases import router as cases_router
 from apps.api.routers.health import router as health_router
 from apps.api.routers.policies import router as policies_router
@@ -32,6 +33,7 @@ def create_app(
     db_engine = engine or create_engine(api_settings.database_url, pool_pre_ping=True)
     object_storage = storage or S3Storage(
         endpoint_url=api_settings.s3_endpoint,
+        public_endpoint_url=api_settings.minio_public_url,
         access_key=api_settings.s3_access_key.get_secret_value(),
         secret_key=api_settings.s3_secret_key.get_secret_value(),
         bucket=api_settings.s3_bucket,
@@ -60,6 +62,7 @@ def create_app(
     app.state.policy_task = policy_task
     app.include_router(health_router)
     app.include_router(cases_router)
+    app.include_router(review_router)
     app.include_router(policies_router)
 
     @app.middleware("http")

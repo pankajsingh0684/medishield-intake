@@ -380,7 +380,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         pipeline_run = UUID(state["pipeline_run"])
         try:
             _record_load_event(runtime, case_id, pipeline_run, "NODE_START", {})
-            with Session(runtime.engine) as session:
+            with Session(runtime.engine) as session, session.begin():
                 case = CaseRepo(session).get(case_id)
                 if case is None:
                     raise LookupError("Case does not exist")
@@ -392,6 +392,24 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
                     pages=case.page_count or rendered.page_count,
                 )
                 received_at = case.received_at
+                fixed_doc_type = state.get("fixed_doc_type")
+                fixed_classification = None
+                if fixed_doc_type is not None:
+                    CaseRepo(session).update_classification(case_id, fixed_doc_type)
+                    now = datetime.now(UTC)
+                    fixed_classification = Classification(
+                        **_envelope_values(
+                            "classifier",
+                            CLASSIFIER_VERSION,
+                            AgentStatus.OK,
+                            now,
+                            now,
+                            None,
+                            1.0,
+                        ),
+                        doc_type=fixed_doc_type,
+                        routing_tags=[],
+                    )
             _write_status(runtime, case_id, CaseStatus.PROCESSING, "load_document", {})
             _record_load_event(runtime, case_id, pipeline_run, "NODE_END", {"status": "OK"})
             return {
@@ -399,6 +417,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
                 "content": content,
                 "images": rendered.images,
                 "received_at": received_at,
+                **({"classification": fixed_classification} if fixed_classification else {}),
             }
         except Exception as error:  # noqa: BLE001
             try:
