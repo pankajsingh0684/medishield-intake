@@ -232,6 +232,26 @@ def _record_load_event(
         )
 
 
+def _record_graph_event(
+    runtime: GraphRuntime,
+    state: GraphState,
+    node: str,
+    event_type: str,
+    payload: dict[str, Any] | None = None,
+) -> None:
+    try:
+        with Session(runtime.engine) as session, session.begin():
+            AuditRepo(session).append(
+                case_id=UUID(state["case_id"]),
+                actor_type="AGENT",
+                actor=node,
+                event_type=event_type,
+                payload={"pipeline_run": state["pipeline_run"], **(payload or {})},
+            )
+    except Exception as error:
+        raise InfrastructureFailure(f"Could not persist {node} audit event") from error
+
+
 def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[str, Any]]]:
     timeout = runtime.settings.agent_timeout_s
 
@@ -423,11 +443,22 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
             return policy_node(state)
         return policy_node(state)
 
-    def join(_: GraphState) -> dict[str, Any]:
+    def join(state: GraphState) -> dict[str, Any]:
+        _record_graph_event(runtime, state, "join", "NODE_START")
+        _record_graph_event(runtime, state, "join", "NODE_END")
         return {}
 
     def route_specialists(state: GraphState) -> dict[str, Any]:
-        return {"routed_agents": sorted(route(state["classification"].doc_type))}
+        _record_graph_event(runtime, state, "route_specialists", "NODE_START")
+        routed_agents = sorted(route(state["classification"].doc_type))
+        _record_graph_event(
+            runtime,
+            state,
+            "route_specialists",
+            "NODE_END",
+            {"routed_agents": routed_agents},
+        )
+        return {"routed_agents": routed_agents}
 
     def fraud(state: GraphState) -> dict[str, Any]:
         if not ROUTING_TABLE[state["classification"].doc_type].fraud:
@@ -439,6 +470,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
 
     def mark_needs_review(state: GraphState) -> dict[str, Any]:
         case_id = UUID(state["case_id"])
+        _record_graph_event(runtime, state, "mark_needs_review", "NODE_START")
         _write_status(
             runtime,
             case_id,
@@ -446,10 +478,12 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
             "mark_needs_review",
             {"errors": state.get("errors", []), "reason": "pipeline requires review"},
         )
+        _record_graph_event(runtime, state, "mark_needs_review", "NODE_END")
         return {"terminal_status": CaseStatus.NEEDS_REVIEW.value}
 
     def mark_failed(state: GraphState) -> dict[str, Any]:
         case_id = UUID(state["case_id"])
+        _record_graph_event(runtime, state, "mark_failed", "NODE_START")
         _write_status(
             runtime,
             case_id,
@@ -457,9 +491,11 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
             "mark_failed",
             {"error": state.get("infrastructure_error", "graph failure")},
         )
+        _record_graph_event(runtime, state, "mark_failed", "NODE_END")
         return {"terminal_status": CaseStatus.FAILED.value}
 
     def aggregate(state: GraphState) -> dict[str, Any]:
+        _record_graph_event(runtime, state, "aggregate", "NODE_START")
         specialist_results = [
             state.get("kyc"),
             state.get("claims"),
@@ -492,6 +528,13 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
                 )
         except Exception as error:
             raise InfrastructureFailure("Could not persist aggregated case state") from error
+        _record_graph_event(
+            runtime,
+            state,
+            "aggregate",
+            "NODE_END",
+            {"status": terminal.value},
+        )
         return {"errors": errors, "terminal_status": terminal.value}
 
     return {

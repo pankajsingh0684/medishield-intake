@@ -75,27 +75,15 @@ def build_graph(runtime: GraphRuntime):
             "route_specialists": "route_specialists",
         },
     )
+    graph.add_edge("route_specialists", "kyc")
+    graph.add_edge("route_specialists", "claims")
+    graph.add_edge("claims", "policy")
+    graph.add_edge(["kyc", "policy"], "join")
     graph.add_conditional_edges(
-        "route_specialists",
-        lambda state: ["kyc", "claims"],
-        {"kyc": "kyc", "claims": "claims"},
+        "join",
+        lambda state: "mark_failed" if state.get("infrastructure_error") else "fraud",
+        {"mark_failed": "mark_failed", "fraud": "fraud"},
     )
-    graph.add_conditional_edges(
-        "kyc",
-        lambda state: "mark_failed" if state.get("infrastructure_error") else "join",
-        {"mark_failed": "mark_failed", "join": "join"},
-    )
-    graph.add_conditional_edges(
-        "claims",
-        lambda state: "mark_failed" if state.get("infrastructure_error") else "policy",
-        {"mark_failed": "mark_failed", "policy": "policy"},
-    )
-    graph.add_conditional_edges(
-        "policy",
-        lambda state: "mark_failed" if state.get("infrastructure_error") else "join",
-        {"mark_failed": "mark_failed", "join": "join"},
-    )
-    graph.add_edge("join", "fraud")
     graph.add_conditional_edges(
         "fraud",
         lambda state: "mark_failed" if state.get("infrastructure_error") else "orchestrator",
