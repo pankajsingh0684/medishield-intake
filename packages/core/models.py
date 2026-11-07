@@ -156,6 +156,10 @@ class Decision(Envelope):
     rule_trace: list[RuleStep]
 
 
+class JustificationDraft(StrictModel):
+    justification: str = Field(min_length=1, max_length=2000)
+
+
 class DocumentRef(StrictModel):
     object_key: str
     mime_type: str

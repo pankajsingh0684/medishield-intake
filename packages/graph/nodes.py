@@ -1,9 +1,11 @@
 """Graph node implementations and their shared runtime dependencies."""
 
+import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -14,19 +16,24 @@ from sqlalchemy.orm import Session
 from packages.agents.claims.agent import CLAIMS_VERSION, ClaimsAgent
 from packages.agents.classifier.agent import CLASSIFIER_VERSION, ClassifierAgent
 from packages.agents.fraud.agent import FRAUD_VERSION, FraudAgent
+from packages.agents.fraud.weights import DETECTOR_WEIGHTS
 from packages.agents.kyc.agent import KYC_VERSION, KycAgent
 from packages.agents.ocr.agent import OCR_VERSION, OCRAgent
 from packages.agents.policy.agent import POLICY_VERSION, PolicyAgent
 from packages.core.clients import create_qdrant_client
+from packages.core.db.models import Decision as DecisionRow
 from packages.core.db.repositories import (
     AuditRepo,
     CaseRepo,
     ClaimHistoryRepo,
+    DecisionRepo,
     MemberRepo,
     PolicyExclusionRepo,
 )
 from packages.core.documents import render_document
 from packages.core.enums import AgentStatus, CaseStatus, DecisionKind, DocType, RiskLevel
+from packages.core.events import EventPublisher, NoOpEventPublisher
+from packages.core.llm.prompts import PromptLoader
 from packages.core.llm.protocol import LLMGateway
 from packages.core.models import (
     ClaimFields,
@@ -35,11 +42,15 @@ from packages.core.models import (
     Decision,
     DocumentRef,
     FraudResult,
+    JustificationDraft,
     KycResult,
     OcrPayload,
     PolicyResult,
+    RuleStep,
 )
 from packages.core.storage import S3Storage
+from packages.decision.engine import decide
+from packages.decision.thresholds import Thresholds
 from packages.graph.routing import ROUTING_TABLE, route
 from packages.graph.state import GraphState
 from packages.graph.wrapper import InfrastructureFailure, instrument
@@ -51,6 +62,7 @@ from packages.rag.retrieve import (
 )
 
 logger = logging.getLogger(__name__)
+ORCHESTRATOR_VERSION = "1.0.0"
 
 
 @dataclass
@@ -62,6 +74,7 @@ class GraphRuntime:
     redis_client: Redis | None = None
     agent_overrides: dict[str, Callable[[GraphState], Any]] = field(default_factory=dict)
     retry_backoff_seconds: float = 1.0
+    event_publisher: EventPublisher = field(default_factory=NoOpEventPublisher)
 
 
 def _envelope_values(
@@ -235,14 +248,69 @@ def _error_fraud(start: datetime, finish: datetime, error: Exception) -> FraudRe
     )
 
 
-def _placeholder_orchestrator() -> Decision:
-    now = datetime.now(UTC)
+def _template_justification(
+    rule_trace: list[RuleStep],
+    state: GraphState | None = None,
+) -> str:
+    fired_rules = [step.rule for step in rule_trace if step.fired]
+    kyc_result = state.get("kyc") if state is not None else None
+    if kyc_result is None or kyc_result.status != AgentStatus.OK:
+        kyc_fact = "KYC unknown"
+    else:
+        kyc_fact = "KYC passed" if kyc_result.kyc_passed else "KYC failed"
+
+    policy_result = state.get("policy") if state is not None else None
+    if policy_result is None or policy_result.status != AgentStatus.OK:
+        coverage_fact = "covered unknown"
+    else:
+        coverage = (
+            "unknown"
+            if policy_result.covered is None
+            else "true"
+            if policy_result.covered
+            else "false"
+        )
+        coverage_fact = f"covered {coverage}"
+
+    fraud_result = state.get("fraud") if state is not None else None
+    if fraud_result is None or fraud_result.status != AgentStatus.OK:
+        fraud_fact = "fraud score unknown, risk level unknown"
+    else:
+        fraud_fact = (
+            f"fraud score {fraud_result.fraud_score:.2f}, "
+            f"risk level {fraud_result.risk_level.value}"
+        )
+
+    rule_fact = ", ".join(fired_rules) if fired_rules else "no rules"
+    return f"Rule trace fired: {rule_fact}. {kyc_fact}; {coverage_fact}; {fraud_fact}."
+
+
+def _error_orchestrator(start: datetime, finish: datetime, error: Exception) -> Decision:
+    trace = [
+        RuleStep(
+            rule="R1_AGENT_RELIABILITY",
+            fired=True,
+            inputs={"error_agents": ["orchestrator"], "error": type(error).__name__},
+        ),
+        RuleStep(rule="R2_FRAUD_SCORE", fired=False, inputs={"fraud_score": None}),
+        RuleStep(rule="R3_REJECTION", fired=False, inputs={"rejection_reasons": []}),
+        RuleStep(rule="R4_APPROVE", fired=False, inputs={"blocked_by": ["R1_AGENT_RELIABILITY"]}),
+    ]
     return Decision(
-        **_envelope_values("orchestrator", "0.1.0", AgentStatus.SKIPPED, now, now, None, 1.0),
+        **_envelope_values(
+            "orchestrator",
+            ORCHESTRATOR_VERSION,
+            AgentStatus.ERROR,
+            start,
+            finish,
+            None,
+            0.0,
+            type(error).__name__,
+        ),
         decision=DecisionKind.ESCALATE,
-        justification="Decision logic is not implemented in this pipeline step.",
+        justification=_template_justification(trace),
         agent_summaries={},
-        rule_trace=[],
+        rule_trace=trace,
     )
 
 
@@ -526,10 +594,61 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
     )
+
+    def orchestrator_call(state: GraphState) -> Decision:
+        started_at = datetime.now(UTC)
+        rule_decision, rule_trace, confidence = decide(
+            state, Thresholds.from_settings(runtime.settings)
+        )
+        model_name: str | None = getattr(runtime.settings, "llm_text_model", None)
+        try:
+            prompt = PromptLoader().load("orchestrator_justify", "v1")
+            model_name = prompt.resolve_model(runtime.settings)
+            trace_payload = [step.model_dump(mode="json") for step in rule_trace]
+            draft = prompt.invoke(
+                runtime.gateway,
+                runtime.settings,
+                [
+                    {
+                        "role": "user",
+                        "content": json.dumps({"rule_trace": trace_payload}, sort_keys=True),
+                    }
+                ],
+                None,
+                JustificationDraft,
+            )
+            justification = draft.justification
+        except Exception as error:  # noqa: BLE001
+            logger.warning("Orchestrator justification fallback: %s", type(error).__name__)
+            justification = _template_justification(rule_trace, state)
+
+        agent_summaries = {
+            name: f"{result.status.value}; confidence={result.confidence:.2f}"
+            for name in ("classification", "ocr", "kyc", "claims", "policy", "fraud")
+            if (result := state.get(name)) is not None and result.status != AgentStatus.SKIPPED
+        }
+        result = Decision(
+            **_envelope_values(
+                "orchestrator",
+                ORCHESTRATOR_VERSION,
+                AgentStatus.OK,
+                started_at,
+                datetime.now(UTC),
+                model_name,
+                confidence,
+            ),
+            decision=rule_decision,
+            justification=justification,
+            agent_summaries=agent_summaries,
+            rule_trace=rule_trace,
+        )
+        assert result.decision == rule_decision, "LLM justification must not alter the decision"
+        return result
+
     orchestrator_node = instrument(
         "orchestrator",
-        lambda state: _placeholder_orchestrator(),
-        lambda start, finish, error: _placeholder_orchestrator(),
+        orchestrator_call,
+        _error_orchestrator,
         engine=runtime.engine,
         redis_client=runtime.redis_client,
         timeout_seconds=timeout,
@@ -566,7 +685,11 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         return fraud_node(state)
 
     def orchestrator(state: GraphState) -> dict[str, Any]:
-        return orchestrator_node(state)
+        result = orchestrator_node(state)
+        return {
+            "decision": result["orchestrator"],
+            **{key: value for key, value in result.items() if key != "orchestrator"},
+        }
 
     def mark_needs_review(state: GraphState) -> dict[str, Any]:
         case_id = UUID(state["case_id"])
@@ -607,7 +730,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
             for item in specialist_results
             if item is not None and item.status == AgentStatus.ERROR
         ]
-        terminal = CaseStatus.NEEDS_REVIEW if errors else CaseStatus.AGGREGATED
+        terminal = CaseStatus.AGGREGATED
         case_id = UUID(state["case_id"])
         try:
             with Session(runtime.engine) as session, session.begin():
@@ -637,6 +760,71 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         )
         return {"errors": errors, "terminal_status": terminal.value}
 
+    def persist(state: GraphState) -> dict[str, Any]:
+        case_id = UUID(state["case_id"])
+        pipeline_run = UUID(state["pipeline_run"])
+        decision = state["decision"]
+        thresholds = Thresholds.from_settings(runtime.settings)
+        reference_date = state["received_at"].date().isoformat()
+        config_snapshot = {
+            "thresholds": thresholds.model_dump(mode="json"),
+            "weights": dict(DETECTOR_WEIGHTS),
+            "reference_date": reference_date,
+        }
+        try:
+            with Session(runtime.engine) as session, session.begin():
+                inserted = DecisionRepo(session).add_if_absent(
+                    DecisionRow(
+                        case_id=case_id,
+                        pipeline_run=pipeline_run,
+                        decision=decision.decision,
+                        confidence=Decimal(str(decision.confidence)),
+                        justification=decision.justification,
+                        rule_trace=[step.model_dump(mode="json") for step in decision.rule_trace],
+                        config_snapshot=config_snapshot,
+                    )
+                )
+                CaseRepo(session).update_status(case_id, CaseStatus.DECIDED)
+                AuditRepo(session).append(
+                    case_id=case_id,
+                    actor_type="AGENT",
+                    actor="orchestrator",
+                    event_type="STATUS",
+                    payload={"pipeline_run": str(pipeline_run), "status": CaseStatus.DECIDED.value},
+                )
+                if inserted:
+                    AuditRepo(session).append(
+                        case_id=case_id,
+                        actor_type="AGENT",
+                        actor="orchestrator",
+                        event_type="DECISION",
+                        payload={
+                            "pipeline_run": str(pipeline_run),
+                            "decision": decision.decision.value,
+                            "confidence": decision.confidence,
+                            "justification": decision.justification,
+                            "rule_trace": [
+                                step.model_dump(mode="json") for step in decision.rule_trace
+                            ],
+                            "config_snapshot": config_snapshot,
+                        },
+                    )
+        except Exception as error:
+            raise InfrastructureFailure("Could not persist decision") from error
+        if inserted:
+            try:
+                runtime.event_publisher.publish(
+                    "DECISION",
+                    {
+                        "case_id": str(case_id),
+                        "pipeline_run": str(pipeline_run),
+                        "decision": decision.decision.value,
+                    },
+                )
+            except Exception as error:  # noqa: BLE001
+                logger.warning("Could not publish decision event: %s", type(error).__name__)
+        return {"terminal_status": CaseStatus.DECIDED.value}
+
     return {
         "load_document": load_document,
         "classify": classify,
@@ -649,6 +837,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         "fraud": fraud,
         "orchestrator": orchestrator,
         "aggregate": aggregate,
+        "persist": persist,
         "mark_needs_review": mark_needs_review,
         "mark_failed": mark_failed,
     }

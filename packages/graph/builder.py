@@ -35,6 +35,7 @@ def build_graph(runtime: GraphRuntime):
         "fraud",
         "orchestrator",
         "aggregate",
+        "persist",
         "mark_needs_review",
         "mark_failed",
     ):
@@ -86,15 +87,24 @@ def build_graph(runtime: GraphRuntime):
     )
     graph.add_conditional_edges(
         "fraud",
+        lambda state: "mark_failed" if state.get("infrastructure_error") else "aggregate",
+        {"mark_failed": "mark_failed", "aggregate": "aggregate"},
+    )
+    graph.add_conditional_edges(
+        "aggregate",
         lambda state: "mark_failed" if state.get("infrastructure_error") else "orchestrator",
         {"mark_failed": "mark_failed", "orchestrator": "orchestrator"},
     )
     graph.add_conditional_edges(
         "orchestrator",
-        lambda state: "mark_failed" if state.get("infrastructure_error") else "aggregate",
-        {"mark_failed": "mark_failed", "aggregate": "aggregate"},
+        lambda state: "mark_failed" if state.get("infrastructure_error") else "persist",
+        {"mark_failed": "mark_failed", "persist": "persist"},
     )
-    graph.add_edge("aggregate", END)
+    graph.add_conditional_edges(
+        "persist",
+        lambda state: "mark_failed" if state.get("infrastructure_error") else END,
+        {"mark_failed": "mark_failed", END: END},
+    )
     graph.add_edge("mark_needs_review", END)
     graph.add_edge("mark_failed", END)
     return graph.compile()

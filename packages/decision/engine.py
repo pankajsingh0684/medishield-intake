@@ -105,6 +105,13 @@ def decide(
             rule="R1_AGENT_RELIABILITY",
             fired=r1_fired,
             inputs={
+                "applicable_agents": {
+                    name: {
+                        "status": result.status.value,
+                        "confidence": result.confidence,
+                    }
+                    for name, result in results.items()
+                },
                 "error_agents": error_agents,
                 "low_confidence_agents": low_confidence_agents,
                 "missing_agents": missing_agents,
@@ -113,9 +120,6 @@ def decide(
             },
         )
     ]
-    if r1_fired:
-        return DecisionKind.ESCALATE, trace, min(confidence, 0.59)
-
     fraud_result = results.get("fraud")
     fraud_score = fraud_result.fraud_score if isinstance(fraud_result, FraudResult) else None
     r2_fired = fraud_score is not None and fraud_score >= cfg.fraud_escalate
@@ -126,9 +130,6 @@ def decide(
             inputs={"fraud_score": fraud_score, "threshold": cfg.fraud_escalate},
         )
     )
-    if r2_fired:
-        return DecisionKind.ESCALATE, trace, confidence
-
     classification = state.get("classification")
     is_policy_amendment = (
         classification is not None and classification.doc_type == DocType.POLICY_AMENDMENT
@@ -138,11 +139,13 @@ def decide(
         DocType.PRESCRIPTION,
     )
     rejection_reasons: list[str] = []
+    rejection_sources: list[str] = []
     kyc_result = results.get("kyc")
     claims_result = results.get("claims")
 
     if isinstance(kyc_result, KycResult) and not kyc_result.kyc_passed:
         rejection_reasons.append("KYC_FAILED")
+        rejection_sources.append("kyc")
     if not is_policy_amendment:
         if (
             not is_supporting_document
@@ -150,37 +153,53 @@ def decide(
             and policy_result.covered is False
         ):
             rejection_reasons.append("NOT_COVERED")
+            rejection_sources.append("policy")
         if isinstance(claims_result, ClaimsResult) and not claims_result.schema_valid:
             rejection_reasons.append("SCHEMA_INVALID")
+            rejection_sources.append("claims")
 
     r3_fired = bool(rejection_reasons)
     trace.append(
         RuleStep(
             rule="R3_REJECTION",
             fired=r3_fired,
-            inputs={"rejection_reasons": rejection_reasons},
+            inputs={
+                "rejection_reasons": rejection_reasons,
+                "rejection_sources": rejection_sources,
+            },
         )
     )
-    if r3_fired:
-        if len(rejection_reasons) == 1:
-            confidence *= 0.9
-        return DecisionKind.REJECT, trace, confidence
-
     if is_policy_amendment:
+        amendment_fired = not (r1_fired or r2_fired or r3_fired)
         trace.append(
             RuleStep(
                 rule="POLICY_AMENDMENT_REVIEW",
-                fired=True,
-                inputs={"reason": "human confirmation required"},
+                fired=amendment_fired,
+                inputs={
+                    "reason": "human confirmation required",
+                    "blocked_by": [step.rule for step in trace if step.fired],
+                },
             )
         )
-        return DecisionKind.ESCALATE, trace, confidence
-
     trace.append(
         RuleStep(
             rule="R4_APPROVE",
-            fired=True,
-            inputs={"applicable_agent_count": len(results)},
+            fired=not (r1_fired or r2_fired or r3_fired or is_policy_amendment),
+            inputs={
+                "applicable_agent_count": len(results),
+                "blocked_by": [step.rule for step in trace if step.fired],
+            },
         )
     )
+
+    if r1_fired:
+        return DecisionKind.ESCALATE, trace, min(confidence, 0.59)
+    if r2_fired:
+        return DecisionKind.ESCALATE, trace, confidence
+    if r3_fired:
+        if len(rejection_sources) == 1:
+            confidence *= 0.9
+        return DecisionKind.REJECT, trace, confidence
+    if is_policy_amendment:
+        return DecisionKind.ESCALATE, trace, confidence
     return DecisionKind.APPROVE, trace, confidence

@@ -27,8 +27,8 @@ from apps.api.settings import ApiSettings
 from apps.worker import tasks as worker_tasks
 from apps.worker.celery_app import celery_app
 from packages.core.config import Settings
-from packages.core.db.models import AgentRun, AuditEvent, Case, Member, Policy
-from packages.core.enums import AgentStatus, CaseStatus, DecisionKind, DocType
+from packages.core.db.models import AgentRun, AuditEvent, Case, Decision, Member, Policy
+from packages.core.enums import AgentStatus, CaseStatus, DecisionKind, DocType, RiskLevel
 from packages.core.llm.gateway import build_gateway
 from packages.core.models import (
     ClaimFields,
@@ -472,6 +472,7 @@ def _graph_runtime(engine, storage, overrides) -> GraphRuntime:
         settings=SimpleNamespace(
             agent_timeout_s=2,
             threshold_classify_review=0.6,
+            threshold_agent_confidence=0.60,
             threshold_fraud_escalate=0.30,
             threshold_fraud_high=0.60,
             near_threshold_low=9500,
@@ -479,6 +480,7 @@ def _graph_runtime(engine, storage, overrides) -> GraphRuntime:
             date_conflict_days=30,
             readmission_days=30,
             llm_vision_model="test-vision",
+            llm_text_model="test-text",
             npi_luhn_strict=False,
             claim_amount_max=Decimal(1000000),
         ),
@@ -537,7 +539,7 @@ def test_graph_runs_real_fraud_agent_for_id_name_mismatch(test_engine):
     assert [item.type for item in state["fraud"].anomalies] == ["IDENTITY_MISMATCH"]
 
 
-def test_kyc_error_still_joins_claims_and_ends_needs_review(test_engine):
+def test_kyc_error_still_joins_claims_and_ends_decided(test_engine):
     case_id = _insert_graph_case(test_engine)
     classification, ocr, claims, kyc_error = _graph_payloads()
     image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
@@ -557,17 +559,22 @@ def test_kyc_error_still_joins_claims_and_ends_needs_review(test_engine):
     state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
 
     assert completed == ["claims"]
-    assert state["terminal_status"] == CaseStatus.NEEDS_REVIEW.value
+    assert state["terminal_status"] == CaseStatus.DECIDED.value
     with Session(test_engine) as session:
-        assert session.get(Case, case_id).status == CaseStatus.NEEDS_REVIEW
+        assert session.get(Case, case_id).status == CaseStatus.DECIDED
+        decision = session.scalar(select(Decision).where(Decision.case_id == case_id))
         runs = list(session.scalars(select(AgentRun).where(AgentRun.case_id == case_id)))
         events = list(session.scalars(select(AuditEvent).where(AuditEvent.case_id == case_id)))
+    assert decision is not None and decision.decision == DecisionKind.ESCALATE
+    assert decision.rule_trace[0]["rule"] == "R1_AGENT_RELIABILITY"
+    assert decision.justification.startswith("Rule trace fired:")
     run_statuses = {run.agent: run.status for run in runs}
     assert run_statuses["kyc"] == AgentStatus.ERROR.value
     assert run_statuses["claims"] == AgentStatus.OK.value
     assert run_statuses["policy"] == AgentStatus.ERROR.value
     assert run_statuses["fraud"] == AgentStatus.SKIPPED.value
-    assert run_statuses["orchestrator"] == AgentStatus.SKIPPED.value
+    assert run_statuses["orchestrator"] == AgentStatus.OK.value
+    assert any(event.event_type == "DECISION" for event in events)
     event_pairs = {(event.actor, event.event_type) for event in events}
     expected_nodes = {
         "load_document",
@@ -632,7 +639,7 @@ def test_fan_in_waits_for_routed_nodes_before_join_and_downstream(
     classification, ocr, claims, kyc_error = _graph_payloads()
     classification = classification.model_copy(update={"doc_type": doc_type})
     kyc_ok = kyc_error.model_copy(
-        update={"status": AgentStatus.OK, "error": None, "kyc_passed": True}
+        update={"status": AgentStatus.OK, "confidence": 0.95, "error": None, "kyc_passed": True}
     )
     image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
 
@@ -677,7 +684,7 @@ def test_fan_in_waits_for_routed_nodes_before_join_and_downstream(
             return original_join(state)
 
         nodes["join"] = observed_join
-        for name in ("fraud", "orchestrator", "aggregate"):
+        for name in ("fraud", "aggregate", "orchestrator", "persist"):
             original_node = nodes[name]
 
             def observed_node(state, node_name=name, node=original_node):
@@ -705,8 +712,17 @@ def test_fan_in_waits_for_routed_nodes_before_join_and_downstream(
                 )
             )
         assert policy_run is not None and policy_run.status == AgentStatus.SKIPPED.value
-    assert order.index("join") < order.index("fraud") < order.index("orchestrator")
-    assert state["terminal_status"] == CaseStatus.AGGREGATED.value
+    assert (
+        order.index("join")
+        < order.index("fraud")
+        < order.index("aggregate")
+        < order.index("orchestrator")
+        < order.index("persist")
+    )
+    assert state["terminal_status"] == CaseStatus.DECIDED.value
+    assert state["decision"].decision == DecisionKind.APPROVE
+    if doc_type in (DocType.DISCHARGE_SUMMARY, DocType.PRESCRIPTION):
+        assert state["policy"].status == AgentStatus.SKIPPED
 
 
 def test_stub_gateway_runs_policy_decision_from_fixture(
@@ -1017,6 +1033,8 @@ def test_upload_runs_eager_pipeline_with_stub_fixtures(
         if hasattr(api_settings, "agent_timeout_s")
         else 90,
         threshold_classify_review=0.6,
+        threshold_agent_confidence=0.60,
+        llm_text_model="test-text",
         threshold_fraud_escalate=0.30,
         threshold_fraud_high=0.60,
         near_threshold_low=9500,
@@ -1057,9 +1075,15 @@ def test_upload_runs_eager_pipeline_with_stub_fixtures(
         case = session.get(Case, case_id)
         runs = list(session.scalars(select(AgentRun).where(AgentRun.case_id == case_id)))
         events = list(session.scalars(select(AuditEvent).where(AuditEvent.case_id == case_id)))
-    assert case is not None and case.status == CaseStatus.AGGREGATED, [
+        decision = session.scalar(select(Decision).where(Decision.case_id == case_id))
+    assert case is not None and case.status == CaseStatus.DECIDED, [
         (run.agent, run.status, run.error) for run in runs
     ]
+    assert decision is not None
+    assert decision.rule_trace
+    assert decision.justification
+    assert decision.config_snapshot["reference_date"] == case.received_at.date().isoformat()
+    assert "thresholds" in decision.config_snapshot and "weights" in decision.config_snapshot
     assert {run.agent for run in runs} >= {"classifier", "ocr", "kyc", "claims", "policy"}
     assert any(event.event_type == "NODE_START" and event.actor == "classifier" for event in events)
     assert any(event.event_type == "NODE_END" and event.actor == "kyc" for event in events)
@@ -1125,13 +1149,172 @@ def test_pipeline_rerun_uses_new_pipeline_run_and_latest_status(
     second_pipeline = UUID(second_result["pipeline_run"])
 
     assert first_pipeline != second_pipeline
-    assert first_result["status"] == CaseStatus.AGGREGATED.value
+    assert first_result["status"] == CaseStatus.DECIDED.value
     assert second_result["status"] == CaseStatus.NEEDS_REVIEW.value
     with Session(test_engine) as session:
         case = session.get(Case, case_id)
         runs = list(session.scalars(select(AgentRun).where(AgentRun.case_id == case_id)))
+        decisions = list(session.scalars(select(Decision).where(Decision.case_id == case_id)))
     assert case is not None and case.status == CaseStatus.NEEDS_REVIEW
     assert {run.pipeline_run for run in runs} == {first_pipeline, second_pipeline}
+    assert len(decisions) == 1 and decisions[0].pipeline_run == first_pipeline
+
+
+def test_unknown_document_stops_for_review_without_a_decision(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    classification, _, _, _ = _graph_payloads()
+    unknown = classification.model_copy(
+        update={"doc_type": DocType.UNKNOWN, "routing_tags": ["NEEDS_REVIEW"]}
+    )
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {"classifier": lambda _: unknown},
+    )
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert state["terminal_status"] == CaseStatus.NEEDS_REVIEW.value
+    assert "decision" not in state
+    with Session(test_engine) as session:
+        assert session.scalar(select(Decision).where(Decision.case_id == case_id)) is None
+
+
+def test_decision_persistence_is_idempotent_per_pipeline_run(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    classification, ocr, claims, kyc_error = _graph_payloads()
+    kyc = kyc_error.model_copy(
+        update={"status": AgentStatus.OK, "confidence": 0.95, "error": None, "kyc_passed": True}
+    )
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    from packages.graph import nodes as graph_nodes_module
+
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classification,
+            "ocr": lambda _: ocr,
+            "kyc": lambda _: kyc,
+            "claims": lambda _: claims,
+            "policy": lambda _: graph_nodes_module._placeholder_policy(),
+        },
+    )
+    same_pipeline_run = str(uuid4())
+    new_pipeline_run = str(uuid4())
+    for pipeline_run in (same_pipeline_run, same_pipeline_run, new_pipeline_run):
+        build_graph(runtime).invoke(initial_state(str(case_id), pipeline_run))
+
+    with Session(test_engine) as session:
+        decisions = list(
+            session.scalars(
+                select(Decision).where(Decision.case_id == case_id).order_by(Decision.pipeline_run)
+            )
+        )
+
+    assert len(decisions) == 2
+    assert {str(decision.pipeline_run) for decision in decisions} == {
+        same_pipeline_run,
+        new_pipeline_run,
+    }
+
+
+def test_justification_response_cannot_change_deterministic_decision(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    classification, ocr, claims, kyc_error = _graph_payloads()
+    kyc = kyc_error.model_copy(
+        update={"status": AgentStatus.OK, "confidence": 0.95, "error": None, "kyc_passed": True}
+    )
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    class FlipDecisionGateway:
+        def complete_json(self, model, system, messages, images, schema, **kwargs):
+            assert kwargs["prompt_name"] == "orchestrator_justify"
+            assert set(json.loads(messages[0]["content"])) == {"rule_trace"}
+            return SimpleNamespace(
+                justification="The trace supports approval.", decision=DecisionKind.REJECT
+            )
+
+    from packages.graph import nodes as graph_nodes_module
+
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classification,
+            "ocr": lambda _: ocr,
+            "kyc": lambda _: kyc,
+            "claims": lambda _: claims,
+            "policy": lambda _: graph_nodes_module._placeholder_policy(),
+        },
+    )
+    runtime.gateway = FlipDecisionGateway()
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert state["decision"].decision == DecisionKind.APPROVE
+    with Session(test_engine) as session:
+        decision = session.scalar(select(Decision).where(Decision.case_id == case_id))
+    assert decision is not None and decision.decision == DecisionKind.APPROVE
+    assert decision.justification == "The trace supports approval."
+
+
+def test_claim_pt_16658_fraud_035_escalates_before_uncovered_rejection(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    classification, ocr, claims, kyc_error = _graph_payloads()
+    kyc = kyc_error.model_copy(
+        update={"status": AgentStatus.OK, "confidence": 0.95, "error": None, "kyc_passed": True}
+    )
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_16658.png").read_bytes()
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    from packages.graph import nodes as graph_nodes_module
+
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classification,
+            "ocr": lambda _: ocr,
+            "kyc": lambda _: kyc,
+            "claims": lambda _: claims,
+            "policy": lambda _: graph_nodes_module._placeholder_policy().model_copy(
+                update={"status": AgentStatus.OK, "confidence": 0.95, "covered": False}
+            ),
+            "fraud": lambda _: graph_nodes_module._placeholder_fraud().model_copy(
+                update={
+                    "status": AgentStatus.OK,
+                    "confidence": 0.95,
+                    "fraud_score": 0.35,
+                    "risk_level": RiskLevel.MEDIUM,
+                }
+            ),
+        },
+    )
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert state["decision"].decision == DecisionKind.ESCALATE
+    with Session(test_engine) as session:
+        decision = session.scalar(select(Decision).where(Decision.case_id == case_id))
+    assert decision is not None
+    trace = {step["rule"]: step for step in decision.rule_trace}
+    assert trace["R2_FRAUD_SCORE"]["fired"] is True
+    assert trace["R3_REJECTION"]["fired"] is True
 
 
 class RetryRequested(Exception):

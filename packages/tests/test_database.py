@@ -107,7 +107,7 @@ def database_engine():
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "20261107_plan_code"
+    assert version == "20261107_decision_idempotency"
 
     with engine.begin() as connection:
         connection.exec_driver_sql("DROP SCHEMA public CASCADE")
@@ -119,16 +119,16 @@ def database_engine():
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "20261107_plan_code"
+    assert version == "20261107_decision_idempotency"
 
     command.downgrade(alembic_config, "-1")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "5b20261101"
+    assert version == "20261107_plan_code"
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "20261107_plan_code"
+    assert version == "20261107_decision_idempotency"
     yield engine
     engine.dispose()
 
@@ -180,6 +180,10 @@ def test_migrations_create_all_spec_tables_and_step_5b_columns(database_engine) 
     assert any(
         constraint["name"] == "ck_claim_history_kind"
         for constraint in inspect(database_engine).get_check_constraints("claim_history")
+    )
+    assert any(
+        constraint["name"] == "uq_decisions_case_pipeline_run"
+        for constraint in inspect(database_engine).get_unique_constraints("decisions")
     )
 
 

@@ -95,7 +95,7 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 | [x] | 13 | Policy ingestion: Docling, chunking, Qdrant, `POST /policies`; use the existing Gold and Silver PDFs; load their "Excluded CPT Code Ranges" table into `policy_exclusions` | L | 2, 5b, 6 | Both policies `READY`; manual query returns relevant chunks; exclusion rows loaded |
 | [x] | 14 | Policy agent: step 0 deterministic CPT exclusion lookup, then hybrid retrieval, rerank, grounded answer, citation check | L | 10, 13 | Covered, uncovered, exclusion-table hit (confidence 0.95) and no-clause cases tested |
 | [x] | 15 | Fraud agent: ten detectors (adds identity mismatch, near-threshold, date conflict, readmission), noisy-OR scoring, 4 dp rounding, risk levels | M | 5c, 10, 11 | Boundary tests at 0.30 and 0.60; property test passes; each dataset fraud scenario fires its detector |
-| [ ] | 16 | Orchestrator node, justification text, full graph wiring | M | 4, 12, 14, 15 | Six scenario graph tests produce the expected decisions |
+| [x] | 16 | Orchestrator node, justification text, full graph wiring | M | 4, 12, 14, 15 | Six scenario graph tests produce the expected decisions |
 | [ ] | 17 | Audit, review queue, override, reclassify, rerun endpoints | M | 16 | Override keeps the original decision; tests pass |
 | [ ] | 18 | JWT auth, RBAC, rate limiting, PHI log redaction | M | 17 | Role matrix test passes (401 and 403 cases) |
 
@@ -221,6 +221,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | 2026-10-31 | Docs updated to v0.2 | Dataset review found 15 mismatches; added Steps 5a to 5c; decisions D1, D2 and the clock rule added |
 | 2026-11-07 | Steps 9b, 10, 11, 12, 13 | OCR precision, Claims agent, KYC agent, LangGraph wiring with Celery (two production bugs found by tests and fixed), policy ingestion (Gold 43 and Silver 34 chunks, 18 exclusion ranges each, `plan_code` migration, rule-based chunk_type, hashed sparse vectors). 324 tests pass. Spec v0.2.9 (chunk-size rule). Step 12 manual worker check still to do |
 | 2026-11-07 | Steps 14, 15 | Policy agent (hybrid retrieval, ADR-015: evidence gate by citation check, description-only queries; real cross-encoder scores were unusable as a gate) and fraud agent (ten detectors, noisy-OR, spec v0.2.11). 403 tests pass. All 6 fraud scenarios reach MEDIUM or higher on dev; all 13 clean dev claims score below 0.30. Known divergence: `claim_PT_16658` (uncovered procedure, $9,950 inside the near-threshold band) is labelled REJECT but the engine gives ESCALATE via R2; kept, to be listed in the Step 20 report |
+| 2026-11-07 | Step 16 | Orchestrator with pure `decide()`, template-fallback justification, `DECIDED` for every decision (specialist ERROR now ESCALATE/AGENT_ERROR), unique (case_id, pipeline_run) migration, reference date in config_snapshot, DECISION audit event, no-op publisher. 408 tests pass, 0 skipped. Spec v0.2.12. Verified at orchestrator level with overridden specialist outputs; real end-to-end on dataset cases comes with Step 19/20. Step 12 manual worker check still open |
 | | | |
 
 ## 11. Definition of done
@@ -231,7 +232,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 ## 12. Next action
 
-Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Steps 1 to 15 are done. Next: **Step 16 (Orchestrator node, justification text, full graph wiring)**. Earlier next-step notes, kept for the record:
+Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Steps 1 to 16 are done. Next: **Gate 2 check, then Step 17 (review, audit, override API)**. Earlier next-step notes, kept for the record:
 
 1. Replace the four docs in `docs/` with the v0.2 files.
 2. Run **Step 5a** (fix the generator, regenerate once, freeze). Use the Step 5a prompt in `prompts.md`.

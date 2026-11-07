@@ -338,7 +338,7 @@ join -> fraud -> aggregate -> orchestrate -> persist -> END
 any node error after retries -> mark_failed -> END   (status FAILED, routed to review)
 ```
 
-**Error handling (v0.2.7).** The wrapper turns an exhausted exception into an `ERROR` envelope, so an agent failure is data, not a crash. An `ERROR` in `classify` or `ocr` goes to `mark_needs_review` (nothing to decide on). An `ERROR` in a routed specialist (kyc, claims, policy) is recorded and the graph continues to `join`, so the decision engine applies rule R1 and escalates with a trace; until the Orchestrator exists (Step 12), such a case ends as `NEEDS_REVIEW`. `mark_failed` is only for infrastructure failures in the graph itself (the stored document or state cannot be loaded or persisted). Until Step 16, a case with no errors ends at `AGGREGATED`; Step 16 sets `DECIDED`.
+**Error handling (v0.2.7).** The wrapper turns an exhausted exception into an `ERROR` envelope, so an agent failure is data, not a crash. An `ERROR` in `classify` or `ocr` goes to `mark_needs_review` (nothing to decide on). An `ERROR` in a routed specialist (kyc, claims, policy) is recorded and the graph continues to `join`, so the decision engine applies rule R1 and escalates with a trace; since Step 16 such a case is persisted as an `ESCALATE` decision (`AGENT_ERROR`) with status `DECIDED`. `mark_failed` is only for infrastructure failures in the graph itself (the stored document or state cannot be loaded or persisted). Every persisted decision, including ESCALATE, sets `DECIDED`; decisions are unique per (`case_id`, `pipeline_run`) and the reference date is stored in `config_snapshot` (v0.2.12).
 
 Routing is a pure function `route(doc_type) -> set[AgentName]` backed by a table **[Default, OQ-05]**:
 
@@ -718,6 +718,9 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.12**
+- 6.2: specialist ERROR now ends as an ESCALATE decision with status DECIDED; decision idempotency key and reference date location stated.
 
 **v0.2.11**
 - 7.7: statistical detectors use strength 1 when fired, 0 otherwise.

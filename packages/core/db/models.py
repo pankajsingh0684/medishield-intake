@@ -18,6 +18,7 @@ from sqlalchemy import (
     String,
     Text,
     TypeDecorator,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -112,6 +113,9 @@ class AgentRun(Base):
 
 class Decision(Base):
     __tablename__ = "decisions"
+    __table_args__ = (
+        UniqueConstraint("case_id", "pipeline_run", name="uq_decisions_case_pipeline_run"),
+    )
 
     decision_id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True), primary_key=True, default=uuid4

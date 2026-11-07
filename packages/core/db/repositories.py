@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Select, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from packages.core.db.models import (
@@ -12,6 +13,7 @@ from packages.core.db.models import (
     AuditEvent,
     Case,
     ClaimHistory,
+    Decision,
     Member,
     Policy,
     PolicyExclusion,
@@ -109,6 +111,28 @@ class AgentRunRepo:
             setattr(existing, attribute, getattr(run, attribute))
         self._session.flush()
         return existing
+
+
+class DecisionRepo:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add_if_absent(self, decision: Decision) -> bool:
+        statement = (
+            pg_insert(Decision)
+            .values(
+                case_id=decision.case_id,
+                pipeline_run=decision.pipeline_run,
+                decision=decision.decision,
+                confidence=decision.confidence,
+                justification=decision.justification,
+                rule_trace=decision.rule_trace,
+                config_snapshot=decision.config_snapshot,
+            )
+            .on_conflict_do_nothing(constraint="uq_decisions_case_pipeline_run")
+            .returning(Decision.decision_id)
+        )
+        return self._session.execute(statement).scalar_one_or_none() is not None
 
 
 class MemberRepo:

@@ -248,8 +248,15 @@ def test_rule_precedence_fraud_escalation_beats_kyc_rejection() -> None:
     decision, trace, _ = decide(claim_state(kyc_passed=False, fraud_score=0.5), DEFAULT_THRESHOLDS)
 
     assert decision == DecisionKind.ESCALATE
-    assert [step.rule for step in trace] == ["R1_AGENT_RELIABILITY", "R2_FRAUD_SCORE"]
-    assert trace[-1].fired is True
+    assert [step.rule for step in trace] == [
+        "R1_AGENT_RELIABILITY",
+        "R2_FRAUD_SCORE",
+        "R3_REJECTION",
+        "R4_APPROVE",
+    ]
+    assert trace[1].fired is True
+    assert trace[2].fired is True
+    assert trace[3].fired is False
 
 
 def test_agent_error_precedes_fraud_and_rejection() -> None:
@@ -306,10 +313,24 @@ def test_skipped_agents_are_ignored_for_rules_and_confidence() -> None:
     state["policy"] = policy(False, 0.0, AgentStatus.SKIPPED)
     state["fraud"] = fraud(0.9, 0.0, AgentStatus.SKIPPED)
 
-    decision, _, confidence = decide(state, DEFAULT_THRESHOLDS)
+    decision, trace, confidence = decide(state, DEFAULT_THRESHOLDS)
 
     assert decision == DecisionKind.APPROVE
     assert confidence == 0.9
+    assert "kyc" not in trace[0].inputs["applicable_agents"]
+
+
+def test_confidence_is_minimum_of_applicable_agents() -> None:
+    state = id_state()
+    state["classification"] = classification(DocType.ID_DOCUMENT, confidence=0.95)
+    state["ocr"] = ocr(confidence=0.82)
+    state["kyc"] = kyc(confidence=0.71)
+    state["fraud"] = fraud(confidence=0.0, status=AgentStatus.SKIPPED)
+
+    decision, _, confidence = decide(state, DEFAULT_THRESHOLDS)
+
+    assert decision == DecisionKind.APPROVE
+    assert confidence == pytest.approx(0.71)
 
 
 def test_unrouted_outputs_may_be_absent_for_id_document() -> None:
@@ -397,8 +418,10 @@ def test_policy_amendment_escalates_for_human_confirmation() -> None:
     decision, trace, _ = decide(amendment_state(), DEFAULT_THRESHOLDS)
 
     assert decision == DecisionKind.ESCALATE
-    assert trace[-1].rule == "POLICY_AMENDMENT_REVIEW"
-    assert trace[-1].fired is True
+    assert trace[-2].rule == "POLICY_AMENDMENT_REVIEW"
+    assert trace[-2].fired is True
+    assert trace[-1].rule == "R4_APPROVE"
+    assert trace[-1].fired is False
 
 
 def test_policy_amendment_rejects_failed_kyc() -> None:
@@ -434,7 +457,7 @@ def test_invalid_prescription_schema_rejects_at_normal_confidence() -> None:
 
     assert decision == DecisionKind.REJECT
     assert confidence == pytest.approx(0.81)
-    assert trace[-1].inputs["rejection_reasons"] == ["SCHEMA_INVALID"]
+    assert trace[2].inputs["rejection_reasons"] == ["SCHEMA_INVALID"]
 
 
 @pytest.mark.parametrize("doc_type", list(DocType))
@@ -470,9 +493,10 @@ def test_rule_trace_records_evaluated_rules_and_trigger_inputs() -> None:
         "R1_AGENT_RELIABILITY",
         "R2_FRAUD_SCORE",
         "R3_REJECTION",
+        "R4_APPROVE",
     ]
-    assert [step.fired for step in trace] == [False, False, True]
-    assert trace[-1].inputs["rejection_reasons"] == ["NOT_COVERED"]
+    assert [step.fired for step in trace] == [False, False, True, False]
+    assert trace[2].inputs["rejection_reasons"] == ["NOT_COVERED"]
 
 
 @given(

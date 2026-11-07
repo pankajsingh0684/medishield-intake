@@ -17,6 +17,7 @@ from packages.core.db.repositories import (
     AuditRepo,
     CaseRepo,
     ClaimHistoryRepo,
+    DecisionRepo,
     MemberRepo,
     PolicyExclusionRepo,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "ClaimHistory",
     "ClaimHistoryRepo",
     "Decision",
+    "DecisionRepo",
     "Member",
     "MemberRepo",
     "Override",
