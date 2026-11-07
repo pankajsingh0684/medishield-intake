@@ -4,6 +4,8 @@ from collections.abc import Iterator
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
+from threading import Event
+from time import sleep
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
@@ -16,6 +18,7 @@ from PIL import Image
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import create_engine, func, select, update
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
@@ -509,17 +512,148 @@ def test_kyc_error_still_joins_claims_and_ends_needs_review(test_engine):
         assert session.get(Case, case_id).status == CaseStatus.NEEDS_REVIEW
         runs = list(session.scalars(select(AgentRun).where(AgentRun.case_id == case_id)))
         events = list(session.scalars(select(AuditEvent).where(AuditEvent.case_id == case_id)))
-    assert {run.agent for run in runs} >= {"classifier", "ocr", "kyc", "claims", "policy"}
-    assert {(event.actor, event.event_type) for event in events} >= {
-        ("classifier", "NODE_START"),
-        ("classifier", "NODE_END"),
-        ("ocr", "NODE_START"),
-        ("ocr", "NODE_END"),
-        ("kyc", "NODE_START"),
-        ("kyc", "NODE_END"),
-        ("claims", "NODE_START"),
-        ("claims", "NODE_END"),
+    run_statuses = {run.agent: run.status for run in runs}
+    assert run_statuses["kyc"] == AgentStatus.ERROR.value
+    assert run_statuses["claims"] == AgentStatus.OK.value
+    assert run_statuses["policy"] == AgentStatus.SKIPPED.value
+    assert run_statuses["fraud"] == AgentStatus.SKIPPED.value
+    assert run_statuses["orchestrator"] == AgentStatus.SKIPPED.value
+    event_pairs = {(event.actor, event.event_type) for event in events}
+    expected_nodes = {
+        "load_document",
+        "classifier",
+        "ocr",
+        "route_specialists",
+        "kyc",
+        "claims",
+        "policy",
+        "join",
+        "fraud",
+        "orchestrator",
+        "aggregate",
     }
+    assert event_pairs >= {
+        (node, event_type) for node in expected_nodes for event_type in ("NODE_START", "NODE_END")
+    }
+
+
+def test_ocr_error_routes_to_review_without_specialists(test_engine):
+    case_id = _insert_graph_case(test_engine)
+    classification, ocr, _, _ = _graph_payloads()
+    ocr_error = ocr.model_copy(
+        update={"status": AgentStatus.ERROR, "confidence": 0.0, "error": "fixture OCR error"}
+    )
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+
+    routed_calls: list[str] = []
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classification,
+            "ocr": lambda _: ocr_error,
+            "kyc": lambda _: routed_calls.append("kyc"),
+            "claims": lambda _: routed_calls.append("claims"),
+        },
+    )
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert state["terminal_status"] == CaseStatus.NEEDS_REVIEW.value
+    assert routed_calls == []
+    with Session(test_engine) as session:
+        assert session.get(Case, case_id).status == CaseStatus.NEEDS_REVIEW
+        agents = set(session.scalars(select(AgentRun.agent).where(AgentRun.case_id == case_id)))
+    assert agents == {"classifier", "ocr"}
+
+
+@pytest.mark.parametrize("doc_type", [DocType.CLAIM_FORM, DocType.DISCHARGE_SUMMARY])
+def test_fan_in_waits_for_routed_nodes_before_join_and_downstream(
+    test_engine, monkeypatch: pytest.MonkeyPatch, doc_type: DocType
+):
+    from packages.graph import builder as graph_builder_module
+    from packages.graph import nodes as graph_nodes_module
+
+    case_id = _insert_graph_case(test_engine, doc_type=doc_type)
+    classification, ocr, claims, kyc_error = _graph_payloads()
+    classification = classification.model_copy(update={"doc_type": doc_type})
+    kyc_ok = kyc_error.model_copy(
+        update={"status": AgentStatus.OK, "error": None, "kyc_passed": True}
+    )
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    order: list[str] = []
+    completed = Event()
+    original_policy = graph_nodes_module._placeholder_policy
+
+    def finish_policy():
+        order.append("policy")
+        return original_policy()
+
+    monkeypatch.setattr(graph_nodes_module, "_placeholder_policy", finish_policy)
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: classification,
+            "ocr": lambda _: ocr,
+            "kyc": lambda _: (sleep(0.03), order.append("kyc"), kyc_ok)[-1],
+            "claims": lambda _: (order.append("claims"), completed.set(), claims)[-1],
+        },
+    )
+    original_factory = graph_builder_module.build_nodes
+
+    def observed_factory(graph_runtime):
+        nodes = original_factory(graph_runtime)
+        original_join = nodes["join"]
+
+        def observed_join(state):
+            routed_required = {"kyc", "claims"}
+            assert routed_required <= set(order)
+            if doc_type == DocType.CLAIM_FORM:
+                assert "policy" in order
+            else:
+                assert "policy" not in route(doc_type)
+            order.append("join")
+            return original_join(state)
+
+        nodes["join"] = observed_join
+        for name in ("fraud", "orchestrator", "aggregate"):
+            original_node = nodes[name]
+
+            def observed_node(state, node_name=name, node=original_node):
+                assert "join" in order
+                order.append(node_name)
+                return node(state)
+
+            nodes[name] = observed_node
+        return nodes
+
+    monkeypatch.setattr(graph_builder_module, "build_nodes", observed_factory)
+    state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
+
+    assert completed.is_set()
+    assert order.index("join") > order.index("kyc")
+    assert order.index("join") > order.index("claims")
+    if doc_type == DocType.CLAIM_FORM:
+        assert order.index("join") > order.index("policy")
+    else:
+        with Session(test_engine) as session:
+            policy_run = session.scalar(
+                select(AgentRun).where(
+                    AgentRun.case_id == case_id,
+                    AgentRun.agent == "policy",
+                )
+            )
+        assert policy_run is not None and policy_run.status == AgentStatus.SKIPPED.value
+    assert order.index("join") < order.index("fraud") < order.index("orchestrator")
+    assert state["terminal_status"] == CaseStatus.AGGREGATED.value
 
 
 def test_classifier_error_routes_to_review_without_ocr(test_engine):
@@ -687,3 +821,245 @@ def test_upload_runs_eager_pipeline_with_stub_fixtures(
     assert {run.agent for run in runs} >= {"classifier", "ocr", "kyc", "claims", "policy"}
     assert any(event.event_type == "NODE_START" and event.actor == "classifier" for event in events)
     assert any(event.event_type == "NODE_END" and event.actor == "kyc" for event in events)
+
+
+def _successful_kyc() -> KycResult:
+    now = datetime.now(UTC)
+    return KycResult(
+        agent="kyc",
+        agent_version="1.0.0",
+        status=AgentStatus.OK,
+        confidence=0.95,
+        started_at=now,
+        finished_at=now,
+        kyc_passed=True,
+        flags=[],
+        member_ref="PT_19116",
+    )
+
+
+def test_pipeline_rerun_uses_new_pipeline_run_and_latest_status(
+    test_engine, monkeypatch: pytest.MonkeyPatch
+):
+    case_id = _insert_graph_case(test_engine)
+    classification, ocr, claims, _ = _graph_payloads()
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+
+    class FakeStorage:
+        def get(self, _: str) -> bytes:
+            return image
+
+    current_classification = [classification]
+    runtime = _graph_runtime(
+        test_engine,
+        FakeStorage(),
+        {
+            "classifier": lambda _: current_classification[0],
+            "ocr": lambda _: ocr,
+            "kyc": lambda _: _successful_kyc(),
+            "claims": lambda _: claims,
+        },
+    )
+    monkeypatch.setattr(
+        worker_tasks,
+        "runtime_factory",
+        lambda: SimpleNamespace(graph=runtime, engine=test_engine, close=lambda: None),
+    )
+    first_result = worker_tasks.run_pipeline.apply(args=[str(case_id)], throw=True).get()
+    current_classification[0] = classification.model_copy(
+        update={
+            "status": AgentStatus.ERROR,
+            "confidence": 0.0,
+            "error": "rerun classifier failure",
+            "doc_type": DocType.UNKNOWN,
+            "routing_tags": ["NEEDS_REVIEW"],
+        }
+    )
+    second_result = worker_tasks.run_pipeline.apply(args=[str(case_id)], throw=True).get()
+    first_pipeline = UUID(first_result["pipeline_run"])
+    second_pipeline = UUID(second_result["pipeline_run"])
+
+    assert first_pipeline != second_pipeline
+    assert first_result["status"] == CaseStatus.AGGREGATED.value
+    assert second_result["status"] == CaseStatus.NEEDS_REVIEW.value
+    with Session(test_engine) as session:
+        case = session.get(Case, case_id)
+        runs = list(session.scalars(select(AgentRun).where(AgentRun.case_id == case_id)))
+    assert case is not None and case.status == CaseStatus.NEEDS_REVIEW
+    assert {run.pipeline_run for run in runs} == {first_pipeline, second_pipeline}
+
+
+class RetryRequested(Exception):
+    pass
+
+
+def _invoke_task_attempt(task, case_id: UUID, pipeline_run: UUID, retry_number: int):
+    task.push_request(retries=retry_number)
+    try:
+        return task.run(str(case_id), str(pipeline_run))
+    finally:
+        task.pop_request()
+
+
+def test_pipeline_task_retries_three_times_with_backoff_then_fails(
+    test_engine, monkeypatch: pytest.MonkeyPatch
+):
+    case_id = _insert_graph_case(test_engine)
+    pipeline_run = uuid4()
+    attempts: list[str] = []
+    retry_calls: list[tuple[list[str], int]] = []
+
+    class AlwaysFailingGraph:
+        def invoke(self, state):
+            attempts.append(state["pipeline_run"])
+            raise RuntimeError("transient graph infrastructure error")
+
+    monkeypatch.setattr(
+        worker_tasks,
+        "runtime_factory",
+        lambda: SimpleNamespace(
+            graph=None,
+            engine=test_engine,
+            close=lambda: None,
+        ),
+    )
+    monkeypatch.setattr(worker_tasks, "build_graph", lambda _: AlwaysFailingGraph())
+    task = worker_tasks.run_pipeline._get_current_object()
+
+    def request_retry(*, exc, args, countdown):
+        del exc
+        retry_calls.append((args, countdown))
+        raise RetryRequested
+
+    monkeypatch.setattr(task, "retry", request_retry)
+    for retry_number in range(2):
+        with pytest.raises(RetryRequested):
+            _invoke_task_attempt(task, case_id, pipeline_run, retry_number)
+    result = _invoke_task_attempt(task, case_id, pipeline_run, 2)
+
+    assert len(attempts) == 3
+    assert set(attempts) == {str(pipeline_run)}
+    assert [countdown for _, countdown in retry_calls] == [1, 2]
+    assert all(args == [str(case_id), str(pipeline_run)] for args, _ in retry_calls)
+    assert result["status"] == CaseStatus.FAILED.value
+    with Session(test_engine) as session:
+        assert session.get(Case, case_id).status == CaseStatus.FAILED
+
+
+def test_pipeline_task_succeeds_on_second_attempt_with_same_pipeline_run(
+    test_engine, monkeypatch: pytest.MonkeyPatch
+):
+    case_id = _insert_graph_case(test_engine)
+    pipeline_run = uuid4()
+    attempt_count = 0
+    retry_calls: list[int] = []
+
+    class RetryThenSuccessGraph:
+        def invoke(self, state):
+            nonlocal attempt_count
+            attempt_count += 1
+            assert state["pipeline_run"] == str(pipeline_run)
+            if attempt_count == 1:
+                raise RuntimeError("transient infrastructure error")
+            with Session(test_engine) as session, session.begin():
+                session.get(Case, case_id).status = CaseStatus.AGGREGATED
+            return {"terminal_status": CaseStatus.AGGREGATED.value}
+
+    monkeypatch.setattr(
+        worker_tasks,
+        "runtime_factory",
+        lambda: SimpleNamespace(graph=None, engine=test_engine, close=lambda: None),
+    )
+    monkeypatch.setattr(worker_tasks, "build_graph", lambda _: RetryThenSuccessGraph())
+    task = worker_tasks.run_pipeline._get_current_object()
+
+    def request_retry(*, exc, args, countdown):
+        del exc, args
+        retry_calls.append(countdown)
+        raise RetryRequested
+
+    monkeypatch.setattr(task, "retry", request_retry)
+    with pytest.raises(RetryRequested):
+        _invoke_task_attempt(task, case_id, pipeline_run, 0)
+    result = _invoke_task_attempt(task, case_id, pipeline_run, 1)
+
+    assert attempt_count == 2
+    assert retry_calls == [1]
+    assert result["pipeline_run"] == str(pipeline_run)
+    assert result["status"] == CaseStatus.AGGREGATED.value
+    with Session(test_engine) as session:
+        assert session.get(Case, case_id).status == CaseStatus.AGGREGATED
+
+
+def test_duplicate_upload_enqueues_once_and_enqueue_observes_committed_case(
+    api_settings: ApiSettings,
+    test_engine,
+    test_storage: S3Storage,
+):
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+    enqueued: list[tuple[str, str]] = []
+
+    class CommitCheckingTask:
+        def apply_async(self, *, args, queue):
+            case_id, pipeline_run = args
+            with Session(test_engine) as independent_session:
+                assert independent_session.get(Case, UUID(case_id)) is not None
+            assert queue == "pipeline"
+            enqueued.append((case_id, pipeline_run))
+
+    app = create_app(
+        api_settings,
+        engine=test_engine,
+        storage=test_storage,
+        pipeline_task=CommitCheckingTask(),
+    )
+    with TestClient(app) as client:
+        first = post_file(client, "first.png", image)
+        second = post_file(client, "same-content.png", image)
+
+    assert first.status_code == 202
+    assert second.status_code == 200
+    assert second.json()["duplicate_of"] == first.json()["case_id"]
+    assert len(enqueued) == 1
+
+
+def test_failed_case_commit_does_not_enqueue(
+    api_settings: ApiSettings,
+    test_engine,
+    test_storage: S3Storage,
+):
+    enqueued: list[tuple[str, ...]] = []
+
+    class RecordingTask:
+        def apply_async(self, *, args, queue):
+            del queue
+            enqueued.append(tuple(args))
+
+    def reject_case_commit(session):
+        if any(
+            isinstance(instance, Case)
+            for instance in (*session.new, *session.identity_map.values())
+        ):
+            raise RuntimeError("simulated commit failure")
+
+    app = create_app(
+        api_settings,
+        engine=test_engine,
+        storage=test_storage,
+        pipeline_task=RecordingTask(),
+    )
+    sqlalchemy_event.listen(Session, "before_commit", reject_case_commit)
+    try:
+        with TestClient(app, raise_server_exceptions=False) as client:
+            response = post_file(
+                client,
+                "commit-failure.png",
+                (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes(),
+            )
+    finally:
+        sqlalchemy_event.remove(Session, "before_commit", reject_case_commit)
+
+    assert response.status_code == 500
+    assert enqueued == []
+    with Session(test_engine) as session:
+        assert session.scalar(select(func.count()).select_from(Case)) == 0
