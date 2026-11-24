@@ -8,13 +8,14 @@ from pathlib import Path
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
 from packages.core.db.models import Member, Policy
 from packages.core.db.repositories import MemberRepo, PolicyExclusionRepo
 from packages.core.enums import AgentStatus, DocType
 from packages.core.llm.prompts import PromptLoader
 from packages.core.llm.protocol import LLMGateway
+from packages.core.llm_outputs import LLMOutputModel
 from packages.core.models import (
     ClaimsResult,
     KycResult,
@@ -26,21 +27,17 @@ from packages.rag.retrieve import Reranker, RetrievedChunk
 
 POLICY_AGENT = "policy"
 POLICY_VERSION = "1.0.0"
-POLICY_PROMPT_VERSION = "v1"
+POLICY_PROMPT_VERSION = "v2"
 CPT_DESCRIPTIONS_PATH = Path(__file__).resolve().parents[3] / "data" / "cpt_descriptions.json"
 ICD10_DESCRIPTIONS_PATH = Path(__file__).resolve().parents[3] / "data" / "icd10_descriptions.json"
 
 
-class Citation(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
+class Citation(LLMOutputModel):
     clause_id: str
     text: str
 
 
-class PolicyAnswer(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
+class PolicyAnswer(LLMOutputModel):
     covered: bool | None
     coverage_percentage: float | None = Field(default=None, ge=0, le=100)
     clause_id: str | None = None

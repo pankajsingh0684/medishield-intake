@@ -192,7 +192,7 @@ def test_prompt_injection_text_in_image_is_treated_as_untrusted_data() -> None:
     image.save(image_buffer, format="PNG")
     image_bytes = image_buffer.getvalue()
     gateway = CapturingGateway()
-    prompt = PromptLoader().load("classifier", "v1")
+    prompt = PromptLoader().load("classifier", "v2")
 
     result = ClassifierAgent(gateway, make_settings()).classify(image_bytes, "image/png")
 

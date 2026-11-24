@@ -15,6 +15,7 @@ class ProviderResponse:
     content: Any
     input_tokens: int | None = None
     output_tokens: int | None = None
+    finish_reason: str | None = None
 
 
 class LLMProvider(Protocol):

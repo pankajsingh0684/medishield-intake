@@ -1,8 +1,8 @@
 {
-  "bbox": null,
+  "affected_bbox": null,
   "confidence": 0.96,
   "evidence": null,
-  "expired_banner": true,
-  "page": 1,
+  "expired_banner_visible": true,
+  "affected_page": 1,
   "tampering_detected": false
 }

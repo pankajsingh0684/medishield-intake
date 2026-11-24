@@ -1,7 +1,10 @@
+import ast
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
-from packages.core.config import Settings
+from packages.core.config import DEFAULT_ENV_FILE, Settings
 
 REQUIRED_ENVIRONMENT = {
     "DATABASE_URL": "postgresql://user:password@localhost:5432/medishield",
@@ -39,6 +42,53 @@ def test_settings_load_from_environment(monkeypatch: pytest.MonkeyPatch) -> None
     assert settings.tesseract_cmd == "C:/tools/tesseract.exe"
 
 
+def test_default_env_file_is_repo_root_absolute_and_cwd_independent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    expected_env_file = Path(__file__).resolve().parents[2] / ".env"
+    monkeypatch.chdir(tmp_path)
+
+    configured_env_file = Path(Settings.model_config["env_file"])
+
+    assert configured_env_file == expected_env_file
+    assert configured_env_file.is_absolute()
+    assert DEFAULT_ENV_FILE == configured_env_file
+
+
+def test_runtime_code_does_not_load_env_example_into_process_environment() -> None:
+    root = Path(__file__).resolve().parents[2]
+    loader_names = {"load_dotenv", "dotenv_values", "read_dotenv"}
+    violations: list[str] = []
+
+    for source_root in (root / "apps", root / "packages", root / "scripts"):
+        for source_path in source_root.rglob("*.py"):
+            tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                function_name = (
+                    node.func.id
+                    if isinstance(node.func, ast.Name)
+                    else node.func.attr
+                    if isinstance(node.func, ast.Attribute)
+                    else ""
+                )
+                if function_name not in loader_names:
+                    continue
+                arguments = [*node.args, *(keyword.value for keyword in node.keywords)]
+                uses_example = any(
+                    isinstance(value, ast.Constant)
+                    and isinstance(value.value, str)
+                    and ".env.example" in value.value
+                    for argument in arguments
+                    for value in ast.walk(argument)
+                )
+                if uses_example:
+                    violations.append(f"{source_path.relative_to(root)}:{node.lineno}")
+
+    assert not violations, "Runtime code must not load .env.example: " + ", ".join(violations)
+
+
 def test_missing_required_settings_raise_validation_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -74,6 +124,9 @@ def test_documented_threshold_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.threshold_fraud_high == 0.60
     assert settings.threshold_agent_confidence == 0.60
     assert settings.threshold_classify_review == 0.60
+    assert settings.groq_rpm_limit == 30
+    assert settings.groq_tpm_limit == 8_000
+    assert settings.groq_tpd_limit == 200_000
 
 
 def test_step_5b_setting_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,4 +198,42 @@ def test_placeholder_secret_is_rejected_in_production(
     monkeypatch.setenv("JWT_SECRET", "replace-with-local-only-secret")
 
     with pytest.raises(ValidationError, match="must not use replace-with placeholders"):
+        Settings(_env_file=None, app_env="production")
+
+
+@pytest.mark.parametrize("model_field", ["LLM_TEXT_MODEL", "LLM_VISION_MODEL"])
+@pytest.mark.parametrize("model_value", ["", "replace-with-model-id"])
+def test_non_stub_provider_rejects_missing_or_placeholder_models(
+    monkeypatch: pytest.MonkeyPatch, model_field: str, model_value: str
+) -> None:
+    set_required_environment(monkeypatch)
+    monkeypatch.setenv("LLM_PROVIDER", "groq")
+    monkeypatch.setenv(model_field, model_value)
+
+    with pytest.raises(ValidationError, match="requires configured model IDs") as error:
+        Settings(_env_file=None)
+    assert model_field in str(error.value)
+
+
+def test_stub_provider_allows_placeholder_model_ids(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required_environment(monkeypatch)
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv("LLM_TEXT_MODEL", "replace-with-model-id")
+    monkeypatch.setenv("LLM_VISION_MODEL", "replace-with-model-id")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.llm_text_model == "replace-with-model-id"
+    assert settings.llm_vision_model == "replace-with-model-id"
+
+
+def test_llm_debug_raw_is_disabled_by_default_and_rejected_in_production(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    set_required_environment(monkeypatch)
+    monkeypatch.delenv("LLM_DEBUG_RAW", raising=False)
+    assert Settings(_env_file=None).llm_debug_raw is False
+
+    monkeypatch.setenv("LLM_DEBUG_RAW", "true")
+    with pytest.raises(ValidationError, match="LLM_DEBUG_RAW cannot be enabled in production"):
         Settings(_env_file=None, app_env="production")

@@ -353,6 +353,36 @@ class TestOCRAgent:
         assert agent is not None
         assert agent.settings is not None
 
+    def test_ocr_fallback_prompt_version_and_complete_payload_contract(self) -> None:
+        from packages.agents.ocr.agent import OCR_PROMPT_VERSION
+        from packages.core.llm.prompts import PromptLoader
+
+        prompt = PromptLoader(Path("packages/agents/ocr/prompts")).load("ocr", OCR_PROMPT_VERSION)
+
+        assert OCR_PROMPT_VERSION == "v3"
+        assert prompt.max_tokens == 3000
+        for required_property in (
+            "agent_version",
+            "started_at",
+            "finished_at",
+            "bounding_boxes",
+            "used_text_layer",
+        ):
+            assert f'"{required_property}"' in prompt.system
+
+    def test_classifier_prompt_matches_prediction_schema(self) -> None:
+        from packages.agents.classifier.agent import CLASSIFIER_PROMPT_VERSION
+        from packages.core.llm.prompts import PromptLoader
+
+        prompt = PromptLoader(Path("packages/agents/prompts")).load(
+            "classifier", CLASSIFIER_PROMPT_VERSION
+        )
+
+        assert prompt.schema == "ClassificationPrediction"
+        assert "doc_type" in prompt.system
+        assert "confidence" in prompt.system
+        assert "routing_tags" in prompt.system
+
     def test_process_empty_image_returns_error_payload(self):
         agent = make_agent()
 

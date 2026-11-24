@@ -4,18 +4,19 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
 from packages.core.config import Settings
 from packages.core.documents import render_document
 from packages.core.enums import AgentStatus, DocType
 from packages.core.llm.prompts import PromptLoader
-from packages.core.llm.protocol import LLMGateway
+from packages.core.llm.protocol import LLMGateway, LLMProviderError
+from packages.core.llm_outputs import LLMOutputModel
 from packages.core.models import Classification
 
 CLASSIFIER_AGENT = "classifier"
 CLASSIFIER_VERSION = "1.0.0"
-CLASSIFIER_PROMPT_VERSION = "v1"
+CLASSIFIER_PROMPT_VERSION = "v2"
 CLASSIFIER_MESSAGE: Mapping[str, str] = {
     "role": "user",
     "content": "Classify the supplied document image and return Classification JSON.",
@@ -23,10 +24,8 @@ CLASSIFIER_MESSAGE: Mapping[str, str] = {
 ClassificationConfidence = Annotated[float, Field(ge=0.0, le=1.0)]
 
 
-class ClassificationPrediction(BaseModel):
+class ClassificationPrediction(LLMOutputModel):
     """The model-generated fields before the agent adds its trusted envelope."""
-
-    model_config = ConfigDict(extra="forbid")
 
     doc_type: DocType
     confidence: ClassificationConfidence
@@ -96,7 +95,7 @@ class ClassifierAgent:
             model=model_name,
             started_at=started_at,
             finished_at=datetime.now(UTC),
-            error=type(error).__name__,
+            error=str(error) if isinstance(error, LLMProviderError) else type(error).__name__,
             doc_type=DocType.UNKNOWN,
             routing_tags=["NEEDS_REVIEW"],
         )

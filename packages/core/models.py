@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from packages.core.enums import AgentStatus, DecisionKind, DocType, RiskLevel
+from packages.core.llm_outputs import LLMOutputModel
 
 Confidence = Annotated[float, Field(ge=0.0, le=1.0)]
 Score = Annotated[float, Field(ge=0.0, le=1.0)]
@@ -157,7 +158,7 @@ class Decision(Envelope):
     rule_trace: list[RuleStep]
 
 
-class JustificationDraft(StrictModel):
+class JustificationDraft(LLMOutputModel):
     justification: str = Field(min_length=1, max_length=2000)
 
 

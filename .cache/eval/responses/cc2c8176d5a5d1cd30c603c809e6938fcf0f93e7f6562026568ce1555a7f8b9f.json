@@ -1,0 +1,1 @@
+"{\n  \"doc_type\": \"DISCHARGE_SUMMARY\",\n  \"confidence\": 0.99,\n  \"routing_tags\": [\n    \"hospital_discharge\",\n    \"medical_record\",\n    \"patient_christopher_harris\",\n    \"diagnosis_icd10\"\n  ]\n}"

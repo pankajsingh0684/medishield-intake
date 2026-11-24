@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pymupdf
 from PIL import Image
-from pydantic import ValidationError
+from pydantic import ConfigDict, ValidationError, model_validator
 from pytesseract import TesseractError, TesseractNotFoundError
 
 from packages.agents.ocr.field_extractors import extract_fields_from_text
@@ -27,13 +27,14 @@ from packages.core.documents import RenderedDocument, render_document
 from packages.core.enums import AgentStatus, DocType
 from packages.core.llm.prompts import PromptLoader
 from packages.core.llm.protocol import LLMError, LLMGateway
+from packages.core.llm_outputs import LLMOutputBBox, LLMOutputModel, LLMOutputOcrField
 from packages.core.models import BBox, OcrField, OcrPayload
 
 logger = logging.getLogger(__name__)
 
 OCR_AGENT = "ocr"
 OCR_VERSION = "1.1.0"
-OCR_PROMPT_VERSION = "v1"
+OCR_PROMPT_VERSION = "v3"
 
 LOW_CONFIDENCE_THRESHOLD = 0.70
 KEY_FIELDS = {
@@ -79,6 +80,18 @@ OCR_MESSAGE: Mapping[str, str] = {
     "role": "user",
     "content": "Extract all visible fields from the document image. Return JSON with fields, raw_text, bounding_boxes, pages, used_text_layer=false, and confidence.",
 }
+
+
+class OcrLLMOutput(OcrPayload):
+    model_config = ConfigDict(extra="ignore")
+
+    fields: list[LLMOutputOcrField]
+    bounding_boxes: list[LLMOutputBBox]
+
+    @model_validator(mode="before")
+    @classmethod
+    def warn_unknown_fields(cls, values):
+        return LLMOutputModel.warn_unknown_fields.__func__(cls, values)
 
 
 class OCRError(ValueError):
@@ -341,11 +354,13 @@ class OCRAgent:
                 self.settings,
                 [OCR_MESSAGE],
                 rendered.images,
-                OcrPayload,
+                OcrLLMOutput,
             )
 
             if not isinstance(result, OcrPayload):
                 raise OCRError(f"Unexpected LLM response type: {type(result)}")
+
+            result = OcrPayload.model_validate(result.model_dump(mode="python"))
 
             # Set timing
             result.started_at = started_at

@@ -40,10 +40,11 @@ def test_core_and_api_settings_require_dotenv_with_setup_message(
     tmp_path,
 ) -> None:
     monkeypatch.chdir(tmp_path)
+    missing_env_file = tmp_path / "not-created" / ".env"
 
     for settings_type in (Settings, ApiSettings, DatabaseSettings):
         with pytest.raises(RuntimeError, match="Copy .env.example to .env"):
-            settings_type()
+            settings_type(_env_file=missing_env_file)
 
 
 @pytest.mark.parametrize("app_env", ["development", "test"])

@@ -58,9 +58,9 @@ def generate_fixtures(dataset_dir: Path, output_dir: Path) -> list[Path]:
             "evidence": "Visible alteration in the document image"
             if truth[doc_id].get("tampered")
             else None,
-            "page": 1,
-            "bbox": None,
-            "expired_banner": bool(truth[doc_id].get("expired")) if is_medicare else False,
+            "affected_page": 1,
+            "affected_bbox": None,
+            "expired_banner_visible": bool(truth[doc_id].get("expired")) if is_medicare else None,
         }
         store.write(key, response)
         written.append(store.path_for(key))

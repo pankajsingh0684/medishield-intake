@@ -60,6 +60,67 @@ def report_markdown(report: dict[str, Any]) -> str:
             for name, value in group_rows.items()
         )
         lines.append("")
+    lines.extend(["## Decision Mismatches", ""])
+    mismatches = report.get("decision_mismatches", [])
+    if not mismatches:
+        lines.append("None.")
+    else:
+        for mismatch in mismatches:
+            lines.extend(
+                [
+                    f"### `{mismatch['doc_id']}`",
+                    "",
+                    (
+                        f"- Expected: **{mismatch['expected']}**; actual: **{mismatch['actual']}**; "
+                        f"decision confidence: {mismatch['decision_confidence']:.3f}"
+                    ),
+                    "- Fired rules: "
+                    + (
+                        "; ".join(rule["summary"] for rule in mismatch["fired_rules"])
+                        if mismatch["fired_rules"]
+                        else "none recorded"
+                    ),
+                    f"- Minimum-confidence agent: **{mismatch['minimum_confidence_agent'] or 'n/a'}**",
+                    "",
+                    "| Agent | Status | Confidence |",
+                    "| --- | --- | ---: |",
+                ]
+            )
+            lines.extend(
+                f"| {agent['agent']}{' **MIN**' if agent['is_minimum_confidence'] else ''} | "
+                f"{agent['status']} | "
+                f"{'n/a' if agent['confidence'] is None else f'{agent["confidence"]:.3f}'} |"
+                for agent in mismatch["agents"]
+            )
+            lines.extend(
+                [
+                    "",
+                    "Rule trace:",
+                    "",
+                    "```json",
+                    json.dumps(mismatch["rule_trace"], indent=2),
+                    "```",
+                    "",
+                ]
+            )
+    usage = report.get("groq_usage")
+    if usage is not None:
+        lines.extend(
+            [
+                "## Groq Usage",
+                "",
+                f"- HTTP calls by model: `{json.dumps(usage.get('calls_by_model', {}), sort_keys=True)}`",
+                f"- HTTP 429 responses: {usage.get('rate_limit_responses_429', 0)}",
+                f"- 429 retries: {usage.get('retries_429', 0)}",
+                f"- Total wait: {usage.get('seconds_waited', 0.0):.2f} seconds",
+                f"- Estimated tokens by model: `{json.dumps(usage.get('estimated_tokens_by_model', {}), sort_keys=True)}`",
+                f"- Daily estimated tokens used: {usage.get('daily_tokens_used', 0)}",
+                f"- Cache hits: {usage.get('cache_hits', 0)}",
+                "",
+            ]
+        )
+    if report.get("daily_budget_stop"):
+        lines.extend(["## Partial Run", "", report["daily_budget_stop"], ""])
     lines.extend(["## Calibration", ""])
     calibration = metrics.get("calibration")
     if calibration:
@@ -78,6 +139,15 @@ def report_markdown(report: dict[str, Any]) -> str:
         )
     else:
         lines.append("Not available (no confidence values).")
+    lines.extend(["", "## Failures", ""])
+    failures = report.get("failures", [])
+    if failures:
+        lines.extend(
+            f"- `{failure['doc_id']}` ({failure['agent']}): {failure['message']}"
+            for failure in failures
+        )
+    else:
+        lines.append("None.")
     lines.extend(["", "## Known Divergences", ""])
     divergences = report.get("known_divergences") or KNOWN_DIVERGENCES
     lines.extend(

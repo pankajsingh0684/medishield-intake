@@ -1,0 +1,1 @@
+"{\"justification\":\"The rule R1_AGENT_RELIABILITY fired because the KYC agent reported an error status and a confidence of 0.0, placing it in both error_agents and low_confidence_agents lists, and the overall reliability threshold of 0.6 was not met. The rule R3_REJECTION fired because the rejection reasons list contains KYC_FAILED, sourced from the KYC agent.\"}"

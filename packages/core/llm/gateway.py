@@ -4,6 +4,8 @@ import hashlib
 import json
 import logging
 import random
+import re
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
@@ -22,7 +24,13 @@ from packages.core.llm.protocol import (
     RetryableLLMError,
 )
 from packages.core.llm.protocol import LLMProviderError as ProviderFailure
-from packages.core.llm.providers import AnthropicProvider, GroqProvider, OpenAIProvider
+from packages.core.llm.providers import (
+    AnthropicProvider,
+    GroqDailyTokenBudget,
+    GroqProvider,
+    GroqRateLimitError,
+    OpenAIProvider,
+)
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 logger = logging.getLogger(__name__)
@@ -76,6 +84,8 @@ class Gateway:
         sleeper: Callable[[float], None] = time.sleep,
         jitter: Callable[[float], float] | None = None,
         response_cache: Any | None = None,
+        cache_hits: int = 0,
+        debug_raw: bool = False,
     ) -> None:
         self.provider = provider
         self.fallback_provider = fallback_provider
@@ -88,6 +98,9 @@ class Gateway:
         self.sleeper = sleeper
         self.jitter = jitter or (lambda maximum: random.uniform(0, maximum))
         self.response_cache = response_cache
+        self.cache_hits = cache_hits
+        self.debug_raw = debug_raw
+        self._usage_lock = threading.Lock()
 
     def complete_json(
         self,
@@ -123,10 +136,14 @@ class Gateway:
             else None
         )
         cached_content = self.response_cache.read(cache_key) if cache_key is not None else None
+        if cached_content is not None:
+            with self._usage_lock:
+                self.cache_hits += 1
         repair_hint: str | None = None
         tokens: tuple[int | None, int | None] = (None, None)
         selected_provider = self.provider
         selected_model = model
+        debug_diagnostics: list[str] = []
         try:
             if cached_content is not None:
                 response = ProviderResponse(cached_content)
@@ -141,15 +158,64 @@ class Gateway:
                     temperature=temperature,
                     max_tokens=max_tokens,
                 )
+            if response.finish_reason == "length":
+                original_response = response
+                original_max_tokens = max_tokens
+                if self.debug_raw:
+                    diagnostic = self._raw_failure_diagnostic(
+                        original_response,
+                        f"truncated at max_tokens={original_max_tokens}",
+                        selected_provider,
+                        attempt=1,
+                    )
+                    debug_diagnostics.append(diagnostic)
+                    logger.error("LLM_DEBUG_RAW %s", diagnostic)
+                max_tokens = max(max_tokens * 2, max_tokens + 1000)
+                response = self._call_with_retries(
+                    selected_provider,
+                    model=selected_model,
+                    system=system,
+                    messages=canonical_messages,
+                    images=image_bytes,
+                    schema=schema,
+                    request_key=key,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+                if response.finish_reason == "length":
+                    if self.debug_raw:
+                        diagnostic = self._raw_failure_diagnostic(
+                            response,
+                            f"truncated at max_tokens={max_tokens}",
+                            selected_provider,
+                            attempt=2,
+                        )
+                        debug_diagnostics.append(diagnostic)
+                        logger.error("LLM_DEBUG_RAW %s", diagnostic)
+                    raise LLMSchemaError(
+                        "Provider response truncated (finish_reason=length) at both "
+                        f"max_tokens={original_max_tokens} and max_tokens={max_tokens}"
+                        + ("\n" + "\n".join(debug_diagnostics) if debug_diagnostics else "")
+                    )
             for schema_attempt in range(2):
                 try:
                     result = schema.model_validate(self._decode_content(response.content))
                 except (ValidationError, ValueError, TypeError, json.JSONDecodeError) as error:
+                    if self.debug_raw:
+                        diagnostic = self._raw_failure_diagnostic(
+                            response,
+                            str(error),
+                            selected_provider,
+                            attempt=schema_attempt + 1,
+                        )
+                        debug_diagnostics.append(diagnostic)
+                        logger.error("LLM_DEBUG_RAW %s", diagnostic)
                     if schema_attempt == 1:
                         raise LLMSchemaError(
                             f"Response did not match {schema.__name__} after one correction retry"
+                            + ("\n" + "\n".join(debug_diagnostics) if debug_diagnostics else "")
                         ) from error
-                    repair_hint = self._schema_repair_hint(error)
+                    repair_hint = self._schema_repair_hint(schema)
                     response = self._call_with_retries(
                         selected_provider,
                         model=selected_model,
@@ -281,7 +347,9 @@ class Gateway:
                     request_key=request_key,
                     repair_hint=repair_hint,
                 )
-            except RetryableLLMError:
+            except RetryableLLMError as error:
+                if isinstance(error, GroqRateLimitError):
+                    raise
                 if attempt + 1 == self.max_provider_attempts:
                     raise
                 delay_cap = self.retry_base_seconds * (2**attempt)
@@ -291,10 +359,44 @@ class Gateway:
     @staticmethod
     def _decode_content(content: Any) -> Any:
         if isinstance(content, str):
-            return json.loads(content)
+            cleaned = re.sub(
+                r"<think\b[^>]*>.*?</think\s*>",
+                "",
+                content,
+                flags=re.IGNORECASE | re.DOTALL,
+            ).strip()
+            fenced = re.fullmatch(
+                r"```(?:json)?\s*(.*?)\s*```", cleaned, flags=re.IGNORECASE | re.DOTALL
+            )
+            if fenced is not None:
+                cleaned = fenced.group(1).strip()
+            return json.loads(cleaned)
         if isinstance(content, (dict, list)):
             return content
         raise TypeError("Provider response must be JSON text or an object")
+
+    @staticmethod
+    def _raw_failure_diagnostic(
+        response: ProviderResponse,
+        validation_error: str,
+        provider: LLMProvider,
+        *,
+        attempt: int,
+    ) -> str:
+        raw_reply = (
+            response.content if isinstance(response.content, str) else json.dumps(response.content)
+        )
+        api_key = getattr(provider, "api_key", None)
+        if api_key:
+            raw_reply = raw_reply.replace(api_key, "[REDACTED]")
+            validation_error = validation_error.replace(api_key, "[REDACTED]")
+        diagnostic = (
+            f"attempt={attempt} finish_reason={response.finish_reason!r} "
+            f"usage={{'input_tokens': {response.input_tokens}, "
+            f"'output_tokens': {response.output_tokens}}} "
+            f"validation_error={validation_error} raw_reply_first_800={raw_reply[:800]!r}"
+        )
+        return diagnostic
 
     @staticmethod
     def _response_reference(content: Any) -> str:
@@ -310,20 +412,11 @@ class Gateway:
         return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
 
     @staticmethod
-    def _schema_repair_hint(error: Exception) -> str:
-        if isinstance(error, ValidationError):
-            details = [
-                {"location": item["loc"], "type": item["type"]}
-                for item in error.errors(include_input=False)
-            ]
-        else:
-            details = [{"type": type(error).__name__}]
+    def _schema_repair_hint(schema: type[BaseModel]) -> str:
+        fields = ", ".join(sorted(schema.model_fields))
         return (
-            "The previous response failed schema validation. Return corrected JSON. "
-            + json.dumps(
-                details,
-                separators=(",", ":"),
-            )
+            "Your previous reply did not match the schema. Return ONLY the corrected JSON object, "
+            f"with exactly these fields: {fields}. Do not return error messages."
         )
 
     def close(self) -> None:
@@ -331,14 +424,35 @@ class Gateway:
         if self.fallback_provider is not None and self.fallback_provider is not self.provider:
             self.fallback_provider.close()
 
+    def usage_summary(self) -> dict[str, Any]:
+        provider_summary = getattr(self.provider, "usage_summary", None)
+        summary = provider_summary() if provider_summary is not None else {}
+        with self._usage_lock:
+            cache_hits = self.cache_hits
+        return {**summary, "cache_hits": cache_hits}
 
-def _provider(name: str, settings: Settings, timeout: float) -> LLMProvider:
+
+def _provider(
+    name: str,
+    settings: Settings,
+    timeout: float,
+    *,
+    sleeper: Callable[[float], None],
+    daily_budget: GroqDailyTokenBudget | None,
+) -> LLMProvider:
     if name == "stub":
         return StubProvider(FixtureStore(DEFAULT_FIXTURE_DIR))
     if name == "groq":
         if settings.groq_api_key is None:
             raise ValueError("GROQ_API_KEY is required when LLM_PROVIDER=groq")
-        return GroqProvider(api_key=settings.groq_api_key.get_secret_value(), timeout=timeout)
+        return GroqProvider(
+            api_key=settings.groq_api_key.get_secret_value(),
+            timeout=timeout,
+            rpm_limit=settings.groq_rpm_limit,
+            tpm_limit=settings.groq_tpm_limit,
+            daily_budget=daily_budget,
+            sleeper=sleeper,
+        )
     if name == "anthropic":
         if settings.anthropic_api_key is None:
             raise ValueError("ANTHROPIC_API_KEY is required when LLM_PROVIDER=anthropic")
@@ -358,13 +472,26 @@ def build_gateway(
     fixture_dir: Path = DEFAULT_FIXTURE_DIR,
     sleeper: Callable[[float], None] = time.sleep,
     response_cache: Any | None = None,
+    daily_budget: GroqDailyTokenBudget | None = None,
 ) -> Gateway:
     if settings.llm_record_fixtures and settings.llm_provider == "stub":
         raise ValueError("LLM_RECORD_FIXTURES requires a real LLM_PROVIDER")
     fixtures = FixtureStore(fixture_dir)
-    primary = _provider(settings.llm_provider, settings, float(settings.agent_timeout_s))
+    primary = _provider(
+        settings.llm_provider,
+        settings,
+        float(settings.agent_timeout_s),
+        sleeper=sleeper,
+        daily_budget=daily_budget,
+    )
     fallback = (
-        _provider(settings.llm_fallback_provider, settings, float(settings.agent_timeout_s))
+        _provider(
+            settings.llm_fallback_provider,
+            settings,
+            float(settings.agent_timeout_s),
+            sleeper=sleeper,
+            daily_budget=daily_budget,
+        )
         if settings.llm_provider != "stub" and settings.llm_fallback_provider
         else None
     )
@@ -379,4 +506,5 @@ def build_gateway(
         timeout=float(settings.agent_timeout_s),
         sleeper=sleeper,
         response_cache=response_cache,
+        debug_raw=settings.llm_debug_raw,
     )

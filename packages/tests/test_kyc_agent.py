@@ -14,6 +14,7 @@ from packages.core.enums import AgentStatus, DocType
 from packages.core.identity import name_similarity, normalize_name
 from packages.core.llm.fixtures import FixtureStore
 from packages.core.llm.gateway import Gateway, StubProvider
+from packages.core.llm.protocol import LLMSchemaError
 from packages.core.models import BBox, OcrField, OcrPayload
 from scripts.make_kyc_fixtures import generate_fixtures
 
@@ -119,7 +120,7 @@ def make_agent(response: dict[str, Any] | None = None, repo=None) -> tuple[KycAg
         gateway.response = {
             "tampering_detected": False,
             "confidence": 0.98,
-            "expired_banner": False,
+            "expired_banner_visible": False,
         }
     return KycAgent(repo or SeededMemberRepo(), gateway, make_settings()), gateway
 
@@ -141,6 +142,32 @@ def id_fields(
     if expiry:
         fields.append(OcrField(key="id_expiry", value=expiry, confidence=0.95, page=1))
     return fields
+
+
+def test_kyc_preserves_gateway_debug_diagnostic_in_error_envelope() -> None:
+    diagnostic = (
+        "Response did not match TamperAssessment; raw_reply_first_800='synthetic diagnostic'"
+    )
+
+    class FailingGateway:
+        def complete_json(self, *args, **kwargs):
+            raise LLMSchemaError(diagnostic)
+
+    agent = KycAgent(
+        SeededMemberRepo(),
+        FailingGateway(),
+        make_settings(llm_debug_raw=True),
+    )
+
+    result = agent.check(
+        DocType.ID_DOCUMENT,
+        make_ocr(id_fields()),
+        RECEIVED_AT,
+        images=[b"synthetic-image"],
+    )
+
+    assert result.status == AgentStatus.ERROR
+    assert result.error == diagnostic
 
 
 def test_seeded_one_vowel_name_change_is_flagged_even_with_high_similarity():
@@ -201,6 +228,51 @@ def test_lookup_uses_dob_and_name_when_document_has_no_identifier():
     assert result.member_ref == "PT_20745"
 
 
+def test_state_id_government_id_number_falls_back_to_matching_dob_and_name():
+    agent, _ = make_agent()
+    fields = [
+        OcrField(key="member_id", value="D5334-4241-7965", confidence=0.96, page=1),
+        OcrField(key="member_name", value="John Johnson X.", confidence=0.96, page=1),
+        OcrField(key="dob", value="01/02/1965", confidence=0.96, page=1),
+    ]
+
+    result = agent.check(DocType.ID_DOCUMENT, make_ocr(fields), RECEIVED_AT)
+
+    assert result.member_ref == "PT_20745"
+    assert "MEMBER_NOT_FOUND" not in {flag.code for flag in result.flags}
+    assert "NAME_MISMATCH" not in {flag.code for flag in result.flags}
+
+
+def test_unknown_but_well_formed_claim_member_id_remains_not_found():
+    agent, _ = make_agent()
+    fields = [
+        OcrField(key="member_id", value="PT_99999", confidence=0.96, page=1),
+        OcrField(key="member_name", value="John Johnson X.", confidence=0.96, page=1),
+        OcrField(key="dob", value="01/02/1965", confidence=0.96, page=1),
+    ]
+
+    result = agent.check(DocType.CLAIM_FORM, make_ocr(fields), RECEIVED_AT)
+
+    assert result.member_ref is None
+    assert "MEMBER_NOT_FOUND" in {flag.code for flag in result.flags}
+
+
+def test_state_id_wrong_name_with_matching_dob_uses_fuzzy_match_then_flags_name():
+    agent, _ = make_agent()
+    fields = [
+        OcrField(key="member_id", value="D5334-4241-7965", confidence=0.96, page=1),
+        OcrField(key="member_name", value="John Johnson Yvette", confidence=0.96, page=1),
+        OcrField(key="dob", value="01/02/1965", confidence=0.96, page=1),
+    ]
+
+    result = agent.check(DocType.ID_DOCUMENT, make_ocr(fields), RECEIVED_AT)
+
+    assert name_similarity("John Johnson Yvette", "John Johnson X.") >= 0.80
+    assert result.member_ref == "PT_20745"
+    assert "NAME_MISMATCH" in {flag.code for flag in result.flags}
+    assert "MEMBER_NOT_FOUND" not in {flag.code for flag in result.flags}
+
+
 def test_dob_name_fallback_requires_ratio_of_at_least_point_eight():
     agent, _ = make_agent()
     fields = [
@@ -248,7 +320,12 @@ def test_expiring_soon_is_low_and_does_not_fail_kyc():
 
 def test_combined_high_flags_and_tamper_are_failed():
     agent, _ = make_agent(
-        {"tampering_detected": True, "confidence": 0.9, "evidence": "Altered text", "page": 1}
+        {
+            "tampering_detected": True,
+            "confidence": 0.9,
+            "evidence": "Altered text",
+            "affected_page": 1,
+        }
     )
     fields = id_fields(
         member_id="PT_39451", name="Sindra Hall C.", dob="09/24/1993", expiry="2025-02-19"
@@ -312,7 +389,7 @@ def test_confidence_uses_largest_flag_penalty_floor_and_no_identifier_cap():
 
 def test_medicare_expired_banner_is_detected_from_ocr_before_vision():
     agent, gateway = make_agent(
-        {"tampering_detected": False, "confidence": 0.9, "expired_banner": False}
+        {"tampering_detected": False, "confidence": 0.9, "expired_banner_visible": False}
     )
     image = MEDICARE_IMAGE.read_bytes()
     result = agent.check(
@@ -327,7 +404,9 @@ def test_medicare_expired_banner_is_detected_from_ocr_before_vision():
 
 
 def test_dataset_medicare_card_uses_vision_for_banner_when_ocr_misses_card_label():
-    agent, _ = make_agent({"tampering_detected": False, "confidence": 0.9, "expired_banner": True})
+    agent, _ = make_agent(
+        {"tampering_detected": False, "confidence": 0.9, "expired_banner_visible": True}
+    )
     image = MEDICARE_IMAGE.read_bytes()
     fields = [
         OcrField(key="member_name", value="John Johnson X.", confidence=0.9, page=1),

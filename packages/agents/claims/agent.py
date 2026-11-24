@@ -21,11 +21,12 @@ from packages.core.config import Settings
 from packages.core.enums import AgentStatus, DocType
 from packages.core.llm.prompts import PromptLoader
 from packages.core.llm.protocol import LLMGateway
+from packages.core.llm_outputs import LLMOutputBBox, LLMOutputModel
 from packages.core.models import BBox, ClaimFields, ClaimsResult, OcrField, OcrPayload
 
 CLAIMS_AGENT = "claims"
 CLAIMS_VERSION = "1.0.0"
-CLAIMS_PROMPT_VERSION = "v1"
+CLAIMS_PROMPT_VERSION = "v2"
 LOW_CONFIDENCE_THRESHOLD = 0.70
 FIELD_ALIASES = {
     "icd10_codes": ("icd10_codes", "icd10"),
@@ -58,10 +59,15 @@ class ExtractedValue(BaseModel):
     bbox: BBox | None = None
 
 
-class ClaimsExtraction(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+class LLMExtractedValue(LLMOutputModel):
+    value: Any = None
+    confidence: float = Field(ge=0, le=1)
+    page: int = Field(ge=1)
+    bbox: LLMOutputBBox | None = None
 
-    fields: dict[str, ExtractedValue] = Field(default_factory=dict)
+
+class ClaimsExtraction(LLMOutputModel):
+    fields: dict[str, LLMExtractedValue] = Field(default_factory=dict)
 
 
 class ClaimsAgent:
@@ -135,7 +141,16 @@ class ClaimsAgent:
                         continue
                     current = values.get(key)
                     if current is None or extracted.confidence > current.confidence:
-                        values[key] = extracted
+                        values[key] = ExtractedValue(
+                            value=extracted.value,
+                            confidence=extracted.confidence,
+                            page=extracted.page,
+                            bbox=(
+                                BBox.model_validate(extracted.bbox.model_dump())
+                                if extracted.bbox is not None
+                                else None
+                            ),
+                        )
 
             fields = self._build_fields(values)
             self._set_missing_confidence(fields, required, ocr.raw_text)

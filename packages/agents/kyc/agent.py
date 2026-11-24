@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
 from packages.core.config import Settings
 from packages.core.db.models import Member
@@ -21,11 +21,14 @@ from packages.core.identity import (
 )
 from packages.core.llm.prompts import PromptLoader
 from packages.core.llm.protocol import LLMGateway
+from packages.core.llm_outputs import LLMOutputBBox, LLMOutputModel
 from packages.core.models import BBox, KycFlag, KycResult, OcrField, OcrPayload
 
 KYC_AGENT = "kyc"
 KYC_VERSION = "1.0.0"
-KYC_PROMPT_VERSION = "v1"
+KYC_PROMPT_VERSION = "v2"
+SEEDED_MEMBER_ID_PATTERN = re.compile(r"(?:PT_\d{5}|PT_EX\d{4})\Z")
+SEEDED_POLICY_NUMBER_PATTERN = re.compile(r"(?:MED-GLD-\d{7}|MED-SLV-RETRIEVAL)\Z")
 MEMBER_MATCH_ONLY_TYPES = {DocType.DISCHARGE_SUMMARY, DocType.PRESCRIPTION}
 PROCESSED_TYPES = {
     DocType.ID_DOCUMENT,
@@ -51,15 +54,13 @@ FLAG_PENALTIES = {
 }
 
 
-class TamperAssessment(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
+class TamperAssessment(LLMOutputModel):
     tampering_detected: bool = False
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     evidence: str | None = None
-    page: int | None = Field(default=None, ge=1)
-    bbox: BBox | None = None
-    expired_banner: bool | None = None
+    affected_page: int | None = Field(default=None, ge=1)
+    affected_bbox: LLMOutputBBox | None = None
+    expired_banner_visible: bool | None = None
     raw_response_ref: str | None = None
 
 
@@ -99,7 +100,7 @@ class KycAgent:
         model_name = self.settings.llm_vision_model
         try:
             fields = self._field_map(ocr.fields)
-            member, lookup_name_ratio = self._find_member(fields)
+            member, lookup_name_ratio = self._find_member(fields, doc_type)
             flags: list[KycFlag] = []
             if member is None:
                 flags.append(
@@ -163,12 +164,20 @@ class KycAgent:
                 0.0,
                 None,
                 model_name,
-                error=type(error).__name__,
+                error=str(error) if self.settings.llm_debug_raw else type(error).__name__,
             )
 
-    def _find_member(self, fields: dict[str, OcrField]) -> tuple[Member | None, float | None]:
+    def _find_member(
+        self, fields: dict[str, OcrField], doc_type: DocType
+    ) -> tuple[Member | None, float | None]:
         member_id = self._value(fields, "member_id")
         policy_number = self._value(fields, "policy_number")
+        if doc_type == DocType.ID_DOCUMENT:
+            if member_id and not SEEDED_MEMBER_ID_PATTERN.fullmatch(member_id):
+                member_id = None
+            if policy_number and not SEEDED_POLICY_NUMBER_PATTERN.fullmatch(policy_number):
+                policy_number = None
+        has_usable_identifier = bool(member_id or policy_number)
         if member_id:
             member = self.member_repo.get(member_id.strip())
             if member is not None:
@@ -177,7 +186,7 @@ class KycAgent:
             member = self.member_repo.get_by_policy_number(policy_number.strip())
             if member is not None:
                 return member, None
-        if member_id or policy_number:
+        if has_usable_identifier:
             return None, None
 
         dob_value = self._value(fields, "dob")
@@ -245,7 +254,7 @@ class KycAgent:
         visual: TamperAssessment | None,
     ) -> None:
         raw_expired = re.search(r"\bEXPIRED\b", ocr.raw_text, re.IGNORECASE) is not None
-        vision_expired = bool(visual and visual.expired_banner)
+        vision_expired = bool(visual and visual.expired_banner_visible)
         expiry_value = self._value(fields, "id_expiry")
         expiry_date = parse_identity_date(expiry_value) if expiry_value else None
         if expiry_date is None and member is not None:
@@ -338,14 +347,14 @@ class KycAgent:
     @staticmethod
     def _tamper_evidence(visual: TamperAssessment) -> str:
         evidence = visual.evidence or "Vision model detected visual tampering"
-        if visual.bbox is not None:
-            box = visual.bbox
+        if visual.affected_bbox is not None:
+            box = visual.affected_bbox
             return (
                 f"{evidence}; page={box.page}; "
                 f"bbox=({box.x:.4f},{box.y:.4f},{box.w:.4f},{box.h:.4f})"
             )
-        if visual.page is not None:
-            return f"{evidence}; page={visual.page}"
+        if visual.affected_page is not None:
+            return f"{evidence}; page={visual.affected_page}"
         return evidence
 
     @staticmethod

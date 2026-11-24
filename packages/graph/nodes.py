@@ -448,7 +448,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         redis_client=runtime.redis_client,
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
-        prompt_version="v1",
+        prompt_version="v2",
     )
 
     def classify(state: GraphState) -> dict[str, Any]:
@@ -483,7 +483,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         redis_client=runtime.redis_client,
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
-        prompt_version="v1",
+        prompt_version="v3",
     )
 
     def ocr(state: GraphState) -> dict[str, Any]:
@@ -514,7 +514,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         redis_client=runtime.redis_client,
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
-        prompt_version="v1",
+        prompt_version="v2",
     )
 
     def claims_call(state: GraphState) -> ClaimsResult:
@@ -539,7 +539,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         redis_client=runtime.redis_client,
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
-        prompt_version="v1",
+        prompt_version="v2",
     )
 
     def policy_call(state: GraphState) -> PolicyResult:
@@ -583,6 +583,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         redis_client=runtime.redis_client,
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
+        prompt_version="v2",
     )
 
     def fraud_call(state: GraphState) -> FraudResult:
@@ -621,7 +622,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         )
         model_name: str | None = getattr(runtime.settings, "llm_text_model", None)
         try:
-            prompt = PromptLoader().load("orchestrator_justify", "v1")
+            prompt = PromptLoader().load("orchestrator_justify", "v2")
             model_name = prompt.resolve_model(runtime.settings)
             trace_payload = [step.model_dump(mode="json") for step in rule_trace]
             draft = prompt.invoke(

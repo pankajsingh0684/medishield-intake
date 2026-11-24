@@ -12,7 +12,9 @@ from packages.eval.labels import LabelRecord
 from packages.eval.reports import write_reports
 from packages.eval.run import (
     automated_weighted_score,
+    build_decision_mismatch,
     evaluation_exit_code,
+    has_initial_configuration_failures,
     main,
     ordered_labels,
     received_at_override,
@@ -123,6 +125,50 @@ def test_report_generation_writes_json_markdown_and_retrieval_csv(tmp_path: Path
         },
         "weighted_score": {"score": 0.5, "sample_size": 2, "method": "test method"},
         "known_divergences": [],
+        "decision_mismatches": [
+            {
+                "doc_id": "id_001",
+                "expected": "APPROVE",
+                "actual": "ESCALATE",
+                "decision_confidence": 0.45,
+                "fired_rules": [
+                    {
+                        "rule": "R1_AGENT_RELIABILITY",
+                        "summary": "R1 LOW_CONFIDENCE:kyc",
+                        "inputs": {},
+                    }
+                ],
+                "rule_trace": [{"rule": "R1_AGENT_RELIABILITY", "fired": True, "inputs": {}}],
+                "minimum_confidence_agent": "kyc",
+                "agents": [
+                    {
+                        "agent": "classifier",
+                        "status": "OK",
+                        "confidence": 0.92,
+                        "is_minimum_confidence": False,
+                    },
+                    {
+                        "agent": "kyc",
+                        "status": "OK",
+                        "confidence": 0.45,
+                        "is_minimum_confidence": True,
+                    },
+                ],
+            }
+        ],
+        "groq_usage": {
+            "calls_by_model": {"model-a": 2},
+            "rate_limit_responses_429": 1,
+            "retries_429": 1,
+            "seconds_waited": 3.0,
+            "estimated_tokens_by_model": {"model-a": 4200},
+            "daily_tokens_used": 4200,
+            "cache_hits": 1,
+        },
+        "daily_budget_stop": "Groq daily token budget stop at 90% threshold.",
+        "failures": [
+            {"doc_id": "claim_001", "agent": "classifier", "message": "HTTP 404 model missing"}
+        ],
         "predictions": [],
     }
     rows = [
@@ -141,6 +187,16 @@ def test_report_generation_writes_json_markdown_and_retrieval_csv(tmp_path: Path
     markdown = markdown_path.read_text(encoding="utf-8")
     assert "Known Divergences" in markdown
     assert "claim_PT_16658" in markdown
+    assert "claim_001" in markdown
+    assert "HTTP 404 model missing" in markdown
+    assert "HTTP 429 responses: 1" in markdown
+    assert "Cache hits: 1" in markdown
+    assert "model-a" in markdown and "4200" in markdown
+    assert "Partial Run" in markdown
+    assert "90% threshold" in markdown
+    assert "Decision Mismatches" in markdown
+    assert "Expected: **APPROVE**; actual: **ESCALATE**" in markdown
+    assert "kyc **MIN**" in markdown
     with csv_path.open(encoding="utf-8", newline="") as sheet:
         assert next(iter(csv.DictReader(sheet)))["cpt_code"] == "97110"
 
@@ -177,6 +233,44 @@ def test_holdout_requires_explicit_split_and_warns_final_only(
 
 def test_below_decision_correctness_gate_returns_nonzero() -> None:
     assert evaluation_exit_code({"decision": {"accuracy": 0.59}}, {"score": 0.90}) == 1
+    assert (
+        evaluation_exit_code(
+            {"decision": {"accuracy": 1.0}}, {"score": 1.0}, daily_budget_stopped=True
+        )
+        == 2
+    )
+
+
+def test_harness_fails_fast_after_three_configuration_errors() -> None:
+    assert has_initial_configuration_failures([True, True, True])
+    assert not has_initial_configuration_failures([True, True, False])
+    assert not has_initial_configuration_failures([True, True])
+
+
+def test_build_decision_mismatch_labels_rules_and_minimum_agent() -> None:
+    mismatch = build_decision_mismatch(
+        doc_id="id_001",
+        expected="APPROVE",
+        actual="ESCALATE",
+        confidence=0.45,
+        rule_trace=[
+            {
+                "rule": "R1_AGENT_RELIABILITY",
+                "fired": True,
+                "inputs": {"low_confidence_agents": ["kyc"]},
+            },
+            {"rule": "R2_FRAUD_SCORE", "fired": False, "inputs": {"fraud_score": 0.0}},
+            {"rule": "R3_REJECTION", "fired": False, "inputs": {"rejection_reasons": []}},
+        ],
+        agent_runs=[
+            {"agent": "classifier", "status": "OK", "confidence": 0.92},
+            {"agent": "kyc", "status": "OK", "confidence": 0.45},
+        ],
+    )
+
+    assert mismatch["fired_rules"][0]["summary"] == "R1 LOW_CONFIDENCE:kyc"
+    assert mismatch["minimum_confidence_agent"] == "kyc"
+    assert mismatch["agents"][1]["is_minimum_confidence"] is True
 
 
 def test_automated_weighted_score_renormalizes_available_scored_metrics() -> None:

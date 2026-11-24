@@ -8,6 +8,9 @@ from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_ENV_FILE = REPO_ROOT / ".env"
+
 
 def reject_production_placeholders(app_env: str, secrets: dict[str, str | None]) -> None:
     if app_env != "production":
@@ -31,8 +34,8 @@ class EnvFileSettings(BaseSettings):
                 if isinstance(configured_files, (str, Path))
                 else tuple(configured_files)
             )
-            requires_dotenv = any(Path(path).name == ".env" for path in paths)
-            if requires_dotenv and not Path(".env").is_file():
+            dotenv_paths = [Path(path) for path in paths if Path(path).name == ".env"]
+            if dotenv_paths and not any(path.is_file() for path in dotenv_paths):
                 raise RuntimeError("Missing .env. Copy .env.example to .env before startup.")
         super().__init__(**values)
 
@@ -41,7 +44,7 @@ class Settings(EnvFileSettings):
     """Typed configuration loaded from environment variables or a local .env file."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=DEFAULT_ENV_FILE,
         env_file_encoding="utf-8",
         env_ignore_empty=True,
         extra="ignore",
@@ -61,15 +64,19 @@ class Settings(EnvFileSettings):
     tesseract_cmd: str | None = None
 
     llm_provider: Literal["stub", "groq", "anthropic", "openai"] = "stub"
-    llm_vision_model: str
-    llm_text_model: str
+    llm_vision_model: str = ""
+    llm_text_model: str = ""
     llm_fallback_provider: Literal["groq", "anthropic", "openai"] | None = None
     llm_fallback_model: str
     groq_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None
     llm_record_fixtures: bool = False
+    llm_debug_raw: bool = False
     embedding_model: str = "BAAI/bge-small-en-v1.5"
+    groq_rpm_limit: int = Field(default=30, gt=0)
+    groq_tpm_limit: int = Field(default=8_000, gt=0)
+    groq_tpd_limit: int = Field(default=200_000, gt=0)
 
     threshold_fraud_escalate: float = Field(default=0.30, ge=0.0, le=1.0)
     threshold_fraud_high: float = Field(default=0.60, ge=0.0, le=1.0)
@@ -95,6 +102,23 @@ class Settings(EnvFileSettings):
 
     @model_validator(mode="after")
     def reject_production_clock_override(self) -> "Settings":
+        if self.app_env == "production" and self.llm_debug_raw:
+            raise ValueError("LLM_DEBUG_RAW cannot be enabled in production")
+        if self.llm_provider != "stub":
+            invalid_models = [
+                name
+                for name, value in (
+                    ("LLM_TEXT_MODEL", self.llm_text_model),
+                    ("LLM_VISION_MODEL", self.llm_vision_model),
+                )
+                if not value.strip() or value.casefold().startswith("replace-with")
+            ]
+            if invalid_models:
+                raise ValueError(
+                    "LLM_PROVIDER requires configured model IDs; set "
+                    + ", ".join(invalid_models)
+                    + " to a non-empty model ID (not a replace-with placeholder)"
+                )
         if self.app_env == "production" and self.allow_received_at_override:
             raise ValueError("ALLOW_RECEIVED_AT_OVERRIDE cannot be enabled in production")
         database_password = make_url(self.database_url).password

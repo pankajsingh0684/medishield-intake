@@ -8,6 +8,7 @@ from sqlalchemy import Engine
 from packages.core.config import Settings
 from packages.core.db.session import create_database_engine
 from packages.core.llm.gateway import Gateway, build_gateway
+from packages.core.llm.providers import GroqDailyTokenBudget
 from packages.core.logging_security import configure_phi_log_redaction
 from packages.core.storage import S3Storage
 from packages.graph.nodes import GraphRuntime
@@ -28,7 +29,12 @@ class WorkerRuntime:
         self.engine.dispose()
 
 
-def build_runtime(settings: Settings | None = None, *, response_cache=None) -> WorkerRuntime:
+def build_runtime(
+    settings: Settings | None = None,
+    *,
+    response_cache=None,
+    groq_daily_budget: GroqDailyTokenBudget | None = None,
+) -> WorkerRuntime:
     active_settings = settings or Settings()
     configure_phi_log_redaction(active_settings.phi_log_redaction)
     engine = create_database_engine(active_settings.database_url)
@@ -41,7 +47,11 @@ def build_runtime(settings: Settings | None = None, *, response_cache=None) -> W
     from packages.core.clients import create_redis_client
 
     redis_client = create_redis_client(active_settings)
-    gateway = build_gateway(active_settings, response_cache=response_cache)
+    gateway = build_gateway(
+        active_settings,
+        response_cache=response_cache,
+        daily_budget=groq_daily_budget,
+    )
     return WorkerRuntime(
         graph=GraphRuntime(
             engine=engine,

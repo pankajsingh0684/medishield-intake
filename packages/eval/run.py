@@ -8,17 +8,19 @@ from datetime import UTC, datetime
 from datetime import time as datetime_time
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from apps.api.factory import create_app
 from apps.api.settings import ApiSettings
 from apps.worker.runtime import build_runtime
 from packages.core.config import Settings
-from packages.core.db.models import Case
+from packages.core.db.models import AgentRun, Case, Decision
+from packages.core.llm.providers import GroqDailyTokenBudget
 from packages.eval import DATASET_AS_OF_DATE, reference_date_for_run
 from packages.eval.cache import EvaluationResponseCache
 from packages.eval.labels import LabelRecord
@@ -33,6 +35,25 @@ LABELS_PATH = DATASET_ROOT / "labels.jsonl"
 SPLIT_PATH = DATASET_ROOT / "split.json"
 REPORTS_DIR = ROOT / "reports"
 PROVIDER_CHOICES = ("stub", "groq", "anthropic", "openai")
+CONFIGURATION_ERROR_MARKERS = (
+    "model_not_found",
+    "unauthorized",
+    "authentication",
+    "invalid_api_key",
+    "http 401",
+    "http 403",
+    "http 404",
+)
+
+
+def is_configuration_error(message: str) -> bool:
+    return any(marker in message.casefold() for marker in CONFIGURATION_ERROR_MARKERS)
+
+
+def has_initial_configuration_failures(call_failed_with_configuration_error: list[bool]) -> bool:
+    return len(call_failed_with_configuration_error) >= 3 and all(
+        call_failed_with_configuration_error[:3]
+    )
 
 
 def ordered_labels(labels: list[LabelRecord]) -> list[LabelRecord]:
@@ -93,7 +114,11 @@ def automated_weighted_score(metrics: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def evaluation_exit_code(metrics: dict[str, Any], weighted_score: dict[str, Any]) -> int:
+def evaluation_exit_code(
+    metrics: dict[str, Any], weighted_score: dict[str, Any], *, daily_budget_stopped: bool = False
+) -> int:
+    if daily_budget_stopped:
+        return 2
     decision_accuracy = metrics["decision"]["accuracy"]
     if decision_accuracy is None or decision_accuracy < 0.60 or weighted_score["score"] < 0.70:
         return 1
@@ -134,7 +159,15 @@ def _prediction_row(
         "split": split_name,
         "latency_ms": latency_ms,
         "terminal_status": state.get("terminal_status"),
+        "_case_id": state.get("case_id"),
+        "_pipeline_run": state.get("pipeline_run"),
     }
+    row["failures"] = [
+        {"agent": agent_name, "message": result.error or "Agent failed"}
+        for agent_name in ("classification", "ocr", "kyc", "claims", "policy", "fraud", "decision")
+        if (result := state.get(agent_name)) is not None
+        and getattr(getattr(result, "status", None), "value", None) == "ERROR"
+    ]
     retrieval_rows: list[dict[str, Any]] = []
     if claims is not None and policy is not None:
         retrieved_clause = (
@@ -156,6 +189,100 @@ def _prediction_row(
     return row, retrieval_rows
 
 
+def build_decision_mismatch(
+    *,
+    doc_id: str,
+    expected: str,
+    actual: str,
+    confidence: float | None,
+    rule_trace: list[dict[str, Any]],
+    agent_runs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Shape a mismatch explanation using only persisted decision and agent-run data."""
+    fired_rules: list[dict[str, Any]] = []
+    for step in rule_trace:
+        if not step.get("fired"):
+            continue
+        rule = str(step.get("rule", "UNKNOWN_RULE"))
+        inputs = step.get("inputs") or {}
+        if rule == "R1_AGENT_RELIABILITY":
+            reasons = []
+            for name in inputs.get("low_confidence_agents", []):
+                reasons.append(f"LOW_CONFIDENCE:{name}")
+            for name in inputs.get("error_agents", []):
+                reasons.append(f"AGENT_ERROR:{name}")
+            for name in inputs.get("missing_agents", []):
+                reasons.append(f"MISSING_AGENT:{name}")
+            label = "R1 " + (", ".join(reasons) or "AGENT_RELIABILITY")
+        elif rule == "R2_FRAUD_SCORE":
+            label = f"R2 FRAUD_SCORE:{inputs.get('fraud_score')}"
+        elif rule == "R3_REJECTION":
+            label = "R3 REJECTION:" + ",".join(inputs.get("rejection_reasons", []))
+        else:
+            label = rule
+        fired_rules.append({"rule": rule, "summary": label, "inputs": inputs})
+
+    scored_agents = [
+        run
+        for run in agent_runs
+        if run.get("status") != "SKIPPED" and run.get("confidence") is not None
+    ]
+    minimum_agent = (
+        min(scored_agents, key=lambda run: float(run["confidence"])) if scored_agents else None
+    )
+    for run in agent_runs:
+        run["is_minimum_confidence"] = bool(
+            minimum_agent is not None and run.get("agent") == minimum_agent.get("agent")
+        )
+    return {
+        "doc_id": doc_id,
+        "expected": expected,
+        "actual": actual,
+        "decision_confidence": confidence,
+        "fired_rules": fired_rules,
+        "rule_trace": rule_trace,
+        "agents": agent_runs,
+        "minimum_confidence_agent": minimum_agent.get("agent") if minimum_agent else None,
+    }
+
+
+def _stored_decision_mismatch(session: Session, label: LabelRecord, prediction: dict[str, Any]):
+    if not prediction.get("_case_id") or not prediction.get("_pipeline_run"):
+        return None
+    decision = session.scalar(
+        select(Decision).where(
+            Decision.case_id == UUID(prediction["_case_id"]),
+            Decision.pipeline_run == UUID(prediction["_pipeline_run"]),
+        )
+    )
+    if decision is None or decision.decision.value == label.decision_expected.value:
+        return None
+    agent_runs = list(
+        session.scalars(
+            select(AgentRun).where(
+                AgentRun.case_id == UUID(prediction["_case_id"]),
+                AgentRun.pipeline_run == UUID(prediction["_pipeline_run"]),
+            )
+        )
+    )
+    agent_details = [
+        {
+            "agent": run.agent,
+            "status": run.status,
+            "confidence": float(run.confidence) if run.confidence is not None else None,
+        }
+        for run in agent_runs
+    ]
+    return build_decision_mismatch(
+        doc_id=label.doc_id,
+        expected=label.decision_expected.value,
+        actual=decision.decision.value,
+        confidence=float(decision.confidence),
+        rule_trace=decision.rule_trace,
+        agent_runs=agent_details,
+    )
+
+
 def run_evaluation(
     provider: str,
     split_name: str,
@@ -173,6 +300,7 @@ def run_evaluation(
     active_settings = active_settings.model_copy(
         update={"llm_provider": provider, "llm_fallback_provider": None}
     )
+    active_settings = Settings.model_validate(active_settings.model_dump())
     active_api_settings = api_settings or ApiSettings()
     if active_settings.app_env == "production" or active_api_settings.app_env == "production":
         raise ValueError("The synthetic evaluation runner cannot run in production")
@@ -193,7 +321,19 @@ def run_evaluation(
         selected_labels = selected_labels[:sample]
 
     cache = EvaluationResponseCache(ROOT / ".cache" / "eval" / "responses")
-    runtime = build_runtime(active_settings, response_cache=cache)
+    daily_budget = (
+        GroqDailyTokenBudget(
+            active_settings.groq_tpd_limit,
+            ROOT / ".cache" / "eval" / "groq_daily_usage.json",
+        )
+        if provider == "groq"
+        else None
+    )
+    runtime = build_runtime(
+        active_settings,
+        response_cache=cache,
+        groq_daily_budget=daily_budget,
+    )
     try:
         with Session(runtime.engine) as session, session.begin():
             seed_dataset(session, active_settings.seed_test_user_password.get_secret_value())
@@ -213,6 +353,8 @@ def run_evaluation(
         predictions: list[dict[str, Any]] = []
         retrieval_rows: list[dict[str, Any]] = []
         state_by_case_id: dict[str, dict[str, Any]] = {}
+        initial_call_configuration_failures: list[bool] = []
+        daily_budget_stop: str | None = None
         with TestClient(api) as client:
             for label in selected_labels:
                 dataset_file = (DATASET_ROOT / label.file.replace("\\", "/")).resolve()
@@ -260,13 +402,51 @@ def run_evaluation(
                 state = graph.invoke(initial_state(case_id, pipeline_run))
                 latency_ms = (time.perf_counter() - started) * 1000
                 state_by_case_id[case_id] = state
+                classification = state.get("classification")
+                if classification is not None:
+                    error_message = classification.error or ""
+                    initial_call_configuration_failures.append(
+                        classification.status.value == "ERROR"
+                        and is_configuration_error(error_message)
+                    )
+                if has_initial_configuration_failures(initial_call_configuration_failures):
+                    raise RuntimeError(
+                        "Evaluation aborted: the first three classifier calls failed with "
+                        "provider configuration errors. "
+                        f"Last case {label.doc_id}: {classification.error}"
+                    )
                 row, retrieval = _prediction_row(label, split_for_label, state, latency_ms)
+                if daily_budget is not None and daily_budget.budget_exceeded:
+                    daily_budget_stop = (
+                        "Groq daily token budget stop at approximately 90% of "
+                        f"GROQ_TPD_LIMIT ({daily_budget.used_tokens:,}/{active_settings.groq_tpd_limit:,} "
+                        "estimated tokens). Rerun resumes successful model responses from cache."
+                    )
+                    row["failures"].append({"agent": "provider", "message": daily_budget_stop})
                 predictions.append(row)
                 retrieval_rows.extend(retrieval)
+                if daily_budget_stop is not None:
+                    break
 
         labels_by_id = {label.doc_id: label for label in selected_labels}
         metrics = calculate_metrics(predictions, labels_by_id)
         weighted = automated_weighted_score(metrics)
+        decision_mismatches = []
+        with Session(runtime.engine) as session:
+            for prediction in predictions:
+                mismatch = _stored_decision_mismatch(
+                    session, labels_by_id[prediction["doc_id"]], prediction
+                )
+                if mismatch is not None:
+                    decision_mismatches.append(mismatch)
+        for prediction in predictions:
+            prediction.pop("_case_id", None)
+            prediction.pop("_pipeline_run", None)
+        failures = [
+            {"doc_id": row["doc_id"], **failure}
+            for row in predictions
+            for failure in row.get("failures", [])
+        ]
         known_divergences = [
             {
                 **item,
@@ -294,11 +474,19 @@ def run_evaluation(
             },
             "metrics": metrics,
             "weighted_score": weighted,
+            "decision_mismatches": decision_mismatches,
             "known_divergences": known_divergences,
+            "failures": failures,
+            "groq_usage": runtime.gateway.usage_summary() if provider == "groq" else None,
+            "daily_budget_stop": daily_budget_stop,
+            "partial": daily_budget_stop is not None,
             "predictions": predictions,
         }
         paths = write_reports(report, retrieval_rows, reports_dir, run_id=run_id)
-        return report, evaluation_exit_code(metrics, weighted), paths
+        exit_code = evaluation_exit_code(
+            metrics, weighted, daily_budget_stopped=daily_budget_stop is not None
+        )
+        return report, exit_code, paths
     finally:
         runtime.close()
 
@@ -326,6 +514,8 @@ def main(argv: list[str] | None = None) -> int:
         f"{args.split}: n={metrics['sample_size']}, decision={decision_text}, "
         f"automated_weighted={report['weighted_score']['score']:.3f}"
     )
+    if report.get("daily_budget_stop"):
+        print(report["daily_budget_stop"], file=sys.stderr)
     print(f"Report: {paths[1]}")
     print(f"JSON: {paths[0]}")
     print(f"Retrieval review: {paths[2]}")
