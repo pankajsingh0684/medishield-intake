@@ -1,7 +1,7 @@
 # Fraud Agent Dev Check
 
 Deterministic FraudAgent run on dev-split labels only. Scores are not tuned against this report.
-Documents scored on fraud-routed types: 85; labeled fraud: 6; clean `valid_clean` claims: 13.
+Documents scored on fraud-routed types: 101; labeled fraud: 6; clean `valid_clean` claims: 16.
 
 ## Detector Results
 
@@ -20,7 +20,7 @@ Documents scored on fraud-routed types: 85; labeled fraud: 6; clean `valid_clean
 
 ## Clean Dev Claim Threshold Check
 
-Passed: all 13 clean dev claims scored below 0.30.
+Passed: all 16 clean dev claims scored below 0.30.
 
 Non-fraud edge scenarios are listed separately because their defined signals may fire by design:
 - `claim_PT_16658` scenario=uncovered_procedure score=0.3500 detectors=NEAR_THRESHOLD
@@ -112,10 +112,19 @@ Non-fraud edge scenarios are listed separately because their defined signals may
 - `claim_PT_74454` expected=LOW score=0.0000 risk=LOW detectors=none
 - `discharge_PT_74454` expected=LOW score=0.0000 risk=LOW detectors=none
 - `rx_PT_74454` expected=LOW score=0.0000 risk=LOW detectors=none
-
-## Known divergences
-
-All claim forms in dev and holdout were scanned for totals in `[9500, 10000)`; 2 matched, 1 labeled non-fraud. Both fire `NEAR_THRESHOLD` (weight/score 0.35), so engine rule R2 runs before rejection rules and returns `ESCALATE`.
-
-- `claim_PT_69470`: $9,875, dev, `amount_under_10k`, fraud label `FLAGGED`, expected decision `ESCALATE`; engine `ESCALATE` (matches).
-- `claim_PT_16658`: $9,950, dev, `uncovered_procedure`, fraud label `LOW`, expected decision `REJECT`; engine `ESCALATE` via R2 before the uncovered-policy R3 rejection (diverges).
+- `id_extra_PT_EX0031` expected=LOW score=0.0000 risk=LOW detectors=none
+- `claim_extra_PT_EX0031` expected=LOW score=0.0000 risk=LOW detectors=none
+- `discharge_extra_PT_EX0031` expected=LOW score=0.0000 risk=LOW detectors=none
+- `rx_extra_PT_EX0031` expected=LOW score=0.0000 risk=LOW detectors=none
+- `id_extra_PT_EX0033` expected=LOW score=0.0000 risk=LOW detectors=none
+- `claim_extra_PT_EX0033` expected=LOW score=0.0000 risk=LOW detectors=none
+- `discharge_extra_PT_EX0033` expected=LOW score=0.0000 risk=LOW detectors=none
+- `rx_extra_PT_EX0033` expected=LOW score=0.0000 risk=LOW detectors=none
+- `id_extra_PT_EX0035` expected=LOW score=0.0000 risk=LOW detectors=none
+- `claim_extra_PT_EX0035` expected=LOW score=0.0000 risk=LOW detectors=none
+- `discharge_extra_PT_EX0035` expected=LOW score=0.0000 risk=LOW detectors=none
+- `rx_extra_PT_EX0035` expected=LOW score=0.0000 risk=LOW detectors=none
+- `id_extra_PT_EX0037` expected=LOW score=0.0000 risk=LOW detectors=none
+- `claim_extra_PT_EX0037` expected=LOW score=0.0000 risk=LOW detectors=none
+- `discharge_extra_PT_EX0037` expected=LOW score=0.0000 risk=LOW detectors=none
+- `rx_extra_PT_EX0037` expected=LOW score=0.0000 risk=LOW detectors=none

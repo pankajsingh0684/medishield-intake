@@ -212,7 +212,7 @@ uv run python generators/generate_unknown.py
 
 Then ask Copilot for one more small change in `generate_unknown.py`: remove existing `unknown_*` entries from `metadata.json` before appending, and write relative paths (otherwise each rerun duplicates the 4 entries). Run everything twice into two folders and compare checksums. Copy the two policy PDFs to `data/policies/`. If `dataset/` is under about 100 MB, commit it; otherwise use Git LFS. Commit as `step 5a: synthetic dataset` and treat it as frozen.
 
-Expected counts as a sanity check: about 94 APPROVE, 18 REJECT, 43 ESCALATE across 155 documents. A large difference means a scenario was mapped wrongly.
+Expected counts as a sanity check: about 94 APPROVE, 18 REJECT, 43 ESCALATE across the original 155 documents (149 / 22 / 67 across 238 after Step 19). A large difference means a scenario was mapped wrongly.
 
 ## Step 5b: Retrofit Steps 3 to 5 to spec v0.2
 

@@ -31,7 +31,23 @@
     "C_015": "holdout",
     "C_020": "dev",
     "C_012": "dev",
-    "C_007": "dev"
+    "C_007": "dev",
+    "C_031": "dev",
+    "C_032": "holdout",
+    "C_033": "dev",
+    "C_034": "holdout",
+    "C_035": "dev",
+    "C_036": "holdout",
+    "C_037": "dev",
+    "C_038": "holdout",
+    "C_039": "holdout",
+    "C_040": "holdout",
+    "C_041": "holdout",
+    "C_042": "holdout",
+    "C_043": "holdout",
+    "C_044": "holdout",
+    "C_045": "holdout",
+    "C_046": "holdout"
   },
   "documents": {
     "id_PT_19116": "dev",
@@ -188,23 +204,106 @@
     "unknown_blank_scan_001": "holdout",
     "unknown_bank_statement_001": "dev",
     "unknown_utility_bill_001": "dev",
-    "unknown_blurry_scan_001": "dev"
+    "unknown_blurry_scan_001": "dev",
+    "id_extra_PT_EX0031": "dev",
+    "claim_extra_PT_EX0031": "dev",
+    "discharge_extra_PT_EX0031": "dev",
+    "rx_extra_PT_EX0031": "dev",
+    "amend_extra_PT_EX0031": "dev",
+    "id_extra_PT_EX0032": "holdout",
+    "claim_extra_PT_EX0032": "holdout",
+    "discharge_extra_PT_EX0032": "holdout",
+    "rx_extra_PT_EX0032": "holdout",
+    "amend_extra_PT_EX0032": "holdout",
+    "id_extra_PT_EX0033": "dev",
+    "claim_extra_PT_EX0033": "dev",
+    "discharge_extra_PT_EX0033": "dev",
+    "rx_extra_PT_EX0033": "dev",
+    "amend_extra_PT_EX0033": "dev",
+    "id_extra_PT_EX0034": "holdout",
+    "claim_extra_PT_EX0034": "holdout",
+    "discharge_extra_PT_EX0034": "holdout",
+    "rx_extra_PT_EX0034": "holdout",
+    "amend_extra_PT_EX0034": "holdout",
+    "id_extra_PT_EX0035": "dev",
+    "claim_extra_PT_EX0035": "dev",
+    "discharge_extra_PT_EX0035": "dev",
+    "rx_extra_PT_EX0035": "dev",
+    "amend_extra_PT_EX0035": "dev",
+    "id_extra_PT_EX0036": "holdout",
+    "claim_extra_PT_EX0036": "holdout",
+    "discharge_extra_PT_EX0036": "holdout",
+    "rx_extra_PT_EX0036": "holdout",
+    "amend_extra_PT_EX0036": "holdout",
+    "id_extra_PT_EX0037": "dev",
+    "claim_extra_PT_EX0037": "dev",
+    "discharge_extra_PT_EX0037": "dev",
+    "rx_extra_PT_EX0037": "dev",
+    "amend_extra_PT_EX0037": "dev",
+    "id_extra_PT_EX0038": "holdout",
+    "claim_extra_PT_EX0038": "holdout",
+    "discharge_extra_PT_EX0038": "holdout",
+    "rx_extra_PT_EX0038": "holdout",
+    "amend_extra_PT_EX0038": "holdout",
+    "id_extra_PT_EX0039": "holdout",
+    "claim_extra_PT_EX0039": "holdout",
+    "discharge_extra_PT_EX0039": "holdout",
+    "rx_extra_PT_EX0039": "holdout",
+    "amend_extra_PT_EX0039": "holdout",
+    "id_extra_PT_EX0040": "holdout",
+    "claim_extra_PT_EX0040": "holdout",
+    "discharge_extra_PT_EX0040": "holdout",
+    "rx_extra_PT_EX0040": "holdout",
+    "amend_extra_PT_EX0040": "holdout",
+    "id_extra_PT_EX0041": "holdout",
+    "claim_extra_PT_EX0041": "holdout",
+    "discharge_extra_PT_EX0041": "holdout",
+    "rx_extra_PT_EX0041": "holdout",
+    "amend_extra_PT_EX0041": "holdout",
+    "id_extra_PT_EX0042": "holdout",
+    "claim_extra_PT_EX0042": "holdout",
+    "claim_extra_PT_EX0042_dup": "holdout",
+    "discharge_extra_PT_EX0042": "holdout",
+    "rx_extra_PT_EX0042": "holdout",
+    "amend_extra_PT_EX0042": "holdout",
+    "id_extra_PT_EX0043": "holdout",
+    "claim_extra_PT_EX0043": "holdout",
+    "discharge_extra_PT_EX0043": "holdout",
+    "rx_extra_PT_EX0043": "holdout",
+    "amend_extra_PT_EX0043": "holdout",
+    "id_extra_PT_EX0044": "holdout",
+    "claim_extra_PT_EX0044": "holdout",
+    "discharge_extra_PT_EX0044": "holdout",
+    "rx_extra_PT_EX0044": "holdout",
+    "amend_extra_PT_EX0044": "holdout",
+    "id_extra_PT_EX0045": "holdout",
+    "claim_extra_PT_EX0045": "holdout",
+    "discharge_extra_PT_EX0045": "holdout",
+    "rx_extra_PT_EX0045": "holdout",
+    "amend_extra_PT_EX0045": "holdout",
+    "id_extra_PT_EX0046": "holdout",
+    "claim_extra_PT_EX0046": "holdout",
+    "discharge_extra_PT_EX0046": "holdout",
+    "rx_extra_PT_EX0046": "holdout",
+    "amend_extra_PT_EX0046": "holdout",
+    "unknown_extra_blank_001": "dev",
+    "unknown_extra_unrelated_001": "holdout"
   },
   "scenario_counts": {
     "amount_under_10k": {
       "dev": 1,
-      "holdout": 0,
-      "clusters": 1
+      "holdout": 1,
+      "clusters": 2
     },
     "date_conflict": {
       "dev": 1,
-      "holdout": 0,
-      "clusters": 1
+      "holdout": 1,
+      "clusters": 2
     },
     "duplicate_claim": {
       "dev": 1,
-      "holdout": 0,
-      "clusters": 1
+      "holdout": 1,
+      "clusters": 2
     },
     "expired_id": {
       "dev": 3,
@@ -218,28 +317,33 @@
     },
     "missing_field": {
       "dev": 5,
-      "holdout": 3,
-      "clusters": 8
+      "holdout": 5,
+      "clusters": 10
     },
     "name_mismatch": {
       "dev": 1,
-      "holdout": 0,
-      "clusters": 1
+      "holdout": 1,
+      "clusters": 2
     },
     "policy_amendment": {
-      "dev": 21,
-      "holdout": 9,
-      "clusters": 30
+      "dev": 25,
+      "holdout": 21,
+      "clusters": 46
     },
     "proc_diag_mismatch": {
       "dev": 1,
-      "holdout": 0,
-      "clusters": 1
+      "holdout": 1,
+      "clusters": 2
+    },
+    "prompt_injection": {
+      "dev": 1,
+      "holdout": 1,
+      "clusters": 2
     },
     "readmission_30d": {
       "dev": 1,
-      "holdout": 0,
-      "clusters": 1
+      "holdout": 1,
+      "clusters": 2
     },
     "tampered_id": {
       "dev": 2,
@@ -252,22 +356,15 @@
       "clusters": 5
     },
     "unknown": {
-      "dev": 3,
-      "holdout": 1,
+      "dev": 4,
+      "holdout": 2,
       "clusters": 0
     },
     "valid_clean": {
-      "dev": 63,
-      "holdout": 26,
-      "clusters": 30
+      "dev": 78,
+      "holdout": 66,
+      "clusters": 46
     }
   },
-  "single_cluster_scenarios": [
-    "amount_under_10k",
-    "date_conflict",
-    "duplicate_claim",
-    "name_mismatch",
-    "proc_diag_mismatch",
-    "readmission_30d"
-  ]
+  "single_cluster_scenarios": []
 }

@@ -619,7 +619,7 @@ Metrics:
 | Latency | p50 and p95 end to end |
 | Calibration (bonus) | 5-bin reliability diagram and ECE of orchestrator confidence against decision correctness |
 
-**Dataset (generated).** The project uses four existing generator scripts in `data/synthetic/generators/`: `generate_docs.py` (151 PNGs in five categories from 30 patient clusters), `generate_gold_policy.py` and `generate_silver_policy.py` (two policy PDFs), and `generate_unknown.py` (4 out-of-distribution documents). Pillow and numpy render the images and fpdf2 renders the PDFs. Everything is fictional. The generator also writes `truth.json` (true values per document: amounts, codes, NPI, dates, signature present, printed name and expiry, tampered, expired, missing field type) and `clusters.json`; `labels.jsonl` is built from these plus `metadata.json`.
+**Dataset (generated).** The project uses four existing generator scripts in `data/synthetic/generators/`: `generate_docs.py` (151 PNGs in five categories from 30 patient clusters), `generate_gold_policy.py` and `generate_silver_policy.py` (two policy PDFs), and `generate_unknown.py` (4 out-of-distribution documents). Step 19 (v0.2.13) appended 83 documents in 16 extra clusters (`generators/extras/`), giving 238 documents in 46 clusters: dev 25 clusters / 130 documents, holdout 21 / 108; expected decisions 149 APPROVE, 22 REJECT, 67 ESCALATE. Pillow and numpy render the images and fpdf2 renders the PDFs. Everything is fictional. The generator also writes `truth.json` (true values per document: amounts, codes, NPI, dates, signature present, printed name and expiry, tampered, expired, missing field type) and `clusters.json`; `labels.jsonl` is built from these plus `metadata.json`.
 
 **Expected decisions (D1 and D2, both confirmed).**
 
@@ -718,6 +718,9 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.13**
+- Section 11 dataset: Step 19 extras appended (238 documents, 46 clusters, dev 25 / holdout 21).
 
 **v0.2.12**
 - 6.2: specialist ERROR now ends as an ESCALATE decision with status DECIDED; decision idempotency key and reference date location stated.

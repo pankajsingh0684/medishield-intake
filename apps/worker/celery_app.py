@@ -2,14 +2,15 @@
 
 from celery import Celery
 from kombu import Queue
-from sqlalchemy.engine import make_url
 
+from packages.core.clients import authenticated_redis_url
 from packages.core.config import Settings
 from packages.core.logging_security import configure_phi_log_redaction
 
-celery_app = Celery("medishield")
+celery_app = Celery("medishield", include=["apps.worker.tasks"])
 
 
+<<<<<<< HEAD
 def configure_celery(
     redis_url: str,
     redis_password: str,
@@ -18,6 +19,10 @@ def configure_celery(
     configure_phi_log_redaction(phi_log_redaction)
     url = make_url(redis_url).set(password=redis_password)
     authenticated_url = url.render_as_string(hide_password=False)
+=======
+def configure_celery(redis_url: str, redis_password: str) -> Celery:
+    authenticated_url = authenticated_redis_url(redis_url, redis_password)
+>>>>>>> step-18-auth
     celery_app.conf.update(
         broker_url=authenticated_url,
         result_backend=authenticated_url,

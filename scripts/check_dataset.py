@@ -6,12 +6,12 @@ from pathlib import Path
 
 DATASET_DIR = Path(__file__).resolve().parents[1] / "data" / "synthetic" / "dataset"
 EXPECTED_COUNTS = {
-    "claim_forms": 31,
-    "id_documents": 30,
-    "discharge_summaries": 30,
-    "prescriptions": 30,
-    "policy_amendments": 30,
-    "unknown": 4,
+    "claim_forms": 48,
+    "id_documents": 46,
+    "discharge_summaries": 46,
+    "prescriptions": 46,
+    "policy_amendments": 46,
+    "unknown": 6,
 }
 
 

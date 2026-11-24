@@ -32,6 +32,8 @@ def _as_date(value: Any) -> date | None:
 
 
 def _scenario(metadata: dict[str, Any], truth: dict[str, Any]) -> str | None:
+    if metadata.get("prompt_injection"):
+        return "prompt_injection"
     fraud_reason = metadata.get("fraud_reason")
     if fraud_reason:
         return fraud_reason

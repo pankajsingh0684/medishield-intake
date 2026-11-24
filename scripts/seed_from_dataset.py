@@ -66,6 +66,7 @@ def _history_values(
 
 def seed_dataset(session: Session, test_user_password: str) -> None:
     metadata_rows = json.loads((DATASET_DIR / "metadata.json").read_text(encoding="utf-8"))
+    metadata_by_id = {row["doc_id"]: row for row in metadata_rows}
     truth_by_doc = json.loads((DATASET_DIR / "truth.json").read_text(encoding="utf-8"))
     clusters = json.loads((DATASET_DIR / "clusters.json").read_text(encoding="utf-8"))
     labels, unmatched = build_labels(metadata_rows, truth_by_doc)
@@ -80,6 +81,26 @@ def seed_dataset(session: Session, test_user_password: str) -> None:
             documents = labels_by_cluster.setdefault(label.cluster_id, {})
             if label.doc_type not in documents or not label.doc_id.endswith("_dup"):
                 documents[label.doc_type] = label
+
+    for cluster in clusters:
+        cluster_id = cluster["cluster_id"]
+        documents = labels_by_cluster.get(cluster_id, {})
+        missing_types = {DocType.ID_DOCUMENT, DocType.CLAIM_FORM} - documents.keys()
+        if missing_types:
+            names = sorted(doc_type.value for doc_type in missing_types)
+            raise ValueError(f"Cluster {cluster_id} is missing required dataset documents: {names}")
+        for label in documents.values():
+            if label.patient_id != cluster["patient_id"]:
+                raise ValueError(f"Cluster {cluster_id} has a mismatched patient on {label.doc_id}")
+            if (
+                label.doc_id not in truth_by_doc
+                or truth_by_doc[label.doc_id].get("cluster_id") != cluster_id
+            ):
+                raise ValueError(f"Cluster {cluster_id} has mismatched truth for {label.doc_id}")
+            if label.doc_id not in metadata_by_id:
+                raise ValueError(f"Cluster {cluster_id} has no metadata for {label.doc_id}")
+            if metadata_by_id[label.doc_id].get("policy_number") != cluster["policy"]:
+                raise ValueError(f"Cluster {cluster_id} has a mismatched policy on {label.doc_id}")
 
     policies_by_number: dict[str, dict[str, Any]] = {
         "GOLD": {

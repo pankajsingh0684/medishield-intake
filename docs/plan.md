@@ -97,7 +97,7 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 | [x] | 15 | Fraud agent: ten detectors (adds identity mismatch, near-threshold, date conflict, readmission), noisy-OR scoring, 4 dp rounding, risk levels | M | 5c, 10, 11 | Boundary tests at 0.30 and 0.60; property test passes; each dataset fraud scenario fires its detector |
 | [x] | 16 | Orchestrator node, justification text, full graph wiring | M | 4, 12, 14, 15 | Six scenario graph tests produce the expected decisions |
 | [x] | 17 | Audit, review queue, override, reclassify, rerun endpoints | M | 16 | Override keeps the original decision; tests pass |
-| [ ] | 18 | JWT auth, RBAC, rate limiting, PHI log redaction | M | 17 | Role matrix test passes (401 and 403 cases) |
+| [x] | 18 | JWT auth, RBAC, rate limiting, PHI log redaction | M | 17 | Role matrix test passes (401 and 403 cases) |
 
 **Gate 2:** every decision branch covered by tests (AC-04); policy upload retrievable at runtime without redeploy (AC-05); full pipeline produces a decision with rule trace.
 
@@ -105,7 +105,7 @@ Legend: **Size** S under 0.5 day, M about 1 day, L about 2 days. **Depends on** 
 
 | Done | Step | Deliverable | Size | Depends on | Done when |
 | --- | --- | --- | --- | --- | --- |
-| [ ] | 19 | Dataset review and gap-filling (the generators exist from 5a): scenario coverage matrix against the spec, add missing scenarios such as a prompt-injection document and an unrelated or blank page, confirm the split. **Also add a second cluster, assigned to holdout, for each single-cluster scenario** (amount under 10k, date conflict, duplicate claim, name mismatch, code mismatch, readmission), because the holdout set currently has none of them | S | 5c | Coverage matrix has no empty row; every scenario has at least one holdout cluster; additions are deterministic; split unchanged for existing clusters |
+| [x] | 19 | Dataset review and gap-filling (the generators exist from 5a): scenario coverage matrix against the spec, add missing scenarios such as a prompt-injection document and an unrelated or blank page, confirm the split. **Also add a second cluster, assigned to holdout, for each single-cluster scenario** (amount under 10k, date conflict, duplicate claim, name mismatch, code mismatch, readmission), because the holdout set currently has none of them | S | 5c | Coverage matrix has no empty row; every scenario has at least one holdout cluster; additions are deterministic; split unchanged for existing clusters |
 | [ ] | 20 | Evaluation harness (runner sets `received_at`, original before duplicate), baseline run with a real model, tuning loop on dev, final numbers on holdout | L | 16, 19 | Report with all metrics, per-scenario and per-category breakdown, dev and holdout columns, sample sizes; gate script works |
 | [ ] | 21 | Next.js: login, dashboard, case detail with document viewer | L | 17, 18 | Log in, list cases, open a case with agent outputs |
 | [ ] | 22 | Review queue, override dialog, audit tab, policies page | L | 21 | AC-06 and AC-07 pass by hand and in Playwright |
@@ -224,6 +224,8 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | 2026-11-07 | Step 16 | Orchestrator with pure `decide()`, template-fallback justification, `DECIDED` for every decision (specialist ERROR now ESCALATE/AGENT_ERROR), unique (case_id, pipeline_run) migration, reference date in config_snapshot, DECISION audit event, no-op publisher. 408 tests pass, 0 skipped. Spec v0.2.12. Verified at orchestrator level with overridden specialist outputs; real end-to-end on dataset cases comes with Step 19/20. Step 12 manual worker check still open |
 | 2026-11-07 | Step 17 | Audit, review queue, override (original preserved, atomic with audit), reclassify and rerun endpoints; case detail with latest-run outputs, override history, effective decision and 10-minute signed URL (`MINIO_PUBLIC_URL`); interim `current_user()` dependency returns a seeded reviewer until Step 18. 418 tests pass, 0 skipped |
 | 2026-11-07 | Step 12 manual check (real worker) | Found and fixed two bugs that eager-mode tests could not see: the Celery app did not import `apps.worker.tasks` (empty registry, tasks accepted but never run), and a stale API process used the old Redis URL (HTTP 500 at enqueue). Now covered by a registration test and a shared URL builder. A file with no stub fixture ends `NEEDS_REVIEW` as designed. A real-worker run to `DECIDED` is left to the Step 19 evaluation runner |
+| 2026-11-24 | Step 18 | Argon2 login, HS256 JWT (algorithm pinned; expired, tampered and alg:none tokens rejected), role matrix across all routes, upload-scoped service token, per-IP and per-username login limits, upload limit, UI-origin-only CORS, PHI redaction on root, Uvicorn and Celery loggers. Seeded user passwords come from `SEED_TEST_USER_PASSWORD`. 430 tests pass, 0 skipped. Phase 2 and Gate 2 closed |
+| 2026-11-24 | Step 19 | Coverage matrix script; 16 extra clusters (83 documents) appended: 238 documents, 46 clusters. Split dev 25 / 130 documents (81 APPROVE, 12 REJECT, 37 ESCALATE), holdout 21 / 108 (68 / 10 / 30). Original labels a byte prefix, original images and truth unchanged, determinism test passes, oracle engine check on new clusters: 0 mismatches. Seed script updated and idempotent. Every scenario now has dev and holdout coverage |
 | | | |
 
 ## 11. Definition of done
@@ -234,7 +236,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 ## 12. Next action
 
-Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Steps 1 to 17 are done. Next: **Step 18 (JWT auth, RBAC, rate limiting, PHI log redaction)**. Earlier next-step notes, kept for the record:
+Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Steps 1 to 19 are done. Next: **Step 20 (evaluation harness and first real run)**. Earlier next-step notes, kept for the record:
 
 1. Replace the four docs in `docs/` with the v0.2 files.
 2. Run **Step 5a** (fix the generator, regenerate once, freeze). Use the Step 5a prompt in `prompts.md`.
