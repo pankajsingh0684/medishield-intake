@@ -75,6 +75,7 @@ class Gateway:
         retry_base_seconds: float = 0.25,
         sleeper: Callable[[float], None] = time.sleep,
         jitter: Callable[[float], float] | None = None,
+        response_cache: Any | None = None,
     ) -> None:
         self.provider = provider
         self.fallback_provider = fallback_provider
@@ -86,6 +87,7 @@ class Gateway:
         self.retry_base_seconds = retry_base_seconds
         self.sleeper = sleeper
         self.jitter = jitter or (lambda maximum: random.uniform(0, maximum))
+        self.response_cache = response_cache
 
     def complete_json(
         self,
@@ -107,21 +109,38 @@ class Gateway:
             for message in messages
         ]
         key = fixture_key(prompt_name, canonical_messages, image_bytes)
+        cache_key = (
+            self.response_cache.key_for(
+                system,
+                canonical_messages,
+                image_bytes,
+                prompt_name,
+                prompt_version,
+                self.provider.name,
+                model,
+            )
+            if self.response_cache is not None
+            else None
+        )
+        cached_content = self.response_cache.read(cache_key) if cache_key is not None else None
         repair_hint: str | None = None
         tokens: tuple[int | None, int | None] = (None, None)
         selected_provider = self.provider
         selected_model = model
         try:
-            response, selected_provider, selected_model = self._fetch_with_fallback(
-                model=model,
-                system=system,
-                messages=canonical_messages,
-                images=image_bytes,
-                schema=schema,
-                request_key=key,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            if cached_content is not None:
+                response = ProviderResponse(cached_content)
+            else:
+                response, selected_provider, selected_model = self._fetch_with_fallback(
+                    model=model,
+                    system=system,
+                    messages=canonical_messages,
+                    images=image_bytes,
+                    schema=schema,
+                    request_key=key,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
             for schema_attempt in range(2):
                 try:
                     result = schema.model_validate(self._decode_content(response.content))
@@ -147,6 +166,8 @@ class Gateway:
                 tokens = (response.input_tokens, response.output_tokens)
                 if self.record_fixtures and self.fixtures and selected_provider.name != "stub":
                     self.fixtures.write(key, result.model_dump(mode="json"))
+                if self.response_cache is not None and cache_key is not None:
+                    self.response_cache.write(cache_key, response.content)
                 if "raw_response_ref" in schema.model_fields:
                     result = result.model_copy(
                         update={"raw_response_ref": self._response_reference(response.content)}
@@ -336,6 +357,7 @@ def build_gateway(
     *,
     fixture_dir: Path = DEFAULT_FIXTURE_DIR,
     sleeper: Callable[[float], None] = time.sleep,
+    response_cache: Any | None = None,
 ) -> Gateway:
     if settings.llm_record_fixtures and settings.llm_provider == "stub":
         raise ValueError("LLM_RECORD_FIXTURES requires a real LLM_PROVIDER")
@@ -356,4 +378,5 @@ def build_gateway(
         record_fixtures=settings.llm_record_fixtures,
         timeout=float(settings.agent_timeout_s),
         sleeper=sleeper,
+        response_cache=response_cache,
     )

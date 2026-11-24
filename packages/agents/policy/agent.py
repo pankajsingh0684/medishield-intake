@@ -460,6 +460,7 @@ class PolicyAgent:
     ) -> PolicyClause:
         return PolicyClause(
             text=text,
+            retrieved_text=chunk.text,
             policy_id=policy_id,
             page=chunk.page,
             section=chunk.section_path,

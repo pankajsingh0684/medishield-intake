@@ -1,0 +1,1638 @@
+{
+  "run": {
+    "provider": "stub",
+    "split": "dev",
+    "sample_requested": null,
+    "sample_size": 130,
+    "received_at_override": true,
+    "data_as_of_date": "2025-12-31",
+    "run_id": "20261124T063059Z-0574e3e8",
+    "retrieval_csv": "eval_20261124T063059Z-0574e3e8_retrieval.csv"
+  },
+  "metrics": {
+    "sample_size": 130,
+    "classification": {
+      "correct": 10,
+      "sample_size": 130,
+      "accuracy": 0.07692307692307693
+    },
+    "extraction": {
+      "correct": 0,
+      "sample_size": 127,
+      "completeness": 0.0
+    },
+    "decision": {
+      "correct": 1,
+      "sample_size": 130,
+      "accuracy": 0.007692307692307693
+    },
+    "confusion_matrix": {
+      "APPROVE": {
+        "NO_DECISION": 81
+      },
+      "ESCALATE": {
+        "ESCALATE": 1,
+        "NO_DECISION": 36
+      },
+      "REJECT": {
+        "NO_DECISION": 12
+      }
+    },
+    "breakdowns": {
+      "scenario": {
+        "amount_under_10k": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "date_conflict": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "duplicate_claim": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "expired_id": {
+          "correct": 0,
+          "sample_size": 3,
+          "accuracy": 0.0
+        },
+        "expiring_soon_id": {
+          "correct": 0,
+          "sample_size": 3,
+          "accuracy": 0.0
+        },
+        "missing_field": {
+          "correct": 0,
+          "sample_size": 5,
+          "accuracy": 0.0
+        },
+        "name_mismatch": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "policy_amendment": {
+          "correct": 1,
+          "sample_size": 25,
+          "accuracy": 0.04
+        },
+        "proc_diag_mismatch": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "prompt_injection": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "readmission_30d": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "tampered_id": {
+          "correct": 0,
+          "sample_size": 2,
+          "accuracy": 0.0
+        },
+        "uncovered_procedure": {
+          "correct": 0,
+          "sample_size": 3,
+          "accuracy": 0.0
+        },
+        "unknown": {
+          "correct": 0,
+          "sample_size": 4,
+          "accuracy": 0.0
+        },
+        "valid_clean": {
+          "correct": 0,
+          "sample_size": 78,
+          "accuracy": 0.0
+        }
+      },
+      "document_category": {
+        "CLAIM_FORM": {
+          "correct": 0,
+          "sample_size": 26,
+          "accuracy": 0.0
+        },
+        "DISCHARGE_SUMMARY": {
+          "correct": 0,
+          "sample_size": 25,
+          "accuracy": 0.0
+        },
+        "ID_DOCUMENT": {
+          "correct": 0,
+          "sample_size": 25,
+          "accuracy": 0.0
+        },
+        "POLICY_AMENDMENT": {
+          "correct": 1,
+          "sample_size": 25,
+          "accuracy": 0.04
+        },
+        "PRESCRIPTION": {
+          "correct": 0,
+          "sample_size": 25,
+          "accuracy": 0.0
+        },
+        "UNKNOWN": {
+          "correct": 0,
+          "sample_size": 4,
+          "accuracy": 0.0
+        }
+      },
+      "split": {
+        "dev": {
+          "correct": 1,
+          "sample_size": 130,
+          "accuracy": 0.007692307692307693
+        }
+      }
+    },
+    "latency_ms": {
+      "sample_size": 130,
+      "p50": 179.49045007117093,
+      "p95": 813.7272200430738
+    },
+    "calibration": {
+      "sample_size": 1,
+      "bins": [
+        {
+          "lower": 0.0,
+          "upper": 0.2,
+          "sample_size": 1,
+          "mean_confidence": 0.0,
+          "accuracy": 1.0
+        }
+      ],
+      "ece": 1.0
+    }
+  },
+  "weighted_score": {
+    "score": 0.026627218934911243,
+    "sample_size": 3,
+    "method": "Available automated PRD weights (classification 20%, extraction 20%, decision 25%) renormalized to 100%; retrieval is manual, UI and code quality are unscored."
+  },
+  "known_divergences": [
+    {
+      "doc_id": "claim_PT_16658",
+      "expected": "REJECT",
+      "known_engine_result": "ESCALATE",
+      "rule": "R2",
+      "reason": "The $9,950 uncovered claim is in the near-threshold band; R2 fires before R3.",
+      "observed": "NO_DECISION"
+    }
+  ],
+  "predictions": [
+    {
+      "doc_id": "id_PT_19116",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 285.86209984496236,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_19116",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 336.3703000359237,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_19116",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "readmission_30d",
+      "split": "dev",
+      "latency_ms": 421.8140000011772,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_19116",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 176.6162000130862,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_19116",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 164.749100105837,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_99733",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 129.06860001385212,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_99733",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 148.50560016930103,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_99733",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 145.04259987734258,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_99733",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "date_conflict",
+      "split": "dev",
+      "latency_ms": 120.72980008088052,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_99733",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 135.52950019948184,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_62350",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 167.32729994691908,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_62350",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "proc_diag_mismatch",
+      "split": "dev",
+      "latency_ms": 151.68869984336197,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_62350",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 163.81790000014007,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_62350",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 154.93820002302527,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_62350",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 167.85430000163615,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_69470",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 117.76880011893809,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_69470",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "amount_under_10k",
+      "split": "dev",
+      "latency_ms": 427.2988000884652,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_69470",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 164.08640006557107,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_69470",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 359.2652000952512,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_69470",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 469.8421999346465,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_20322",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 255.29719982296228,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_20322",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 630.4838999640197,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_20322",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 167.3242999240756,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_20322",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 168.36469992995262,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_20322",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 215.9600001759827,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_20322_dup",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "duplicate_claim",
+      "split": "dev",
+      "latency_ms": 421.36609996668994,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_39451",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "name_mismatch",
+      "split": "dev",
+      "latency_ms": 106.77199997007847,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_39451",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 126.40709988772869,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_39451",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 127.55779991857708,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_39451",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 243.4892999008298,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_39451",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 902.463800041005,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_71993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 204.07610014081,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_71993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "uncovered_procedure",
+      "split": "dev",
+      "latency_ms": 179.23200014047325,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_71993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 705.2714000456035,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_71993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "missing_field",
+      "split": "dev",
+      "latency_ms": 210.71370015852153,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_71993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 179.7489000018686,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_17665",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 159.1143999248743,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_17665",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "missing_field",
+      "split": "dev",
+      "latency_ms": 206.31920010782778,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_17665",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 223.60539995133877,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_17665",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 488.1814999971539,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_17665",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 683.7464000564069,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_20745",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "expired_id",
+      "split": "dev",
+      "latency_ms": 291.28240002319217,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_20745",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 546.0147999692708,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_20745",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 239.08259999006987,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_20745",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 399.99999990686774,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_20745",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 272.4693000782281,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_16658",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 255.75609994120896,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_16658",
+      "doc_type": "CLAIM_FORM",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "uncovered_procedure",
+      "split": "dev",
+      "latency_ms": 956.5497001167387,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_16658",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 257.7755998354405,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_16658",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 218.71370007283986,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_16658",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 274.1812998428941,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_57795",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "tampered_id",
+      "split": "dev",
+      "latency_ms": 205.67599986679852,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_57795",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 296.02829995565116,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_57795",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 301.74049991182983,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_57795",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 251.28239998593926,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_57795",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 604.6670000068843,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_15075",
+      "doc_type": "ID_DOCUMENT",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "expired_id",
+      "split": "dev",
+      "latency_ms": 5429.689600132406,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_15075",
+      "doc_type": "CLAIM_FORM",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 15704.06369981356,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_15075",
+      "doc_type": "DISCHARGE_SUMMARY",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 8920.115699991584,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_15075",
+      "doc_type": "PRESCRIPTION",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 5439.91219997406,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_15075",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.0,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 46636.01200003177,
+      "terminal_status": "DECIDED"
+    },
+    {
+      "doc_id": "id_PT_50538",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "expiring_soon_id",
+      "split": "dev",
+      "latency_ms": 134.77640016935766,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_50538",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 308.23980015702546,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_50538",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 137.0079000480473,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_50538",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 270.6123001407832,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_50538",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 531.9777000695467,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_81810",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 132.3140999302268,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_81810",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 142.47519988566637,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_81810",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 374.1450000088662,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_81810",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 280.3069001529366,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_81810",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 172.3575999494642,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_30028",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 148.6765998415649,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_30028",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "uncovered_procedure",
+      "split": "dev",
+      "latency_ms": 517.7102000452578,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_30028",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 153.2260999083519,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_30028",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 149.09880002960563,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_30028",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 139.35040007345378,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_67125",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "expiring_soon_id",
+      "split": "dev",
+      "latency_ms": 109.99789997003973,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_67125",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 165.6877000350505,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_67125",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 166.47749999538064,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_67125",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "missing_field",
+      "split": "dev",
+      "latency_ms": 129.4044000096619,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_67125",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 403.9720001164824,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_54236",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "expiring_soon_id",
+      "split": "dev",
+      "latency_ms": 130.21379988640547,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_54236",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 162.04180009663105,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_54236",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 147.8524999693036,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_54236",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 119.1259000916034,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_54236",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 464.06419994309545,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_24993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 103.68139995262027,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_24993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "missing_field",
+      "split": "dev",
+      "latency_ms": 537.6190999522805,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_24993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 175.34019984304905,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_24993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 184.89130004309118,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_24993",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 152.92189992032945,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_55056",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 98.3716999180615,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_55056",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "missing_field",
+      "split": "dev",
+      "latency_ms": 117.31440015137196,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_55056",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 119.5511999540031,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_55056",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 249.577600043267,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_55056",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 141.99439994990826,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_39816",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "expired_id",
+      "split": "dev",
+      "latency_ms": 100.53619998507202,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_39816",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 328.77560006454587,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_39816",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 512.8717001061887,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_39816",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 257.632999913767,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_39816",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 421.1818999610841,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_PT_74454",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "tampered_id",
+      "split": "dev",
+      "latency_ms": 114.01220015250146,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_PT_74454",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 140.03030001185834,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_PT_74454",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 400.12150001712143,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_PT_74454",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 223.14830007962883,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_PT_74454",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 140.0271998718381,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_extra_PT_EX0031",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 111.63539998233318,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0031",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 199.48469987139106,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0031",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 128.44559992663562,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_extra_PT_EX0031",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 134.06210020184517,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_extra_PT_EX0031",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 129.40489989705384,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_extra_PT_EX0033",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 88.7455998454243,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0033",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 132.43499980308115,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0033",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 106.17749998345971,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_extra_PT_EX0033",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 110.57400004938245,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_extra_PT_EX0033",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 137.1306001674384,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_extra_PT_EX0035",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 154.51000002212822,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0035",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 325.30079991556704,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0035",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 199.25919990055263,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_extra_PT_EX0035",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 184.71179995685816,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_extra_PT_EX0035",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 211.1490999814123,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "id_extra_PT_EX0037",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 148.3146999962628,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0037",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "prompt_injection",
+      "split": "dev",
+      "latency_ms": 186.0823999159038,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0037",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 189.8433999158442,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "rx_extra_PT_EX0037",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 148.28659989871085,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "amend_extra_PT_EX0037",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 149.68739985488355,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "unknown_bank_statement_001",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "unknown",
+      "split": "dev",
+      "latency_ms": 137.94899987988174,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "unknown_blurry_scan_001",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "unknown",
+      "split": "dev",
+      "latency_ms": 162.40939986892045,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "unknown_extra_blank_001",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "unknown",
+      "split": "dev",
+      "latency_ms": 147.08609995432198,
+      "terminal_status": "NEEDS_REVIEW"
+    },
+    {
+      "doc_id": "unknown_utility_bill_001",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "unknown",
+      "split": "dev",
+      "latency_ms": 192.9502000566572,
+      "terminal_status": "NEEDS_REVIEW"
+    }
+  ]
+}

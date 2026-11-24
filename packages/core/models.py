@@ -105,6 +105,7 @@ class ClaimsResult(Envelope):
 
 class PolicyClause(StrictModel):
     text: str
+    retrieved_text: str | None = None
     policy_id: UUID
     page: int = Field(ge=1)
     section: str | None

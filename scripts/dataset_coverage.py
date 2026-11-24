@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -105,15 +105,15 @@ def build_coverage() -> dict:
         amount = fields.get("claim_amount")
         try:
             amount_value = Decimal(str(amount)) if amount is not None else None
-        except Exception:
+        except InvalidOperation:
             amount_value = None
         if reason == "amount_under_10k" or (
             amount_value is not None
-            and amount_value < Decimal("10000")
+            and amount_value < Decimal(10000)
             and label["decision_expected"] != "ESCALATE"
         ):
             mark("billing_outlier", doc_id)
-        if amount_value is not None and Decimal("9500") <= amount_value < Decimal("10000"):
+        if amount_value is not None and Decimal(9500) <= amount_value < Decimal(10000):
             mark("near_threshold", doc_id)
 
         if reason == "name_mismatch" or scenario == "name_mismatch":
@@ -140,7 +140,7 @@ def build_coverage() -> dict:
         if noisy:
             mark("noisy_scan", doc_id)
 
-        if doc_id.startswith("id_extra_") or doc_id.startswith("claim_extra_"):
+        if doc_id.startswith(("id_extra_", "claim_extra_")):
             cluster_id = label.get("cluster_id")
             if cluster_id in {"C_031", "C_032"}:
                 mark("rotated", doc_id)

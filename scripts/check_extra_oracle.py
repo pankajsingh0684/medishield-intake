@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, datetime, time, date
+from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 
@@ -18,12 +18,9 @@ from packages.core.models import (
     ClaimFields,
     ClaimsResult,
     Classification,
-    FraudResult,
     KycFlag,
     KycResult,
-    OcrField,
     OcrPayload,
-    PolicyClause,
     PolicyResult,
 )
 from packages.decision.engine import decide

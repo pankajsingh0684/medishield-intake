@@ -5,6 +5,7 @@ from pathlib import Path
 from packages.core.enums import DocType
 from packages.eval import DATASET_AS_OF_DATE, reference_date_for_run
 from packages.eval.labels import LabelRecord
+from packages.eval.metrics import calculate_metrics
 from packages.eval.split import LABELS_PATH, OUTPUT_PATH, build_split
 from scripts.build_labels import DATASET_DIR, build_labels
 
@@ -206,3 +207,58 @@ def test_split_is_deterministic_clustered_and_stratified() -> None:
     extra_original = next(label for label in labels if label.doc_id == "claim_extra_PT_EX0042")
     extra_copy = next(label for label in labels if label.doc_id == "claim_extra_PT_EX0042_dup")
     assert labels.index(extra_original) < labels.index(extra_copy)
+
+
+def test_metrics_include_confusion_breakdowns_and_denominators() -> None:
+    label = LabelRecord(
+        doc_id="claim_metric",
+        file="claim_forms/claim_metric.png",
+        doc_type=DocType.CLAIM_FORM,
+        cluster_id="C_METRIC",
+        patient_id="P_METRIC",
+        fields={
+            "claim_amount": "125.00",
+            "icd10_codes": ["M54.5"],
+            "cpt_codes": ["97110"],
+            "provider_npi": "1234567893",
+            "service_date": "2025-12-01",
+        },
+        kyc_expected=None,
+        coverage_expected=True,
+        fraud_expected="LOW",
+        fraud_reason=None,
+        decision_expected="APPROVE",
+        scenario="valid_clean",
+        reference_date="2025-12-01",
+    )
+    rows = [
+        {
+            "doc_id": "claim_metric",
+            "doc_type": "CLAIM_FORM",
+            "decision": "REJECT",
+            "scenario": "valid_clean",
+            "split": "dev",
+            "latency_ms": 100,
+            "confidence": 0.8,
+            "fields": {
+                "claim_amount": 125,
+                "icd10_codes": ["M54.5"],
+                "cpt_codes": ["97110"],
+                "provider_npi": "1234567893",
+                "service_date": "2025-12-01",
+            },
+        }
+    ]
+
+    metrics = calculate_metrics(rows, {label.doc_id: label})
+
+    assert metrics["sample_size"] == 1
+    assert metrics["classification"] == {"correct": 1, "sample_size": 1, "accuracy": 1.0}
+    assert metrics["extraction"] == {"correct": 5, "sample_size": 5, "completeness": 1.0}
+    assert metrics["decision"] == {"correct": 0, "sample_size": 1, "accuracy": 0.0}
+    assert metrics["confusion_matrix"] == {"APPROVE": {"REJECT": 1}}
+    assert metrics["breakdowns"]["scenario"]["valid_clean"]["sample_size"] == 1
+    assert metrics["breakdowns"]["document_category"]["CLAIM_FORM"]["accuracy"] == 0.0
+    assert metrics["breakdowns"]["split"]["dev"]["correct"] == 0
+    assert metrics["latency_ms"] == {"sample_size": 1, "p50": 100.0, "p95": 100.0}
+    assert metrics["calibration"]["sample_size"] == 1

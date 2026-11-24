@@ -371,7 +371,7 @@ def test_seed_is_idempotent_and_passwords_are_argon2_hashed(database_engine) -> 
             .where(Member.member_id.like(f"{MEMBER_ID_PREFIX}%"))
         )
 
-    assert member_count == 30
+    assert member_count == 46
     assert random_member_count == 0
     assert silver_member is not None
     assert silver_member.policy_number == "MED-SLV-RETRIEVAL"
