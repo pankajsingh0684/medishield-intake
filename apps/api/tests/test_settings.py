@@ -85,3 +85,24 @@ def test_api_rejects_placeholder_secrets_in_production(
 
     with pytest.raises(ValidationError, match="must not use replace-with placeholders"):
         ApiSettings(_env_file=None)
+
+
+def test_api_requires_jwt_secret_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:db@localhost/medishield")
+    monkeypatch.setenv("REDIS_URL", "redis://localhost:6380/0")
+    monkeypatch.setenv("REDIS_PASSWORD", "redis-test")
+    monkeypatch.setenv("S3_ENDPOINT", "http://localhost:9000")
+    monkeypatch.setenv("S3_ACCESS_KEY", "access-test")
+    monkeypatch.setenv("S3_SECRET_KEY", "s3-test")
+    monkeypatch.setenv("S3_BUCKET", "medishield-documents")
+    monkeypatch.setenv("QDRANT_URL", "http://localhost:6333")
+    monkeypatch.setenv("QDRANT_API_KEY", "qdrant-test")
+    monkeypatch.setenv("SERVICE_TOKEN", "service-test")
+    monkeypatch.setenv("SEED_TEST_USER_PASSWORD", "seed-test")
+    monkeypatch.delenv("JWT_SECRET", raising=False)
+
+    with pytest.raises(ValidationError) as error:
+        ApiSettings(_env_file=None)
+
+    assert any(item["loc"] == ("jwt_secret",) for item in error.value.errors())

@@ -113,6 +113,17 @@ class PipelineActionResponse(BaseModel):
     status: CaseStatus
 
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
 class PolicyResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

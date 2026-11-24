@@ -29,7 +29,11 @@ class ApiSettings(EnvFileSettings):
     qdrant_api_key: SecretStr
     minio_public_url: str = "http://localhost:9000"
     jwt_secret: SecretStr
+    jwt_ttl_min: int = Field(default=15, ge=1, le=120)
     seed_test_user_password: SecretStr
+    service_token: SecretStr | None = None
+    ui_origin: str = "http://localhost:3000"
+    phi_log_redaction: bool = True
     groq_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None
@@ -54,6 +58,9 @@ class ApiSettings(EnvFileSettings):
                 if self.openai_api_key
                 else None,
                 "JWT_SECRET": self.jwt_secret.get_secret_value(),
+                "SERVICE_TOKEN": self.service_token.get_secret_value()
+                if self.service_token
+                else None,
                 "SEED_TEST_USER_PASSWORD": self.seed_test_user_password.get_secret_value(),
                 "LANGSMITH_API_KEY": self.langsmith_api_key.get_secret_value()
                 if self.langsmith_api_key

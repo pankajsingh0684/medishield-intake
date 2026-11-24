@@ -8,6 +8,7 @@ from sqlalchemy import Engine
 from packages.core.config import Settings
 from packages.core.db.session import create_database_engine
 from packages.core.llm.gateway import Gateway, build_gateway
+from packages.core.logging_security import configure_phi_log_redaction
 from packages.core.storage import S3Storage
 from packages.graph.nodes import GraphRuntime
 
@@ -29,6 +30,7 @@ class WorkerRuntime:
 
 def build_runtime(settings: Settings | None = None) -> WorkerRuntime:
     active_settings = settings or Settings()
+    configure_phi_log_redaction(active_settings.phi_log_redaction)
     engine = create_database_engine(active_settings.database_url)
     storage = S3Storage(
         endpoint_url=active_settings.s3_endpoint,

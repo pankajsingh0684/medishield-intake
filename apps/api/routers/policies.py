@@ -10,10 +10,12 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from apps.api.auth import require_role
 from apps.api.dependencies import get_session, get_settings, get_storage
 from apps.api.schemas import PolicyListResponse, PolicyResponse
 from apps.api.settings import ApiSettings
-from packages.core.db.models import Policy
+from packages.core.db.models import Policy, User
+from packages.core.enums import UserRole
 from packages.core.storage import S3Storage, StorageUnavailable
 from packages.rag.ingest import infer_plan_code
 
@@ -29,6 +31,7 @@ def upload_policy(
     session: Annotated[Session, Depends(get_session)],
     settings: Annotated[ApiSettings, Depends(get_settings)],
     storage: Annotated[S3Storage, Depends(get_storage)],
+    _: Annotated[User, Depends(require_role(UserRole.SUPERVISOR, UserRole.ADMIN))],
     effective_to: Annotated[date | None, Form()] = None,
 ) -> PolicyResponse:
     content = file.file.read(settings.max_upload_mb * 1024 * 1024 + 1)
@@ -77,6 +80,9 @@ def upload_policy(
 @router.get("", response_model=PolicyListResponse)
 def list_policies(
     session: Annotated[Session, Depends(get_session)],
+    _: Annotated[
+        User, Depends(require_role(UserRole.REVIEWER, UserRole.SUPERVISOR, UserRole.ADMIN))
+    ],
 ) -> PolicyListResponse:
     items = list(session.scalars(select(Policy).order_by(Policy.plan_code, Policy.version)))
     return PolicyListResponse(items=items, total=len(items))

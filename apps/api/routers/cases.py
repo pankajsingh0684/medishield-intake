@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from sqlalchemy import String, cast, func, or_, select, text
 from sqlalchemy.orm import Session
 
-from apps.api.dependencies import current_user, get_session, get_settings, get_storage
+from apps.api.auth import enforce_upload_rate_limit, require_role, require_upload_access
+from apps.api.dependencies import get_session, get_settings, get_storage
 from apps.api.schemas import (
     AuditEventResponse,
     CaseDetailResponse,
@@ -25,7 +26,7 @@ from apps.api.schemas import (
 from apps.api.settings import ApiSettings
 from packages.core.db.models import AgentRun, Case, Decision, Override, User
 from packages.core.db.repositories import AuditRepo, CaseRepo
-from packages.core.enums import CaseStatus, DecisionKind, DocType
+from packages.core.enums import CaseStatus, DecisionKind, DocType, UserRole
 from packages.core.storage import S3Storage, StorageUnavailable
 
 router = APIRouter(prefix="/api/v1/cases", tags=["cases"])
@@ -118,8 +119,10 @@ def upload_case(
     session: Annotated[Session, Depends(get_session)],
     settings: Annotated[ApiSettings, Depends(get_settings)],
     storage: Annotated[S3Storage, Depends(get_storage)],
+    _: Annotated[User | None, Depends(require_upload_access)],
     channel: Annotated[str | None, Form()] = "API",
 ) -> CaseResponse:
+    enforce_upload_rate_limit(request)
     maximum_bytes = settings.max_upload_mb * 1024 * 1024
     content = file.file.read(maximum_bytes + 1)
     if len(content) > maximum_bytes:
@@ -198,6 +201,12 @@ def upload_case(
 @router.get("", response_model=CaseListResponse)
 def list_cases(
     session: Annotated[Session, Depends(get_session)],
+    _: Annotated[
+        User,
+        Depends(
+            require_role(UserRole.REVIEWER, UserRole.SUPERVISOR, UserRole.AUDITOR, UserRole.ADMIN)
+        ),
+    ],
     status: CaseStatus | None = None,
     decision: DecisionKind | None = None,
     doc_type: DocType | None = None,
@@ -247,6 +256,12 @@ def get_case(
     case_id: UUID,
     session: Annotated[Session, Depends(get_session)],
     storage: Annotated[S3Storage, Depends(get_storage)],
+    _: Annotated[
+        User,
+        Depends(
+            require_role(UserRole.REVIEWER, UserRole.SUPERVISOR, UserRole.AUDITOR, UserRole.ADMIN)
+        ),
+    ],
 ) -> CaseDetailResponse:
     case = CaseRepo(session).get(case_id)
     if case is None:
@@ -258,6 +273,12 @@ def get_case(
 def get_case_audit(
     case_id: UUID,
     session: Annotated[Session, Depends(get_session)],
+    _: Annotated[
+        User,
+        Depends(
+            require_role(UserRole.REVIEWER, UserRole.SUPERVISOR, UserRole.AUDITOR, UserRole.ADMIN)
+        ),
+    ],
 ) -> list[AuditEventResponse]:
     if CaseRepo(session).get(case_id) is None:
         raise _error(404, "CASE_NOT_FOUND", "The requested case was not found.")
@@ -270,6 +291,9 @@ def get_case_audit(
 def get_review_queue(
     session: Annotated[Session, Depends(get_session)],
     storage: Annotated[S3Storage, Depends(get_storage)],
+    _: Annotated[
+        User, Depends(require_role(UserRole.REVIEWER, UserRole.SUPERVISOR, UserRole.ADMIN))
+    ],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
 ) -> ReviewQueueResponse:
@@ -327,7 +351,9 @@ def override_case(
     payload: OverrideRequest,
     request: Request,
     session: Annotated[Session, Depends(get_session)],
-    user: Annotated[User, Depends(current_user)],
+    user: Annotated[
+        User, Depends(require_role(UserRole.REVIEWER, UserRole.SUPERVISOR, UserRole.ADMIN))
+    ],
 ) -> OverrideResponse:
     with session.begin():
         case = CaseRepo(session).get(case_id)
@@ -371,7 +397,7 @@ def rerun_case(
     case_id: UUID,
     request: Request,
     session: Annotated[Session, Depends(get_session)],
-    user: Annotated[User, Depends(current_user)],
+    user: Annotated[User, Depends(require_role(UserRole.SUPERVISOR, UserRole.ADMIN))],
 ) -> PipelineActionResponse:
     with session.begin():
         case = CaseRepo(session).get(case_id)
@@ -407,7 +433,9 @@ def reclassify_case(
     payload: ReclassifyRequest,
     request: Request,
     session: Annotated[Session, Depends(get_session)],
-    user: Annotated[User, Depends(current_user)],
+    user: Annotated[
+        User, Depends(require_role(UserRole.REVIEWER, UserRole.SUPERVISOR, UserRole.ADMIN))
+    ],
 ) -> PipelineActionResponse:
     with session.begin():
         case = CaseRepo(session).get(case_id)

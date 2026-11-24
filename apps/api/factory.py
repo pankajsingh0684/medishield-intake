@@ -6,16 +6,19 @@ from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import Engine
 from sqlalchemy.engine import create_engine
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from apps.api.routers.auth import router as auth_router
 from apps.api.routers.cases import review_router
 from apps.api.routers.cases import router as cases_router
 from apps.api.routers.health import router as health_router
 from apps.api.routers.policies import router as policies_router
 from apps.api.settings import ApiSettings
+from packages.core.logging_security import configure_phi_log_redaction
 from packages.core.storage import S3Storage
 
 
@@ -28,6 +31,7 @@ def create_app(
     policy_task=None,
 ) -> FastAPI:
     api_settings = settings or ApiSettings()
+    configure_phi_log_redaction(api_settings.phi_log_redaction)
     owns_engine = engine is None
     owns_storage = storage is None
     db_engine = engine or create_engine(api_settings.database_url, pool_pre_ping=True)
@@ -55,11 +59,23 @@ def create_app(
         from apps.worker.celery_app import configure_celery
         from apps.worker.tasks import ingest_policy, run_pipeline
 
-        configure_celery(api_settings.redis_url, api_settings.redis_password.get_secret_value())
+        configure_celery(
+            api_settings.redis_url,
+            api_settings.redis_password.get_secret_value(),
+            api_settings.phi_log_redaction,
+        )
         pipeline_task = pipeline_task or run_pipeline
         policy_task = policy_task or ingest_policy
     app.state.pipeline_task = pipeline_task
     app.state.policy_task = policy_task
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[api_settings.ui_origin],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    )
+    app.include_router(auth_router)
     app.include_router(health_router)
     app.include_router(cases_router)
     app.include_router(review_router)

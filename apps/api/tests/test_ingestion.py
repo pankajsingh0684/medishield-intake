@@ -13,6 +13,7 @@ import boto3
 import pytest
 from alembic import command
 from alembic.config import Config
+from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
 from PIL import Image
 from pydantic import model_validator
@@ -109,6 +110,8 @@ def api_settings(ingestion_settings: IngestionTestSettings) -> ApiSettings:
         qdrant_url="http://127.0.0.1:6333",
         qdrant_api_key="test-qdrant-key",
         jwt_secret="test-jwt-secret",
+        service_token="test-service-token",
+        ui_origin="http://localhost:3000",
         seed_test_user_password="test-seed-password",
         max_upload_mb=10,
     )
@@ -142,14 +145,18 @@ def test_engine(ingestion_settings: IngestionTestSettings):
         "sqlalchemy.url", ingestion_settings.test_database_url.replace("%", "%%")
     )
     command.upgrade(config, "head")
+    hasher = PasswordHasher()
     with Session(engine) as session, session.begin():
-        session.add(
-            User(
-                user_id=uuid5(NAMESPACE_URL, "medishield:test-user:REVIEWER"),
-                email="reviewer@medishield.test",
-                password_hash="test-hash",
-                role=UserRole.REVIEWER,
-            )
+        session.add_all(
+            [
+                User(
+                    user_id=uuid5(NAMESPACE_URL, f"medishield:test-user:{role.value}"),
+                    email=f"{role.value.lower()}@medishield.test",
+                    password_hash=hasher.hash("test-seed-password"),
+                    role=role,
+                )
+                for role in UserRole
+            ]
         )
     yield engine
     engine.dispose()
@@ -161,6 +168,10 @@ def client(
     test_engine,
     test_storage: S3Storage,
 ) -> Iterator[TestClient]:
+    from apps.api.auth import reset_login_rate_limits
+
+    reset_login_rate_limits()
+
     class NoopPipelineTask:
         def apply_async(self, **_: object) -> None:
             return None
@@ -177,7 +188,341 @@ def client(
         policy_task=NoopPolicyTask(),
     )
     with TestClient(app) as test_client:
-        yield test_client
+        try:
+            authenticate_client(test_client)
+            yield test_client
+        finally:
+            reset_login_rate_limits()
+
+
+def authenticate_client(client: TestClient, role: UserRole = UserRole.REVIEWER) -> TestClient:
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": f"{role.value.lower()}@medishield.test",
+            "password": "test-seed-password",
+        },
+    )
+    assert response.status_code == 200, response.json()
+    if response.status_code == 200:
+        client.headers["Authorization"] = f"Bearer {response.json()['access_token']}"
+    return client
+
+
+def test_unauthenticated_requests_are_rejected_and_service_token_is_upload_scoped(
+    client: TestClient,
+    api_settings: ApiSettings,
+):
+    client.headers.pop("Authorization", None)
+    assert client.get("/api/v1/cases").status_code == 401
+    assert client.get("/api/v1/review-queue").status_code == 401
+    case_id = uuid4()
+    unauthenticated_requests = [
+        client.get(f"/api/v1/cases/{case_id}"),
+        client.get(f"/api/v1/cases/{case_id}/audit"),
+        client.post(
+            "/api/v1/cases",
+            files={
+                "file": (
+                    "anonymous.png",
+                    (DATASET_DIR / "claim_forms" / "claim_PT_17665.png").read_bytes(),
+                    "image/png",
+                )
+            },
+        ),
+        client.post(
+            f"/api/v1/cases/{case_id}/override",
+            json={"to_decision": "APPROVE", "reason": "Valid test reason."},
+        ),
+        client.post(f"/api/v1/cases/{case_id}/rerun"),
+        client.post(f"/api/v1/cases/{case_id}/reclassify", json={"doc_type": "CLAIM_FORM"}),
+        client.get("/api/v1/policies"),
+        client.post(
+            "/api/v1/policies",
+            data={"version": "no-auth", "effective_from": "2024-01-01"},
+            files={"file": ("medishield_gold_plan.pdf", b"%PDF-1.7", "application/pdf")},
+        ),
+    ]
+    assert [response.status_code for response in unauthenticated_requests] == [401] * len(
+        unauthenticated_requests
+    )
+
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_15075.png").read_bytes()
+    uploaded = client.post(
+        "/api/v1/cases",
+        headers={"Authorization": f"Bearer {api_settings.service_token.get_secret_value()}"},
+        files={"file": ("service-upload.png", image, "image/png")},
+    )
+    assert uploaded.status_code in {200, 202}
+    assert client.get("/api/v1/cases").status_code == 401
+    service_headers = {"Authorization": f"Bearer {api_settings.service_token.get_secret_value()}"}
+    service_token_requests = [
+        client.get("/api/v1/cases", headers=service_headers),
+        client.get(f"/api/v1/cases/{uuid4()}", headers=service_headers),
+        client.get(f"/api/v1/cases/{uuid4()}/audit", headers=service_headers),
+        client.get("/api/v1/review-queue", headers=service_headers),
+        client.post(
+            f"/api/v1/cases/{uuid4()}/override",
+            headers=service_headers,
+            json={"to_decision": "APPROVE", "reason": "Valid test reason."},
+        ),
+        client.post(f"/api/v1/cases/{uuid4()}/rerun", headers=service_headers),
+        client.post(
+            f"/api/v1/cases/{uuid4()}/reclassify",
+            headers=service_headers,
+            json={"doc_type": "CLAIM_FORM"},
+        ),
+        client.get("/api/v1/policies", headers=service_headers),
+        client.post(
+            "/api/v1/policies",
+            headers=service_headers,
+            data={"version": "service-token-reuse", "effective_from": "2024-01-01"},
+            files={"file": ("medishield_gold_plan.pdf", b"%PDF-1.7", "application/pdf")},
+        ),
+    ]
+    assert [response.status_code for response in service_token_requests] == [403] * len(
+        service_token_requests
+    )
+
+
+def test_health_and_ready_are_open_without_token(client):
+    client.headers.pop("Authorization", None)
+    assert client.get("/health").status_code == 200
+    assert client.get("/ready").status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("role", "allowed"),
+    [
+        (
+            UserRole.REVIEWER,
+            {"view", "audit", "queue", "override", "reclassify", "policy_list", "upload"},
+        ),
+        (
+            UserRole.SUPERVISOR,
+            {
+                "view",
+                "audit",
+                "queue",
+                "override",
+                "rerun",
+                "reclassify",
+                "policy_list",
+                "policy_upload",
+                "upload",
+            },
+        ),
+        (UserRole.AUDITOR, {"view", "audit"}),
+        (
+            UserRole.ADMIN,
+            {
+                "view",
+                "audit",
+                "queue",
+                "override",
+                "rerun",
+                "reclassify",
+                "policy_list",
+                "policy_upload",
+                "upload",
+            },
+        ),
+    ],
+)
+def test_endpoint_role_matrix(client, test_engine, role: UserRole, allowed: set[str]):
+    case_id = _insert_graph_case(test_engine)
+    with Session(test_engine) as session, session.begin():
+        CaseRepo(session).update_status(case_id, CaseStatus.NEEDS_REVIEW)
+    _add_decision(test_engine, case_id, DecisionKind.ESCALATE)
+
+    role_client = TestClient(client.app)
+    authenticate_client(role_client, role)
+    assert role_client.get("/api/v1/cases").status_code == (200 if "view" in allowed else 403)
+    assert role_client.get(f"/api/v1/cases/{case_id}").status_code == (
+        200 if "view" in allowed else 403
+    )
+    assert role_client.get(f"/api/v1/cases/{case_id}/audit").status_code == (
+        200 if "audit" in allowed else 403
+    )
+    assert role_client.get("/api/v1/review-queue").status_code == (
+        200 if "queue" in allowed else 403
+    )
+    assert role_client.post(
+        f"/api/v1/cases/{case_id}/override",
+        json={"to_decision": "APPROVE", "reason": "Matrix role review."},
+    ).status_code == (200 if "override" in allowed else 403)
+    assert role_client.post(f"/api/v1/cases/{case_id}/rerun").status_code == (
+        202 if "rerun" in allowed else 403
+    )
+    assert role_client.post(
+        f"/api/v1/cases/{case_id}/reclassify", json={"doc_type": "CLAIM_FORM"}
+    ).status_code == (202 if "reclassify" in allowed else 403)
+    assert role_client.get("/api/v1/policies").status_code == (
+        200 if "policy_list" in allowed else 403
+    )
+    pdf = (ROOT / "data" / "policies" / "medishield_gold_plan.pdf").read_bytes()
+    policy_upload = role_client.post(
+        "/api/v1/policies",
+        data={"version": f"matrix-{role.value.lower()}-{uuid4()}", "effective_from": "2024-01-01"},
+        files={"file": ("medishield_gold_plan.pdf", pdf, "application/pdf")},
+    )
+    assert policy_upload.status_code == (202 if "policy_upload" in allowed else 403)
+    image = (DATASET_DIR / "claim_forms" / "claim_PT_17665.png").read_bytes()
+    case_upload = role_client.post(
+        "/api/v1/cases", files={"file": (f"matrix-{uuid4()}.png", image, "image/png")}
+    )
+    assert case_upload.status_code in ({200, 202} if "upload" in allowed else {403})
+
+
+def test_expired_and_tampered_jwts_return_401(client):
+    import base64
+    from datetime import timedelta
+
+    from apps.api.auth import create_access_token
+
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "reviewer@medishield.test", "password": "test-seed-password"},
+    )
+    user_token = response.json()["access_token"]
+    user = User(
+        user_id=uuid5(NAMESPACE_URL, "medishield:test-user:REVIEWER"),
+        email="reviewer@medishield.test",
+        password_hash="unused",
+        role=UserRole.REVIEWER,
+    )
+    expired = create_access_token(
+        user,
+        client.app.state.settings,
+        now=datetime.now(UTC) - timedelta(minutes=client.app.state.settings.jwt_ttl_min + 1),
+    )
+    tampered = user_token[:-1] + ("A" if user_token[-1] != "A" else "B")
+    payload_segment = user_token.split(".")[1]
+    none_header = base64.urlsafe_b64encode(b'{"alg":"none","typ":"JWT"}').rstrip(b"=").decode()
+    unsigned = f"{none_header}.{payload_segment}."
+    for token in (expired, tampered, unsigned):
+        assert (
+            client.get("/api/v1/cases", headers={"Authorization": f"Bearer {token}"}).status_code
+            == 401
+        )
+
+
+def test_login_rate_limit_and_cors_allowlist(client):
+    from apps.api.auth import reset_login_rate_limits
+
+    reset_login_rate_limits()
+    for _ in range(5):
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": "reviewer@medishield.test", "password": "wrong-password"},
+        )
+        assert response.status_code == 401
+    limited = client.post(
+        "/api/v1/auth/login",
+        json={"email": "reviewer@medishield.test", "password": "wrong-password"},
+    )
+    assert limited.status_code == 429
+
+    allowed = client.options(
+        "/api/v1/cases",
+        headers={
+            "Origin": client.app.state.settings.ui_origin,
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    denied = client.options(
+        "/api/v1/cases",
+        headers={"Origin": "https://untrusted.example", "Access-Control-Request-Method": "GET"},
+    )
+    assert allowed.headers.get("access-control-allow-origin") == client.app.state.settings.ui_origin
+    assert denied.headers.get("access-control-allow-origin") is None
+    reset_login_rate_limits()
+
+
+def test_login_rate_limit_is_independent_by_ip_and_username(client, test_engine, monkeypatch):
+    from fastapi import HTTPException
+    from sqlalchemy.orm import Session
+    from starlette.requests import Request
+
+    from apps.api.auth import authenticate_login, reset_login_rate_limits
+
+    reset_login_rate_limits()
+    monkeypatch.setattr("apps.api.auth._LOGIN_LIMIT", 1)
+    settings = client.app.state.settings
+
+    def request_from(ip: str) -> Request:
+        return Request({"type": "http", "client": (ip, 12345), "app": client.app})
+
+    with Session(test_engine) as session:
+        with pytest.raises(HTTPException) as first_ip_attempt:
+            authenticate_login(
+                "reviewer@medishield.test",
+                "wrong-password",
+                request_from("192.0.2.1"),
+                session,
+                settings,
+            )
+        assert first_ip_attempt.value.status_code == 401
+        with pytest.raises(HTTPException) as same_username_new_ip:
+            authenticate_login(
+                "reviewer@medishield.test",
+                "wrong-password",
+                request_from("192.0.2.2"),
+                session,
+                settings,
+            )
+        assert same_username_new_ip.value.status_code == 429
+
+    reset_login_rate_limits()
+    with Session(test_engine) as session:
+        with pytest.raises(HTTPException) as first_user_attempt:
+            authenticate_login(
+                "unknown-a@example.test", "bad", request_from("192.0.2.9"), session, settings
+            )
+        assert first_user_attempt.value.status_code == 401
+        with pytest.raises(HTTPException) as same_ip_new_username:
+            authenticate_login(
+                "unknown-b@example.test", "bad", request_from("192.0.2.9"), session, settings
+            )
+        assert same_ip_new_username.value.status_code == 429
+    reset_login_rate_limits()
+
+
+def test_upload_rate_limit(client, monkeypatch):
+    from apps.api import auth as auth_module
+
+    auth_module.reset_upload_rate_limits()
+    monkeypatch.setattr(auth_module, "_UPLOAD_LIMIT", 1)
+    first = post_file(
+        client,
+        "upload-limit-first.png",
+        (DATASET_DIR / "claim_forms" / "claim_PT_17665.png").read_bytes(),
+    )
+    second = post_file(
+        client,
+        "upload-limit-second.png",
+        (DATASET_DIR / "claim_forms" / "claim_PT_19116.png").read_bytes(),
+    )
+    assert first.status_code == 202
+    assert second.status_code == 429
+    auth_module.reset_upload_rate_limits()
+
+
+def test_phi_redaction_filter_masks_member_id_dob_and_name(caplog):
+    import logging
+
+    from apps.worker.celery_app import configure_celery
+
+    configure_celery("redis://127.0.0.1:6380/0", "dummy-test-password")
+    logger = logging.getLogger("test.phi.redaction")
+    with caplog.at_level(logging.INFO, logger=logger.name):
+        logger.info("member_id=PT_12345 dob=01/02/1980 name=Jane Doe policy_number=MED-GLD-1234567")
+
+    output = caplog.text
+    assert "PT_12345" not in output
+    assert "01/02/1980" not in output
+    assert "Jane Doe" not in output
+    assert "MED-GLD-1234567" not in output
 
 
 def post_file(client: TestClient, filename: str, content: bytes):
@@ -343,6 +688,7 @@ def test_health_and_ready(client: TestClient) -> None:
 
 
 def test_policy_upload_and_list(client: TestClient, test_engine) -> None:
+    authenticate_client(client, UserRole.SUPERVISOR)
     content = (ROOT / "data" / "policies" / "medishield_gold_plan.pdf").read_bytes()
     response = client.post(
         "/api/v1/policies",
@@ -374,6 +720,7 @@ def test_storage_failure_returns_clean_error_without_case_row(
 
     app = create_app(api_settings, engine=test_engine, storage=FailedStorage())
     with TestClient(app) as failing_client:
+        authenticate_client(failing_client)
         response = post_file(failing_client, "claim.png", _dataset_category_samples()[0][1])
 
     assert response.status_code == 503
@@ -1088,6 +1435,7 @@ def test_upload_runs_eager_pipeline_with_stub_fixtures(
     )
     app = create_app(api_settings, engine=test_engine, storage=test_storage)
     with TestClient(app) as eager_client:
+        authenticate_client(eager_client)
         response = post_file(eager_client, image_path.name, image)
 
     assert response.status_code == 202
@@ -1567,6 +1915,7 @@ def test_override_and_audit_event_roll_back_together(client, test_engine, monkey
 
     monkeypatch.setattr(AuditRepo, "append", fail_append)
     safe_client = TestClient(client.app, raise_server_exceptions=False)
+    authenticate_client(safe_client)
     response = safe_client.post(
         f"/api/v1/cases/{case_id}/override",
         json={"to_decision": "APPROVE", "reason": "Rollback this override."},
@@ -1591,6 +1940,7 @@ def test_override_and_audit_event_roll_back_together(client, test_engine, monkey
 
 
 def test_rerun_rejects_processing_and_uses_new_pipeline_run(client, test_engine):
+    authenticate_client(client, UserRole.SUPERVISOR)
     case_id = _insert_graph_case(test_engine)
     with Session(test_engine) as session, session.begin():
         CaseRepo(session).update_status(case_id, CaseStatus.PROCESSING)
@@ -1854,6 +2204,7 @@ def test_duplicate_upload_enqueues_once_and_enqueue_observes_committed_case(
         pipeline_task=CommitCheckingTask(),
     )
     with TestClient(app) as client:
+        authenticate_client(client)
         first = post_file(client, "first.png", image)
         second = post_file(client, "same-content.png", image)
 
@@ -1891,6 +2242,7 @@ def test_failed_case_commit_does_not_enqueue(
     sqlalchemy_event.listen(Session, "before_commit", reject_case_commit)
     try:
         with TestClient(app, raise_server_exceptions=False) as client:
+            authenticate_client(client)
             response = post_file(
                 client,
                 "commit-failure.png",
