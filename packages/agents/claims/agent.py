@@ -37,6 +37,24 @@ FIELD_ALIASES = {
     "prescriber_npi": ("prescriber_npi", "provider_npi"),
 }
 EXTRA_FIELDS = {"drug_name", "sig", "refills", "prescriber_npi", "dea_number", "rx_date"}
+LIST_FIELDS = {"drug_name", "sig"}
+
+
+def _text_items(value: Any) -> list[str]:
+    raw = value if isinstance(value, list | tuple) else [value]
+    items: list[str] = []
+    for item in raw:
+        if item is None:
+            continue
+        items.extend(line.strip() for line in str(item).splitlines() if line.strip())
+    return items
+
+
+def _text_or_list(value: Any) -> str | list[str] | None:
+    items = _text_items(value)
+    if not items:
+        return None
+    return items[0] if len(items) == 1 else items
 
 
 def _matching_bbox(value: Any, page: int, boxes: list[BBox]) -> BBox | None:
@@ -153,7 +171,9 @@ class ClaimsAgent:
                         )
 
             fields = self._build_fields(values)
-            self._set_missing_confidence(fields, required, ocr.raw_text)
+            if doc_type == DocType.PRESCRIPTION:
+                fields.extra.setdefault("refills", 0)
+            self._set_missing_confidence(fields, required, ocr.raw_text, ocr.confidence)
             errors, warnings = validate_claim(
                 fields,
                 doc_type,
@@ -193,6 +213,8 @@ class ClaimsAgent:
         values: dict[str, ExtractedValue] = {}
         for field in ocr_fields:
             key = field.key
+            if doc_type == DocType.PRESCRIPTION and key == "service_date":
+                key = "rx_date"
             if key == "provider_npi" and doc_type == DocType.PRESCRIPTION:
                 key = "prescriber_npi"
             else:
@@ -202,9 +224,17 @@ class ClaimsAgent:
                     ):
                         key = canonical
                         break
+            value: Any = field.value
+            confidence = field.confidence
+            previous = values.get(key)
+            if key in LIST_FIELDS and previous is not None:
+                value = [*_text_items(previous.value), *_text_items(field.value)]
+                confidence = min(previous.confidence, field.confidence)
+            elif key == "rx_date" and previous is not None and not field.value.strip():
+                continue
             values[key] = ExtractedValue(
-                value=field.value,
-                confidence=field.confidence,
+                value=value,
+                confidence=confidence,
                 page=field.page,
                 bbox=_matching_bbox(field.value, field.page, bounding_boxes),
             )
@@ -240,11 +270,15 @@ class ClaimsAgent:
                 extracted_value = normalize_date(extracted.value)
             elif key == "claim_amount":
                 extracted_value = amount_value
-            elif key == "refills" and extracted.value not in (None, ""):
-                try:
-                    extracted_value = int(extracted.value)
-                except (TypeError, ValueError):
-                    extracted_value = extracted.value
+            elif key == "refills":
+                extracted_value = 0
+                if extracted.value not in (None, ""):
+                    try:
+                        extracted_value = int(extracted.value)
+                    except (TypeError, ValueError):
+                        extracted_value = extracted.value
+            elif key in LIST_FIELDS:
+                extracted_value = _text_or_list(extracted.value)
             else:
                 extracted_value = extracted.value
             confidence[target_key] = extracted.confidence
@@ -278,12 +312,14 @@ class ClaimsAgent:
 
     @staticmethod
     def _set_missing_confidence(
-        fields: ClaimFields, required: tuple[str, ...], raw_text: str
+        fields: ClaimFields, required: tuple[str, ...], raw_text: str, ocr_confidence: float
     ) -> None:
+        readable = ocr_confidence >= LOW_CONFIDENCE_THRESHOLD
         for key in required:
             present = fields.extra.get(key) if key in EXTRA_FIELDS else getattr(fields, key, None)
             if present is None or present == "" or present == []:
-                fields.field_confidence[key] = 0.9 if has_confirmed_absence(raw_text, key) else 0.5
+                confirmed = readable or has_confirmed_absence(raw_text, key)
+                fields.field_confidence[key] = 0.9 if confirmed else 0.5
 
     @staticmethod
     def _result(

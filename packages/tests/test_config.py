@@ -47,6 +47,7 @@ def test_default_env_file_is_repo_root_absolute_and_cwd_independent(
 ) -> None:
     expected_env_file = Path(__file__).resolve().parents[2] / ".env"
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(Settings.model_config, "env_file", DEFAULT_ENV_FILE)
 
     configured_env_file = Path(Settings.model_config["env_file"])
 

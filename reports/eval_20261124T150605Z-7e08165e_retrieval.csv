@@ -1,0 +1,44 @@
+doc_id,cpt_code,retrieved_clause,cited_clause,covered
+claim_PT_19116,90837,"The following services are covered under the MediShield Gold Plan when Medically Necessary and not listed under Section 4 (Exclusions). Coverage is subject to the deductibles, copays, and coinsurance specified in the Schedule of Benefits.
+
+Inpatient hospitalization: room and board (up to the Room and Board Limit), intensive care unit (ICU), nursing care, and attending physician fees.
+
+Emergency room services, including stabilization and observation.
+
+Outpatient physician visits: Primary Care Physician and Specialist consultations.
+
+Diagnostic services: laboratory tests, blood panels, urinalysis, pathology.
+
+Diagnostic imaging: X-ray, CT scan, MRI, PET scan, echocardiogram, ultrasound.
+
+Surgical services: physician fees, anesthesia, operating room, post-operative care.
+
+Day Care Procedures as defined in Section 2.
+
+Maternity care (labor, delivery, postnatal care) -- subject to Maternity Rider election and 9-month waiting period.
+
+Newborn care for the first 31 days of life (added to policy within 31 days of birth).
+
+Mental health and substance use disorder treatment (inpatient and outpatient), as required by the Mental Health Parity and Addiction Equity Act (MHPAEA).
+
+Preventive care services as mandated by the Affordable Care Act (ACA) at $0 cost-sharing.
+
+Prescription drugs: Formulary Tier 1-4 medications dispensed by a licensed pharmacist.
+
+Home health care: skilled nursing, physical therapy, occupational therapy (up to 60 visits/year).
+
+Durable medical equipment (DME): prosthetics, orthotics, and medically required devices.
+
+Ambulance services: ground and air transport when Medically Necessary.
+
+Rehabilitation services: physical, occupational, and speech therapy (up to 60 visits/year).
+
+Organ transplants: listed transplants at designated Centers of Excellence.
+
+Chemotherapy, radiation therapy, and cancer-related infusion services.
+
+Dialysis (in-center and home hemodialysis).
+
+Telemedicine consultations with Network Providers.","Mental health and substance use disorder treatment (inpatient and outpatient), as required by the Mental Health Parity and Addiction Equity Act (MHPAEA).",True
+discharge_PT_19116,90837,,,
+discharge_PT_19116,93000,,,

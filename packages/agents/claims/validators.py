@@ -40,7 +40,6 @@ REQUIRED_FIELDS: dict[DocType, tuple[str, ...]] = {
     DocType.PRESCRIPTION: (
         "drug_name",
         "sig",
-        "refills",
         "prescriber_npi",
         "dea_number",
         "rx_date",

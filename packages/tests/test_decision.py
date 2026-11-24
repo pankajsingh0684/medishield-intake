@@ -538,3 +538,15 @@ def test_decision_property_is_valid_and_never_approves_triggered_rules(
     assert decision in set(DecisionKind)
     if rule_triggered:
         assert decision != DecisionKind.APPROVE
+
+
+def test_policy_skipped_no_member_is_excluded_and_kyc_rejects() -> None:
+    state = claim_state(kyc_passed=False)
+    state["policy"] = policy(None, 1.0, AgentStatus.SKIPPED)
+
+    decision, trace, _ = decide(state, DEFAULT_THRESHOLDS)
+
+    assert decision == DecisionKind.REJECT
+    assert trace[0].fired is False
+    assert "policy" not in trace[0].inputs["applicable_agents"]
+    assert trace[2].inputs["rejection_reasons"] == ["KYC_FAILED"]

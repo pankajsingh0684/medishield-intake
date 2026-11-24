@@ -183,7 +183,7 @@ def test_covered_code_retrieves_for_both_policies(plan_code: str) -> None:
     retriever = FakeRetriever()
     retriever.chunks["default"] = _chunk(policy_id)
     gateway = FakeGateway(_answer(retriever.chunks["default"]))
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime(2025, 6, 2, tzinfo=UTC))
@@ -196,7 +196,7 @@ def test_covered_code_retrieves_for_both_policies(plan_code: str) -> None:
     assert retriever.policy_id == policy_id
     assert retriever.service_date == date(2025, 6, 1)
     assert gateway.calls == 1
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -205,13 +205,13 @@ def test_rank_one_confidence_uses_llm_certainty() -> None:
     retriever = FakeRetriever()
     retriever.chunks["default"] = _chunk(policy_id)
     gateway = FakeGateway(_answer(retriever.chunks["default"], certainty=0.6))
-    agent, session = _agent(engine, policy_id, gateway, retriever, reranker=FakeReranker(0.8))
+    agent, _session = _agent(engine, policy_id, gateway, retriever, reranker=FakeReranker(0.8))
     kyc, claims, ocr = _envelopes()
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
 
     assert result.confidence == pytest.approx(0.6)
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -229,7 +229,7 @@ def test_claim_coverage_percentage_is_minimum_across_codes() -> None:
             )
 
     gateway = MultiAnswerGateway({})
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields(["93306", "93000"], [], date(2025, 6, 1))}
@@ -240,7 +240,7 @@ def test_claim_coverage_percentage_is_minimum_across_codes() -> None:
     assert result.covered is True
     assert result.coverage_percentage == 60
     assert gateway.calls == 2
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -258,7 +258,7 @@ def test_combined_percentage_is_null_when_any_code_has_no_percentage() -> None:
             )
 
     gateway = MixedPercentageGateway({})
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields(["93306", "93000"], [], date(2025, 6, 1))}
@@ -268,7 +268,7 @@ def test_combined_percentage_is_null_when_any_code_has_no_percentage() -> None:
 
     assert result.covered is True
     assert result.coverage_percentage is None
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -288,7 +288,7 @@ def test_exclusion_table_hit_returns_095_without_gateway(plan_code: str) -> None
         )
     retriever = FakeRetriever()
     gateway = FakeGateway({})
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields(["17000"], [], date(2025, 6, 1))}
@@ -301,7 +301,7 @@ def test_exclusion_table_hit_returns_095_without_gateway(plan_code: str) -> None
     assert result.exclusions[0].page == 7
     assert gateway.calls == 0
     assert retriever.policy_id is None
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -320,7 +320,7 @@ def test_numeric_code_does_not_match_alphanumeric_exclusion_range() -> None:
         )
     retriever = FakeRetriever()
     gateway = FakeGateway({})
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields(["00020"], [], date(2025, 6, 1))}
@@ -331,7 +331,7 @@ def test_numeric_code_does_not_match_alphanumeric_exclusion_range() -> None:
     assert result.covered is None
     assert result.confidence == 0.3
     assert gateway.calls == 0
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -351,7 +351,7 @@ def test_excluded_and_covered_code_combination_is_not_covered() -> None:
     retriever = FakeRetriever()
     retriever.chunks["default"] = _chunk(policy_id)
     gateway = FakeGateway(_answer(retriever.chunks["default"]))
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields(["17000", "93306"], [], date(2025, 6, 1))}
@@ -362,7 +362,7 @@ def test_excluded_and_covered_code_combination_is_not_covered() -> None:
     assert result.covered is False
     assert result.confidence == pytest.approx(0.9)
     assert gateway.calls == 1
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -384,7 +384,7 @@ def test_overlapping_exclusion_ranges_are_all_preserved() -> None:
                 )
             )
     gateway = FakeGateway({})
-    agent, session = _agent(engine, policy_id, gateway, FakeRetriever())
+    agent, _session = _agent(engine, policy_id, gateway, FakeRetriever())
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields(["17000"], [], date(2025, 6, 1))}
@@ -395,7 +395,7 @@ def test_overlapping_exclusion_ranges_are_all_preserved() -> None:
     assert result.covered is False
     assert len(result.exclusions) == 2
     assert gateway.calls == 0
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -409,7 +409,7 @@ def test_hallucinated_citation_returns_unknown_with_low_confidence() -> None:
             "policy_clause": "This fabricated quote is not in the retrieved clause.",
         }
     )
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
@@ -418,14 +418,14 @@ def test_hallucinated_citation_returns_unknown_with_low_confidence() -> None:
     assert result.covered is None
     assert result.confidence == 0.3
     assert result.error is None
-    session.close()
+    _session.close()
     engine.dispose()
 
 
 def test_no_relevant_clause_returns_unknown_and_low_confidence() -> None:
     engine, policy_id = _policy_fixture()
     gateway = FakeGateway({})
-    agent, session = _agent(engine, policy_id, gateway, FakeRetriever())
+    agent, _session = _agent(engine, policy_id, gateway, FakeRetriever())
     kyc, claims, ocr = _envelopes()
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
@@ -433,7 +433,7 @@ def test_no_relevant_clause_returns_unknown_and_low_confidence() -> None:
     assert result.covered is None
     assert result.confidence == 0.3
     assert gateway.calls == 0
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -451,7 +451,7 @@ def test_llm_null_answer_returns_unknown_with_confidence_03() -> None:
             "certainty": 0.99,
         }
     )
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
@@ -459,7 +459,7 @@ def test_llm_null_answer_returns_unknown_with_confidence_03() -> None:
     assert result.covered is None
     assert result.confidence == 0.3
     assert result.status == AgentStatus.OK
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -493,14 +493,14 @@ def test_confidence_uses_certainty_rank_discount_and_cap(
         def rerank(self, query, candidates):
             return [(chunk, 0.95 - rank * 0.05) for rank, chunk in enumerate(candidates)]
 
-    agent, session = _agent(engine, policy_id, gateway, retriever, reranker=OrderedReranker())
+    agent, _session = _agent(engine, policy_id, gateway, retriever, reranker=OrderedReranker())
     kyc, claims, ocr = _envelopes()
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
 
     assert result.policy_clause.page == cited_rank
     assert result.confidence == pytest.approx(expected_confidence)
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -509,7 +509,7 @@ def test_cpt_and_icd_queries_use_descriptions_without_code_numbers() -> None:
     retriever = FakeRetriever()
     retriever.chunks["default"] = _chunk(policy_id)
     gateway = FakeGateway(_answer(retriever.chunks["default"]))
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields(["93306"], ["I25.10"], date(2025, 6, 1))}
@@ -519,10 +519,9 @@ def test_cpt_and_icd_queries_use_descriptions_without_code_numbers() -> None:
 
     assert retriever.queries == [
         "Complete transthoracic echocardiography covered service",
-        "Coronary artery disease without angina pectoris covered service",
     ]
     assert all("93306" not in query and "I25.10" not in query for query in retriever.queries)
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -531,7 +530,7 @@ def test_low_rerank_score_still_calls_gateway_without_evidence_gate() -> None:
     retriever = FakeRetriever()
     retriever.chunks["default"] = _chunk(policy_id)
     gateway = FakeGateway(_answer(retriever.chunks["default"], certainty=0.85))
-    agent, session = _agent(engine, policy_id, gateway, retriever, reranker=FakeReranker(0.01))
+    agent, _session = _agent(engine, policy_id, gateway, retriever, reranker=FakeReranker(0.01))
     kyc, claims, ocr = _envelopes()
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
@@ -539,7 +538,7 @@ def test_low_rerank_score_still_calls_gateway_without_evidence_gate() -> None:
     assert result.covered is True
     assert result.confidence == pytest.approx(0.85)
     assert gateway.calls == 1
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -549,7 +548,7 @@ def test_wrong_policy_date_gets_no_match() -> None:
     retriever.active_until = date(2025, 12, 31)
     retriever.chunks["default"] = _chunk(policy_id)
     gateway = FakeGateway({})
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields(["93306"], [], date(2026, 1, 1))}
@@ -560,7 +559,7 @@ def test_wrong_policy_date_gets_no_match() -> None:
     assert result.covered is None
     assert retriever.service_date == date(2026, 1, 1)
     assert gateway.calls == 0
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -583,40 +582,42 @@ def test_fabricated_silver_member_uses_policy_from_number_prefix() -> None:
     retriever = FakeRetriever()
     retriever.chunks["default"] = _chunk(silver_policy_id)
     gateway = FakeGateway(_answer(retriever.chunks["default"]))
-    agent, session = _agent(engine, silver_policy_id, gateway, retriever)
+    agent, _session = _agent(engine, silver_policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes("FABRICATED-SILVER")
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
 
     assert result.covered is True
     assert retriever.policy_id == silver_policy_id
-    session.close()
+    _session.close()
     engine.dispose()
 
 
-def test_icd_exclusion_citation_overrides_covered_answer() -> None:
+def test_icd_exclusion_table_hit_overrides_covered_answer() -> None:
     engine, policy_id = _policy_fixture()
-    retriever = FakeRetriever()
-    retriever.chunks["default"] = _chunk(policy_id)
-    gateway = FakeGateway(
-        {
-            **_answer(retriever.chunks["default"]),
-            "exclusions": [
-                {"clause_id": "clause-1", "text": "Echocardiography is covered at 80 percent."}
-            ],
-        }
-    )
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    with Session(engine) as session, session.begin():
+        session.add(
+            PolicyExclusion(
+                policy_id=policy_id,
+                range_start="I10",
+                range_end="I20",
+                category="Excluded cardiac condition",
+                basis="Plan exclusion",
+                page=8,
+            )
+        )
+    gateway = FakeGateway({})
+    agent, _session = _agent(engine, policy_id, gateway, FakeRetriever())
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
-        update={"extracted_fields": _result_fields([], ["I10"], date(2025, 6, 1))}
+        update={"extracted_fields": _result_fields([], ["I15"], date(2025, 6, 1))}
     )
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
 
     assert result.covered is False
-    assert result.exclusions
-    session.close()
+    assert gateway.calls == 0
+    _session.close()
     engine.dispose()
 
 
@@ -634,7 +635,7 @@ def test_icd_range_match_is_deterministic_without_gateway() -> None:
             )
         )
     gateway = FakeGateway({})
-    agent, session = _agent(engine, policy_id, gateway, FakeRetriever())
+    agent, _session = _agent(engine, policy_id, gateway, FakeRetriever())
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(
         update={"extracted_fields": _result_fields([], ["I10"], date(2025, 6, 1))}
@@ -646,7 +647,7 @@ def test_icd_range_match_is_deterministic_without_gateway() -> None:
     assert result.confidence == 0.95
     assert result.exclusions[0].page == 8
     assert gateway.calls == 0
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -657,21 +658,21 @@ def test_retrieval_exception_returns_error_envelope() -> None:
         def search(self, *args):
             raise RuntimeError("vector database unavailable")
 
-    agent, session = _agent(engine, policy_id, FakeGateway({}), FailedRetriever())
+    agent, _session = _agent(engine, policy_id, FakeGateway({}), FailedRetriever())
     kyc, claims, ocr = _envelopes()
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
 
     assert result.status == AgentStatus.ERROR
     assert result.error == "RuntimeError"
-    session.close()
+    _session.close()
     engine.dispose()
 
 
 def test_missing_service_date_falls_back_to_received_date_warning() -> None:
     engine, policy_id = _policy_fixture()
     gateway = FakeGateway({})
-    agent, session = _agent(engine, policy_id, gateway, FakeRetriever())
+    agent, _session = _agent(engine, policy_id, gateway, FakeRetriever())
     kyc, claims, ocr = _envelopes()
     claims = claims.model_copy(update={"extracted_fields": _result_fields(["93306"], [], None)})
     received_at = datetime(2025, 8, 3, 12, tzinfo=UTC)
@@ -680,20 +681,20 @@ def test_missing_service_date_falls_back_to_received_date_warning() -> None:
 
     assert "SERVICE_DATE_FALLBACK_RECEIVED_AT" in result.warnings
     assert agent.retriever.service_date == received_at.date()
-    session.close()
+    _session.close()
     engine.dispose()
 
 
 def test_unresolved_member_returns_error_envelope() -> None:
     engine, policy_id = _policy_fixture()
-    agent, session = _agent(engine, policy_id, FakeGateway({}), FakeRetriever())
+    agent, _session = _agent(engine, policy_id, FakeGateway({}), FakeRetriever())
     kyc, claims, ocr = _envelopes("NOT-A-MEMBER")
 
     result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
 
     assert result.status == AgentStatus.ERROR
     assert result.error == "LookupError"
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -702,7 +703,7 @@ def test_amendment_mode_returns_consistency_result() -> None:
     retriever = FakeRetriever()
     retriever.chunks["default"] = _chunk(policy_id)
     gateway = FakeGateway(_answer(retriever.chunks["default"], covered=False))
-    agent, session = _agent(engine, policy_id, gateway, retriever)
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
     kyc, claims, ocr = _envelopes()
     ocr = ocr.model_copy(
         update={"fields": [OcrField(key="benefit_limit", value="$25,000", confidence=0.9, page=1)]}
@@ -716,7 +717,7 @@ def test_amendment_mode_returns_consistency_result() -> None:
     assert result.covered is False
     assert result.policy_clause is not None
     assert json.loads(gateway.messages[0]["content"])["mode"] == "amendment"
-    session.close()
+    _session.close()
     engine.dispose()
 
 
@@ -734,3 +735,67 @@ def test_icd10_description_lookup_covers_truth_dataset() -> None:
     }
 
     assert dataset_codes <= load_icd10_descriptions().keys()
+
+
+def test_null_member_ref_returns_skipped_no_member() -> None:
+    engine, policy_id = _policy_fixture()
+    agent, _session = _agent(engine, policy_id, FakeGateway({}), FakeRetriever())
+    kyc, claims, ocr = _envelopes()
+    kyc = kyc.model_copy(update={"member_ref": None})
+
+    result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
+
+    assert result.status == AgentStatus.SKIPPED
+    assert result.error == "NO_MEMBER"
+    _session.close()
+    engine.dispose()
+
+
+def test_icd10_does_not_trigger_policy_llm_without_exclusion_table_hit() -> None:
+    engine, policy_id = _policy_fixture()
+    retriever = FakeRetriever()
+    retriever.chunks["default"] = _chunk(policy_id)
+    gateway = FakeGateway(_answer(retriever.chunks["default"]))
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
+    kyc, claims, ocr = _envelopes()
+    claims = claims.model_copy(
+        update={"extracted_fields": _result_fields([], ["I10"], date(2025, 6, 1))}
+    )
+
+    result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
+
+    assert result.covered is None
+    assert gateway.calls == 0
+    assert retriever.queries == []
+
+
+def test_gap_citation_accepts_normalized_segments_from_same_chunk() -> None:
+    policy_id = uuid4()
+    chunk = _chunk(
+        policy_id,
+        "Diagnostic imaging services are covered when medically necessary. "
+        "Additional unrelated text appears here for gap testing.",
+    )
+    citation = (
+        "Diagnostic imaging services are covered when medically necessary."
+        " ... Additional   unrelated text appears here for gap testing."
+    )
+    assert PolicyAgent._citation_is_verbatim(citation, chunk.text)
+
+
+@pytest.mark.parametrize(
+    ("citation", "chunk_text"),
+    [
+        (
+            "This entirely invented policy sentence is not in the source.",
+            "A sufficiently different retrieved policy chunk with real wording.",
+        ),
+        ("Short text.", "Short text. This is a sufficiently long retrieved policy chunk."),
+        (
+            "First exact segment in this retrieved chunk.",
+            "Completely unrelated text in one retrieved chunk.",
+        ),
+    ],
+)
+def test_citation_rejects_invented_short_or_other_chunk_text(citation, chunk_text) -> None:
+    assert not PolicyAgent._citation_is_verbatim(citation, chunk_text)

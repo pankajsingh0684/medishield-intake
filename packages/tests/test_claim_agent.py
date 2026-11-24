@@ -127,10 +127,10 @@ def test_confirmed_blank_required_field_has_normal_confidence():
     assert result.confidence >= 0.5
 
 
-def test_missing_field_without_absence_evidence_escalates_confidence():
+def test_missing_field_on_unreadable_page_escalates_confidence():
     result = ClaimsAgent(EmptyExtractionGateway(), make_settings()).extract(
         DocType.CLAIM_FORM,
-        make_ocr(raw_text="TOTAL CHARGES: $0.00"),
+        make_ocr(raw_text="TOTAL CHARGES: $0.00").model_copy(update={"confidence": 0.6}),
         RECEIVED_AT,
         [b"document image"],
     )
@@ -156,3 +156,79 @@ def test_fixture_generator_is_repeatable(tmp_path: Path):
 
     assert len(first) == 3
     assert first_content == {path.name: path.read_bytes() for path in second}
+
+
+def _rx_fields(**overrides: str | None) -> list[OcrField]:
+    values: dict[str, str | None] = {
+        "medication": "Sertraline",
+        "sig": "Take 1 tablet daily",
+        "provider_npi": "NPI-1234567893",
+        "dea": "AB1234563",
+        "rx_date": "05/01/2025",
+        "refills": "",
+    }
+    values.update(overrides)
+    return [
+        OcrField(key=key, value=value, confidence=0.95, page=1)
+        for key, value in values.items()
+        if value is not None
+    ]
+
+
+def _extract_rx(fields: list[OcrField], confidence: float = 0.9):
+    return ClaimsAgent(EmptyExtractionGateway(), make_settings()).extract(
+        DocType.PRESCRIPTION,
+        make_ocr(fields).model_copy(update={"confidence": confidence}),
+        RECEIVED_AT,
+    )
+
+
+def test_prescription_with_blank_refills_passes():
+    result = _extract_rx(_rx_fields())
+
+    assert result.schema_valid, result.validation_errors
+    assert result.extracted_fields.extra["refills"] == 0
+    assert result.extracted_fields.service_date is None
+
+
+def test_prescription_without_refills_field_passes():
+    assert _extract_rx(_rx_fields(refills=None)).schema_valid
+
+
+def test_prescription_date_maps_to_rx_date_only():
+    result = _extract_rx(_rx_fields(rx_date=None, service_date="05/01/2025"))
+
+    assert result.extracted_fields.service_date is None
+    assert str(result.extracted_fields.extra["rx_date"]) == "2025-05-01"
+
+
+def test_multiple_sig_and_drug_lines_become_lists():
+    fields = [
+        *_rx_fields(),
+        OcrField(key="sig", value="Then 2 tablets at night", confidence=0.9, page=1),
+        OcrField(key="medication", value="Lisinopril", confidence=0.9, page=1),
+    ]
+
+    result = _extract_rx(fields)
+
+    assert result.schema_valid, result.validation_errors
+    assert result.extracted_fields.extra["sig"] == [
+        "Take 1 tablet daily",
+        "Then 2 tablets at night",
+    ]
+    assert result.extracted_fields.extra["drug_name"] == ["Sertraline", "Lisinopril"]
+
+
+def test_prescription_missing_dea_fails_schema_at_normal_confidence():
+    result = _extract_rx(_rx_fields(dea=None))
+
+    assert not result.schema_valid
+    assert any(error.startswith("DEA_NUMBER") for error in result.validation_errors)
+    assert result.confidence >= 0.7
+
+
+def test_low_ocr_confidence_page_keeps_low_confidence():
+    result = _extract_rx(_rx_fields(dea=None), confidence=0.6)
+
+    assert not result.schema_valid
+    assert result.confidence == 0.5

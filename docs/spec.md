@@ -394,7 +394,7 @@ Checks run in this order; each produces flags:
 
 | Check | Logic | Flag |
 | --- | --- | --- |
-| Member lookup | by `member_id`, then `policy_number`; when the document carries neither (passports, state IDs), by date of birth plus the best fuzzy name match (ratio at least 0.80) | `MEMBER_NOT_FOUND` (HIGH) |
+| Member lookup | by `member_id`, then `policy_number`; when the document carries neither (passports, state IDs), or when those lookups find no member (v0.2.15, for example an OCR misread), by date of birth plus the best fuzzy name match (ratio at least 0.80). A member found this way is still checked against the document's printed policy number (`POLICY_MISMATCH`), so a fabricated number is not accepted. A value counts as a `member_id` or `policy_number` only if it matches the seeded format; a printed government ID number is ignored for lookup. A policy number whose plan prefix is within edit distance 1 of exactly one known plan prefix (`MED-GLD`, `MED-SLV`) is corrected to it before lookup | `MEMBER_NOT_FOUND` (HIGH) |
 | DOB | exact date match | `DOB_MISMATCH` (HIGH) |
 | Name | normalize both names (case, punctuation, middle initial, extra spaces); any remaining difference is a flag; fuzzy ratio 0.85 or above gives MEDIUM, below gives HIGH | `NAME_MISMATCH` (MEDIUM or HIGH) |
 | Policy number | equals member record, policy active on service date | `POLICY_MISMATCH` (HIGH) |
@@ -423,7 +423,7 @@ For "member match only" document types, only member lookup, DOB and name checks 
    - `claim_amount > 0` and below a configurable maximum (default 1,000,000).
    - Conform to `data/schemas/claim_submission_standard.v1.json` (JSON Schema) **[Default, OQ-04]**.
 4. `schema_valid = no errors`. Each error is a string `FIELD_CODE: message`.
-5. Confidence reflects how reliably the values were read, not whether the form is complete. It is the minimum over the confidences of fields that are present, with 0.9 for a field confirmed absent (its label was found and the value is blank or marked missing). It drops below 0.6 only when the page cannot be read well enough to tell whether a field is present (for example OCR mean confidence below 0.7 after the LLM fallback). A missing required field therefore gives `schema_valid=false` at normal confidence, so rule R3 rejects the claim instead of rule R1 escalating it.
+5. Confidence reflects how reliably the values were read, not whether the form is complete. It is the minimum over the confidences of fields that are present, with 0.9 for a field confirmed absent (its label was found and the value is blank or marked missing). It drops below 0.6 only when the page cannot be read well enough to tell whether a field is present (for example OCR mean confidence below 0.7 after the LLM fallback). When the OCR mean confidence is 0.7 or higher, a field that is absent counts as confirmed absent (0.9) (v0.2.15). A missing required field therefore gives `schema_valid=false` at normal confidence, so rule R3 rejects the claim instead of rule R1 escalating it.
 
 **Required fields by document type**
 
@@ -431,7 +431,7 @@ For "member match only" document types, only member lookup, DOB and name checks 
 | --- | --- |
 | CLAIM_FORM | `claim_amount`, `service_date`, `icd10_codes` (1 or more), `cpt_codes` (1 or more), `provider_npi`, `signature_present` |
 | DISCHARGE_SUMMARY | `admit_date`, `discharge_date`, `icd10_codes` (1 or more), `signature_present` |
-| PRESCRIPTION | drug name, dosage instructions (sig), refills, prescriber NPI and DEA number, `rx_date` (stored in `extra`) |
+| PRESCRIPTION | drug name (1 or more), dosage instructions (sig, 1 or more), prescriber NPI and DEA number, `rx_date` (stored in `extra`). `refills` is optional and an absent value means 0 (v0.2.15: the frozen dataset prescriptions carry only a blank refill-options row). The prescription date maps to `rx_date` only, never to `service_date` |
 | ID_DOCUMENT, POLICY_AMENDMENT | not processed by the Claims Agent |
 
 The generated forms mark absent values with explicit text such as `[DOB MISSING]`, `[NPI MISSING]`, `[SIGNATURE MISSING]` or `[DEA MISSING]`, and some leave the line blank; both count as confirmed absent. The prior-authorization number is blank on valid forms, so it is not a required field.
@@ -449,10 +449,12 @@ The generated forms mark absent values with explicit text such as `[DOB MISSING]
 
 **Retrieval (`Policy Agent`)**
 
+If KYC could not resolve a member (`member_ref` is null), the Policy Agent returns `SKIPPED` with reason `NO_MEMBER` (v0.2.15) instead of an ERROR, so the decision engine's R3 (KYC) decides.
+
 1. Resolve `policy_id` from the member's policy number via KYC `member_ref`; filter by `effective_from <= service_date <= effective_to` (FR-POL-05/08).
-2. Build queries per CPT code (`"{description} covered service"` (v0.2.10: description only; the bare code number scored as noise against policy prose, ADR-015), with description from a small CPT lookup table in `data/`) and per ICD-10 code; run hybrid search (dense + BM25 over chunk text via Qdrant sparse vectors), top 8 each, merged with reciprocal rank fusion, then a cross-encoder or LLM rerank to top 5.
-3. Ask the text LLM (prompt `policy_decide.v1`) with only the retrieved chunks to return `covered`, `coverage_percentage`, supporting clause id and exclusions, with an instruction to answer `null` when the text does not decide coverage.
-4. Verify that the cited clause text is a substring of a retrieved chunk; reject hallucinated citations.
+2. Build queries per CPT code (`"{description} covered service"` (v0.2.10: description only; the bare code number scored as noise against policy prose, ADR-015), with description from a small CPT lookup table in `data/`) (v0.2.16: CPT codes only; an ICD-10 code needs no inclusion clause and is not sent to the LLM, because a diagnosis does not decide coverage; diagnosis-based exclusions are out of scope for v1); run hybrid search (dense + BM25 over chunk text via Qdrant sparse vectors), top 8 each, merged with reciprocal rank fusion, then a cross-encoder or LLM rerank to top 5.
+3. Ask the text LLM (prompt `policy_decide`, which receives the CPT description and answers `covered` when a retrieved clause lists a service category that includes the procedure, and `null` only when no clause addresses that kind of service; v0.2.16) with only the retrieved chunks to return `covered`, `coverage_percentage`, supporting clause id and exclusions, with an instruction to answer `null` when the text does not decide coverage.
+4. Verify that the cited clause text is a substring of a retrieved chunk; reject hallucinated citations. (v0.2.16) Whitespace is normalised, and a citation may use `...` to skip text, in which case every segment between gaps must itself be a verbatim substring of the same retrieved chunk and at least 20 characters long.
 5. Confidence (v0.2.10, ADR-015): the rerank score is used only to order candidates, not to gate evidence. If the LLM answers `null`, or its citation is not a verbatim substring of a retrieved chunk, return `covered=None` with confidence 0.3 (forces escalation, FR-POL-06). Otherwise confidence = the LLM self-reported certainty, multiplied by 0.9 when the cited clause ranked 3rd to 5th after rerank, and capped at 0.9. Exclusion hits stay at 0.95.
 6. A claim is `covered` only when every CPT code is covered; coverage percentage is the minimum across codes; exclusions that match any ICD-10 or CPT code set `covered=false`.
 
@@ -701,7 +703,7 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 
 | PRD ID | Spec impact | Default used here |
 | --- | --- | --- |
-| OQ-02 | Model IDs and fallback | Groq primary for the real run (vision-capable Llama 4 models), stub until Step 20, Anthropic and OpenAI as optional providers; model IDs confirmed in the Groq console before Step 20 |
+| OQ-02 | Model IDs and fallback | Groq primary for the real run: text `openai/gpt-oss-120b`, vision `qwen/qwen3.8-27b` (preview; Llama models left the free tier in 2026, ADR-001 v0.3), stub until Step 20, Anthropic and OpenAI as optional providers; model IDs re-confirmed in the Groq console before Step 20 |
 | OQ-03 | Retention, tracing, BAA | Synthetic only; tracing off |
 | OQ-04 | Claim standard schema | Authored `claim_submission_standard.v1.json` |
 | OQ-05 | Routing table | Section 6.2 table |
@@ -718,6 +720,15 @@ Decision-engine coverage MUST include: each of R1 to R4 firing alone, every pair
 ---
 
 ## Changelog
+
+**v0.2.16**
+- 7.6: ICD-10 codes are not sent to the LLM for coverage; citation check accepts whitespace differences and `...` gaps with verbatim segments; `policy_decide` gets the CPT description and a service-category rule.
+
+**v0.2.15**
+- 7.4: member lookup falls back to date of birth plus fuzzy name when identifier lookups fail; policy-prefix correction; 7.5: refills optional, rx_date only, absent field is confirmed absent when OCR confidence is 0.7 or higher; 7.6: Policy SKIPPED when no member.
+
+**v0.2.14**
+- OQ-02 and ADR-001 v0.3: Groq model IDs (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`) and free-tier limits recorded.
 
 **v0.2.13**
 - Section 11 dataset: Step 19 extras appended (238 documents, 46 clusters, dev 25 / holdout 21).

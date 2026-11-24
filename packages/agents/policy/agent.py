@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Literal
@@ -27,7 +28,7 @@ from packages.rag.retrieve import Reranker, RetrievedChunk
 
 POLICY_AGENT = "policy"
 POLICY_VERSION = "1.0.0"
-POLICY_PROMPT_VERSION = "v2"
+POLICY_PROMPT_VERSION = "v3"
 CPT_DESCRIPTIONS_PATH = Path(__file__).resolve().parents[3] / "data" / "cpt_descriptions.json"
 ICD10_DESCRIPTIONS_PATH = Path(__file__).resolve().parents[3] / "data" / "icd10_descriptions.json"
 
@@ -130,9 +131,19 @@ class PolicyAgent:
         started = datetime.now(UTC)
         model_name = self.settings.llm_text_model
         warnings: list[str] = []
+        if not kyc.member_ref:
+            return self._result(
+                AgentStatus.SKIPPED,
+                None,
+                None,
+                None,
+                [],
+                1.0,
+                started,
+                model_name,
+                error="NO_MEMBER",
+            )
         try:
-            if not kyc.member_ref:
-                raise LookupError("KYC did not resolve a member")
             member = self.member_repo.get(kyc.member_ref)
             if member is None:
                 raise LookupError("Resolved member does not exist")
@@ -211,18 +222,6 @@ class PolicyAgent:
                     outcomes.append(
                         (False, None, 0.95, matching_clause(code_exclusions), code_exclusions)
                     )
-                    continue
-                outcomes.append(
-                    self._evaluate_code(
-                        policy,
-                        service_date,
-                        "ICD-10",
-                        code,
-                        self.icd10_descriptions.get(code, "diagnosis"),
-                        started,
-                        model_name,
-                    )
-                )
 
             if not outcomes:
                 return self._result(
@@ -304,7 +303,7 @@ class PolicyAgent:
         if answer.clause_id not in scores or not answer.policy_clause:
             return None, None, 0.3, None, []
         chunk = next(chunk for chunk in chunks if chunk.point_id == answer.clause_id)
-        if answer.policy_clause not in chunk.text:
+        if not self._citation_is_verbatim(answer.policy_clause, chunk.text):
             return None, None, 0.3, None, []
         clause = self._policy_clause(
             policy.policy_id, chunk, answer.policy_clause, scores[chunk.point_id]
@@ -387,7 +386,7 @@ class PolicyAgent:
                 AgentStatus.OK, None, None, None, [], 0.3, started, model_name, warnings=warnings
             )
         chunk = next(chunk for chunk, _ in top_five if chunk.point_id == answer.clause_id)
-        if answer.policy_clause not in chunk.text:
+        if not self._citation_is_verbatim(answer.policy_clause, chunk.text):
             return self._result(
                 AgentStatus.OK, None, None, None, [], 0.3, started, model_name, warnings=warnings
             )
@@ -417,6 +416,27 @@ class PolicyAgent:
             model_name,
             warnings=warnings,
         )
+
+    @staticmethod
+    def _normalise_citation(text: str) -> str:
+        return re.sub(r"\s+", " ", text).strip()
+
+    @classmethod
+    def _citation_segments(cls, text: str) -> list[str]:
+        normalised = cls._normalise_citation(text)
+        if not normalised:
+            return []
+        parts = re.split(r"(?:\s*\.\.\.\s*)", normalised)
+        return [cls._normalise_citation(part) for part in parts if cls._normalise_citation(part)]
+
+    @classmethod
+    def _citation_is_verbatim(cls, citation: str, chunk_text: str) -> bool:
+        segments = cls._citation_segments(citation)
+        if not segments:
+            return False
+        if any(len(segment) < 20 for segment in segments):
+            return False
+        return all(segment in cls._normalise_citation(chunk_text) for segment in segments)
 
     @staticmethod
     def _confidence(certainty: float, rank: int) -> float:
@@ -472,8 +492,8 @@ class PolicyAgent:
         scores: dict[str, float],
     ) -> PolicyClause:
         chunk = next((item for item in chunks if item.point_id == citation.clause_id), None)
-        if chunk is None or not citation.text or citation.text not in chunk.text:
-            raise ValueError("Policy exclusion citation is not verbatim in retrieved text")
+        if chunk is None or not self._citation_is_verbatim(citation.text, chunk.text):
+            raise ValueError("Policy citation is not verbatim in the cited retrieved chunk")
         return self._policy_clause(policy_id, chunk, citation.text, scores[chunk.point_id])
 
     @staticmethod

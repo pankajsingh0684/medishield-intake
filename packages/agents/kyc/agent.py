@@ -29,6 +29,7 @@ KYC_VERSION = "1.0.0"
 KYC_PROMPT_VERSION = "v2"
 SEEDED_MEMBER_ID_PATTERN = re.compile(r"(?:PT_\d{5}|PT_EX\d{4})\Z")
 SEEDED_POLICY_NUMBER_PATTERN = re.compile(r"(?:MED-GLD-\d{7}|MED-SLV-RETRIEVAL)\Z")
+KNOWN_POLICY_PREFIXES = ("MED-GLD", "MED-SLV")
 MEMBER_MATCH_ONLY_TYPES = {DocType.DISCHARGE_SUMMARY, DocType.PRESCRIPTION}
 PROCESSED_TYPES = {
     DocType.ID_DOCUMENT,
@@ -52,6 +53,28 @@ FLAG_PENALTIES = {
     "ID_EXPIRED": 0.90,
     "ID_EXPIRING_SOON": 0.10,
 }
+
+
+def _within_one_edit(left: str, right: str) -> bool:
+    if left == right:
+        return True
+    if abs(len(left) - len(right)) > 1:
+        return False
+    if len(left) == len(right):
+        return sum(a != b for a, b in zip(left, right, strict=True)) == 1
+    shorter, longer = sorted((left, right), key=len)
+    return any(longer[:i] + longer[i + 1 :] == shorter for i in range(len(longer)))
+
+
+def correct_policy_number(policy_number: str) -> str:
+    """Fix a plan prefix within edit distance 1 of exactly one known prefix."""
+    prefix, separator, tail = policy_number.strip().upper().rpartition("-")
+    if not separator or prefix in KNOWN_POLICY_PREFIXES:
+        return policy_number.strip()
+    matches = [known for known in KNOWN_POLICY_PREFIXES if _within_one_edit(prefix, known)]
+    if len(matches) != 1:
+        return policy_number.strip()
+    return f"{matches[0]}-{tail}"
 
 
 class TamperAssessment(LLMOutputModel):
@@ -171,13 +194,12 @@ class KycAgent:
         self, fields: dict[str, OcrField], doc_type: DocType
     ) -> tuple[Member | None, float | None]:
         member_id = self._value(fields, "member_id")
-        policy_number = self._value(fields, "policy_number")
+        policy_number = self._printed_policy_number(fields)
         if doc_type == DocType.ID_DOCUMENT:
             if member_id and not SEEDED_MEMBER_ID_PATTERN.fullmatch(member_id):
                 member_id = None
             if policy_number and not SEEDED_POLICY_NUMBER_PATTERN.fullmatch(policy_number):
                 policy_number = None
-        has_usable_identifier = bool(member_id or policy_number)
         if member_id:
             member = self.member_repo.get(member_id.strip())
             if member is not None:
@@ -186,8 +208,6 @@ class KycAgent:
             member = self.member_repo.get_by_policy_number(policy_number.strip())
             if member is not None:
                 return member, None
-        if has_usable_identifier:
-            return None, None
 
         dob_value = self._value(fields, "dob")
         name_value = self._value(fields, "member_name")
@@ -294,7 +314,7 @@ class KycAgent:
         received_at: datetime,
         flags: list[KycFlag],
     ) -> None:
-        policy_number = self._value(fields, "policy_number")
+        policy_number = self._printed_policy_number(fields)
         mismatch = bool(policy_number and policy_number.strip() != member.policy_number)
         service_value = self._value(fields, "service_date")
         service_date = parse_identity_date(service_value) if service_value else received_at.date()
@@ -317,6 +337,11 @@ class KycAgent:
                     ),
                 )
             )
+
+    @classmethod
+    def _printed_policy_number(cls, fields: dict[str, OcrField]) -> str | None:
+        value = cls._value(fields, "policy_number")
+        return correct_policy_number(value) if value else None
 
     @staticmethod
     def _field_map(fields: list[OcrField]) -> dict[str, OcrField]:

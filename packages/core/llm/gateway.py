@@ -3,6 +3,7 @@
 import hashlib
 import json
 import logging
+import math
 import random
 import re
 import threading
@@ -101,6 +102,7 @@ class Gateway:
         self.cache_hits = cache_hits
         self.debug_raw = debug_raw
         self._usage_lock = threading.Lock()
+        self._prompt_usage: dict[str, dict[str, Any]] = {}
 
     def complete_json(
         self,
@@ -135,10 +137,37 @@ class Gateway:
             if self.response_cache is not None
             else None
         )
-        cached_content = self.response_cache.read(cache_key) if cache_key is not None else None
+        cached_content = (
+            self.response_cache.read(cache_key)
+            if self.response_cache is not None and cache_key is not None
+            else None
+        )
         if cached_content is not None:
             with self._usage_lock:
                 self.cache_hits += 1
+            status = "cached"
+        else:
+            status = "live"
+        with self._usage_lock:
+            entry = self._prompt_usage.setdefault(
+                prompt_name,
+                {
+                    "live_calls": 0,
+                    "cached_calls": 0,
+                    "estimated_input_tokens": {"live": 0, "cached": 0},
+                    "estimated_output_tokens": {"live": 0, "cached": 0},
+                },
+            )
+            entry[f"{status}_calls"] += 1
+            estimated_input = math.ceil(
+                (
+                    len(system)
+                    + sum(len(str(message.get("content", ""))) for message in canonical_messages)
+                )
+                / 4
+            ) + 2048 * len(image_bytes)
+            entry["estimated_input_tokens"][status] += estimated_input
+            entry["estimated_output_tokens"][status] += max_tokens
         repair_hint: str | None = None
         tokens: tuple[int | None, int | None] = (None, None)
         selected_provider = self.provider
@@ -429,7 +458,22 @@ class Gateway:
         summary = provider_summary() if provider_summary is not None else {}
         with self._usage_lock:
             cache_hits = self.cache_hits
-        return {**summary, "cache_hits": cache_hits}
+            prompt_usage = {
+                name: {
+                    "live": {
+                        "calls": values["live_calls"],
+                        "estimated_input_tokens": values["estimated_input_tokens"]["live"],
+                        "estimated_output_tokens": values["estimated_output_tokens"]["live"],
+                    },
+                    "cached": {
+                        "calls": values["cached_calls"],
+                        "estimated_input_tokens": values["estimated_input_tokens"]["cached"],
+                        "estimated_output_tokens": values["estimated_output_tokens"]["cached"],
+                    },
+                }
+                for name, values in self._prompt_usage.items()
+            }
+        return {**summary, "cache_hits": cache_hits, "usage_by_prompt": prompt_usage}
 
 
 def _provider(

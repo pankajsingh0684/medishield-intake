@@ -61,10 +61,10 @@
             "required": ["extra"],
             "properties": {
               "extra": {
-                "required": ["drug_name", "sig", "refills", "prescriber_npi", "dea_number", "rx_date"],
+                "required": ["drug_name", "sig", "prescriber_npi", "dea_number", "rx_date"],
                 "properties": {
-                  "drug_name": {"type": "string", "minLength": 1},
-                  "sig": {"type": "string", "minLength": 1},
+                  "drug_name": {"type": ["string", "array"], "minLength": 1, "minItems": 1, "items": {"type": "string", "minLength": 1}},
+                  "sig": {"type": ["string", "array"], "minLength": 1, "minItems": 1, "items": {"type": "string", "minLength": 1}},
                   "refills": {"type": ["integer", "string"]},
                   "prescriber_npi": {"type": "string"},
                   "dea_number": {"type": "string", "minLength": 1},

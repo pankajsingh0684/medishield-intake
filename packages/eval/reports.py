@@ -116,6 +116,9 @@ def report_markdown(report: dict[str, Any]) -> str:
                 f"- Estimated tokens by model: `{json.dumps(usage.get('estimated_tokens_by_model', {}), sort_keys=True)}`",
                 f"- Daily estimated tokens used: {usage.get('daily_tokens_used', 0)}",
                 f"- Cache hits: {usage.get('cache_hits', 0)}",
+                "- Usage by prompt: `"
+                + json.dumps(usage.get("usage_by_prompt", {}), sort_keys=True)
+                + "`",
                 "",
             ]
         )

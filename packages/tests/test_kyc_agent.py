@@ -243,11 +243,11 @@ def test_state_id_government_id_number_falls_back_to_matching_dob_and_name():
     assert "NAME_MISMATCH" not in {flag.code for flag in result.flags}
 
 
-def test_unknown_but_well_formed_claim_member_id_remains_not_found():
+def test_unknown_but_well_formed_claim_member_id_with_unmatched_name_remains_not_found():
     agent, _ = make_agent()
     fields = [
         OcrField(key="member_id", value="PT_99999", confidence=0.96, page=1),
-        OcrField(key="member_name", value="John Johnson X.", confidence=0.96, page=1),
+        OcrField(key="member_name", value="Zzyzx Qwerty", confidence=0.96, page=1),
         OcrField(key="dob", value="01/02/1965", confidence=0.96, page=1),
     ]
 
@@ -510,3 +510,62 @@ def test_unknown_document_type_is_skipped():
     agent, _ = make_agent()
     result = agent.check(DocType.UNKNOWN, make_ocr([]), RECEIVED_AT)
     assert result.status == AgentStatus.SKIPPED
+
+
+def _claim_identity(policy: str, *, name: str = "John Johnson X.", member_id: str | None = None):
+    fields = [
+        OcrField(key="member_name", value=name, confidence=0.95, page=1),
+        OcrField(key="dob", value="01/02/1965", confidence=0.95, page=1),
+        OcrField(key="policy_number", value=policy, confidence=0.95, page=1),
+    ]
+    if member_id:
+        fields.append(OcrField(key="member_id", value=member_id, confidence=0.95, page=1))
+    return make_ocr(fields)
+
+
+def test_policy_prefix_within_one_edit_is_corrected() -> None:
+    from packages.agents.kyc.agent import correct_policy_number
+
+    assert correct_policy_number("MED-GID-1954280") == "MED-GLD-1954280"
+    assert correct_policy_number("MED-GLD-1954280") == "MED-GLD-1954280"
+    assert correct_policy_number("MED-XYZ-1954280") == "MED-XYZ-1954280"
+
+
+def test_ambiguous_policy_prefix_is_not_corrected(monkeypatch: pytest.MonkeyPatch) -> None:
+    from packages.agents.kyc import agent as kyc_module
+
+    monkeypatch.setattr(kyc_module, "KNOWN_POLICY_PREFIXES", ("MED-GLD", "MED-GLE"))
+
+    assert kyc_module.correct_policy_number("MED-GLF-1954280") == "MED-GLF-1954280"
+
+
+def test_corrected_prefix_finds_member_without_policy_mismatch() -> None:
+    agent, _ = make_agent()
+
+    result = agent.check(DocType.CLAIM_FORM, _claim_identity("MED-GID-1954280"), RECEIVED_AT)
+
+    assert result.member_ref == "PT_20745"
+    assert not any(flag.code == "POLICY_MISMATCH" for flag in result.flags)
+
+
+def test_fabricated_policy_with_right_name_and_dob_is_policy_mismatch() -> None:
+    agent, _ = make_agent()
+
+    result = agent.check(DocType.CLAIM_FORM, _claim_identity("MED-GLD-9999999"), RECEIVED_AT)
+
+    assert result.member_ref == "PT_20745"
+    assert any(flag.code == "POLICY_MISMATCH" for flag in result.flags)
+    assert not result.kyc_passed
+
+
+def test_dob_and_name_fallback_when_identifiers_find_no_member() -> None:
+    agent, _ = make_agent()
+
+    result = agent.check(
+        DocType.CLAIM_FORM,
+        _claim_identity("MED-GLD-1954280", member_id="PT_00000"),
+        RECEIVED_AT,
+    )
+
+    assert result.member_ref == "PT_20745"
+    assert not any(flag.code == "MEMBER_NOT_FOUND" for flag in result.flags)
