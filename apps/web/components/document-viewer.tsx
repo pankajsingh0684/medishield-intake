@@ -4,15 +4,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+type BoundingBox = {
+  text: string;
+  page: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
 export function DocumentViewer({
   url,
   mimeType,
+  selectedBox,
 }: {
   url: string;
   mimeType: string;
+  selectedBox?: BoundingBox | null;
 }) {
   const [zoom, setZoom] = useState(100);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(selectedBox?.page ?? 1);
   const changeZoom = useCallback(
     (amount: number) =>
       setZoom((value) => Math.min(250, Math.max(50, value + amount))),
@@ -94,12 +105,26 @@ export function DocumentViewer({
           />
         ) : (
           <div className="flex justify-center">
-            <img
-              alt="Submitted case document"
-              className="max-w-none object-contain shadow"
-              src={url}
-              style={{ width: `${zoom}%` }}
-            />
+            <div className="relative" style={{ width: `${zoom}%` }}>
+              <img
+                alt="Submitted case document"
+                className="w-full max-w-none object-contain shadow"
+                src={url}
+                draggable={false}
+              />
+              {selectedBox?.page === page && (
+                <div
+                  aria-label={`Highlighted field: ${selectedBox.text}`}
+                  className="pointer-events-none absolute border-4 border-yellow-500 bg-yellow-300/30"
+                  style={{
+                    left: `${selectedBox.x * 100}%`,
+                    top: `${selectedBox.y * 100}%`,
+                    width: `${selectedBox.w * 100}%`,
+                    height: `${selectedBox.h * 100}%`,
+                  }}
+                />
+              )}
+            </div>
           </div>
         )}
       </div>

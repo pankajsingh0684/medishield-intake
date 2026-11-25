@@ -8,3 +8,7 @@ export type AgentRun = components["schemas"]["AgentRunResponse"];
 export type CaseStatus = components["schemas"]["CaseStatus"];
 export type DecisionKind = components["schemas"]["DecisionKind"];
 export type DocType = components["schemas"]["DocType"];
+export type Policy = components["schemas"]["PolicyResponse"];
+export type PolicyList = components["schemas"]["PolicyListResponse"];
+export type ReviewQueue = components["schemas"]["ReviewQueueResponse"];
+export type UserRole = "REVIEWER" | "SUPERVISOR" | "AUDITOR" | "ADMIN";

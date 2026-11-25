@@ -8,6 +8,7 @@ import type { Case, DecisionKind } from "@/lib/types";
 import { LogoutButton } from "@/components/logout-button";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui-state";
+import { AppNav } from "@/components/app-nav";
 
 type CatalogItem = Case & { effective_decision: DecisionKind | null };
 type Result = { items: CatalogItem[]; total: number };
@@ -91,6 +92,7 @@ export function Dashboard() {
           </div>
           <LogoutButton />
         </div>
+        <AppNav />
       </header>
       <main className="mx-auto max-w-7xl space-y-5 px-5 py-6">
         <section

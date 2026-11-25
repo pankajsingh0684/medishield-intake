@@ -23,7 +23,10 @@ labels = [
     for line in (root / "data/synthetic/labels.jsonl").read_text(encoding="utf-8").splitlines()
     if line
 ]
-selected = sorted(labels, key=lambda row: row["doc_id"])[:3]
+selected = sorted(
+    (label for label in labels if label["decision_expected"] == "ESCALATE"),
+    key=lambda row: row["doc_id"],
+)[:3]
 for label in selected:
     path = root / "data/synthetic" / label["file"]
     with path.open("rb") as file:

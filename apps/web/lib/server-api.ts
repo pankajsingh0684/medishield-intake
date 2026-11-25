@@ -19,15 +19,16 @@ export async function proxyApi(request: NextRequest, path: string) {
     const token = request.cookies.get(COOKIE)?.value;
     if (!token) return new NextResponse("Unauthorized", { status: 401 });
     const target = `${apiUrl()}/api/v1/${path}${request.nextUrl.search}`;
-    const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.text();
+    const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer();
+    const contentType = request.headers.get("content-type");
     const response = await fetch(target, {
         method: request.method,
         headers: {
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
-            ...(body ? { "Content-Type": request.headers.get("content-type") ?? "application/json" } : {}),
+            ...(contentType ? { "Content-Type": contentType } : {}),
         },
-        body,
+        body: body,
         cache: "no-store",
     }).catch(() => null);
     if (!response) return NextResponse.json({ error: { message: "The API is unavailable." } }, { status: 503 });
