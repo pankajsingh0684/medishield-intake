@@ -162,6 +162,14 @@ class GroqDailyTokenBudgetExceeded(LLMProviderError):
     """The configured daily Groq token budget is exhausted for the UTC day."""
 
 
+class GroqRequestTooLargeError(LLMProviderError):
+    """Groq rejected a request for exceeding a model output-token limit."""
+
+
+GROQ_OTPM_DEFAULT = 1_000
+GROQ_LIMITER_WAIT_MAX_SECONDS = 120.0
+
+
 def _retry_after_seconds(response: httpx.Response, message: str) -> float:
     retry_after = response.headers.get("Retry-After")
     if retry_after:
@@ -195,35 +203,42 @@ class GroqMinuteLimiter:
         requests_per_minute: int,
         tokens_per_minute: int,
         *,
+        model_tokens_per_minute: Mapping[str, int] | None = None,
         clock=time.monotonic,
         sleeper=time.sleep,
     ) -> None:
         self.requests_per_minute = requests_per_minute
         self.tokens_per_minute = tokens_per_minute
+        self.model_tokens_per_minute = dict(model_tokens_per_minute or {})
         self.clock = clock
         self.sleeper = sleeper
         self.events: dict[str, list[tuple[float, int]]] = {}
         self.wait_seconds = 0.0
         self._lock = threading.Lock()
 
-    def acquire(self, model: str, estimated_tokens: int) -> None:
-        if estimated_tokens > self.tokens_per_minute:
+    def acquire(self, model: str, estimated_tokens: int, wait_max_s: float = 120.0) -> None:
+        token_limit = self.model_tokens_per_minute.get(model, self.tokens_per_minute)
+        if estimated_tokens > token_limit:
             raise LLMProviderError(
                 f"Estimated request ({estimated_tokens} tokens) exceeds Groq per-minute token limit"
             )
+        local_wait = 0.0
         with self._lock:
             while True:
                 now = self.clock()
                 active = [event for event in self.events.get(model, []) if now - event[0] < 60.0]
                 self.events[model] = active
                 request_full = len(active) >= self.requests_per_minute
-                tokens_full = sum(event[1] for event in active) + estimated_tokens > (
-                    self.tokens_per_minute
-                )
+                tokens_full = sum(event[1] for event in active) + estimated_tokens > token_limit
                 if not request_full and not tokens_full:
                     active.append((now, estimated_tokens))
                     return
                 wait = max(0.01, 60.0 - (now - active[0][0])) if active else 60.0
+                if local_wait + wait > wait_max_s:
+                    raise LLMProviderError(
+                        f"Groq minute limiter wait exceeded separate wait cap ({wait_max_s:g}s)"
+                    )
+                local_wait += wait
                 self.wait_seconds += wait
                 self.sleeper(wait)
 
@@ -349,11 +364,25 @@ class GroqProvider(_HttpProvider):
         rpm_limit: int = 30,
         tpm_limit: int = 8_000,
         daily_budget: GroqDailyTokenBudget | None = None,
+        qwen_tpm_limit: int = 8_000,
+        qwen_otpm_limit: int = GROQ_OTPM_DEFAULT,
+        gpt_oss_otpm_limit: int = GROQ_OTPM_DEFAULT,
+        limiter_wait_max_s: float = GROQ_LIMITER_WAIT_MAX_SECONDS,
         clock=time.monotonic,
         sleeper=time.sleep,
     ) -> None:
         super().__init__(api_key=api_key, timeout=timeout, base_url=GROQ_BASE_URL, client=client)
-        self.minute_limiter = GroqMinuteLimiter(rpm_limit, tpm_limit, clock=clock, sleeper=sleeper)
+        self.minute_limiter = GroqMinuteLimiter(
+            rpm_limit,
+            tpm_limit,
+            model_tokens_per_minute={"qwen/qwen3.8-27b": qwen_tpm_limit},
+            clock=clock,
+            sleeper=sleeper,
+        )
+        self.qwen_tpm_limit = qwen_tpm_limit
+        self.qwen_otpm_limit = qwen_otpm_limit
+        self.gpt_oss_otpm_limit = gpt_oss_otpm_limit
+        self.limiter_wait_max_s = limiter_wait_max_s
         self.daily_budget = daily_budget
         self.clock = clock
         self.sleeper = sleeper
@@ -383,6 +412,30 @@ class GroqProvider(_HttpProvider):
 
     def _rate_limit_error(self, response: httpx.Response, message: str) -> GroqRateLimitError:
         return GroqRateLimitError(message, _retry_after_seconds(response, message))
+
+    def _post(
+        self, path: str, *, headers: Mapping[str, str], payload: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        try:
+            response = self.client.post(f"{self.base_url}{path}", headers=headers, json=payload)
+        except (httpx.TimeoutException, httpx.TransportError) as error:
+            raise RetryableLLMError(f"{self.name} transport failure") from error
+        if response.status_code >= 400:
+            message = self._http_error_message(response)
+            if response.status_code == 429:
+                raise self._rate_limit_error(response, message)
+            if "request too large" in message.casefold() or "otpm" in message.casefold():
+                raise GroqRequestTooLargeError("Groq request-too-large (non-retryable): " + message)
+            if response.status_code >= 500:
+                raise RetryableLLMError(message)
+            raise LLMProviderError(message)
+        try:
+            body = response.json()
+        except ValueError as error:
+            raise LLMProviderError(f"{self.name} returned invalid JSON") from error
+        if not isinstance(body, dict):
+            raise LLMProviderError(f"{self.name} returned an invalid response")
+        return body
 
     @staticmethod
     def estimate_tokens(
@@ -423,6 +476,14 @@ class GroqProvider(_HttpProvider):
     ) -> ProviderResponse:
         if len(images) > MAX_GROQ_IMAGES:
             raise LLMProviderError(f"Groq accepts at most {MAX_GROQ_IMAGES} images per request")
+        otpm_limit = (
+            self.qwen_otpm_limit
+            if model == "qwen/qwen3.8-27b"
+            else self.gpt_oss_otpm_limit
+            if model == "openai/gpt-oss-120b"
+            else GROQ_OTPM_DEFAULT
+        )
+        max_tokens = min(max_tokens, otpm_limit)
         estimated_tokens = self.estimate_tokens(system, messages, images, max_tokens)
         images = [_prepare_groq_image(image) for image in images]
         _validate_groq_images(images)
@@ -451,7 +512,9 @@ class GroqProvider(_HttpProvider):
         budget_reserved = self.daily_budget is not None
         try:
             while True:
-                self.minute_limiter.acquire(model, estimated_tokens)
+                self.minute_limiter.acquire(
+                    model, estimated_tokens, wait_max_s=self.limiter_wait_max_s
+                )
                 with self._stats_lock:
                     self.request_calls_by_model[model] = (
                         self.request_calls_by_model.get(model, 0) + 1

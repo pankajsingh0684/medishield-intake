@@ -76,7 +76,11 @@ class Settings(EnvFileSettings):
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     groq_rpm_limit: int = Field(default=30, gt=0)
     groq_tpm_limit: int = Field(default=8_000, gt=0)
+    groq_qwen_tpm_limit: int = Field(default=8_000, gt=0)
     groq_tpd_limit: int = Field(default=200_000, gt=0)
+    groq_qwen_otpm_limit: int = Field(default=1_000, gt=0)
+    groq_gpt_oss_otpm_limit: int = Field(default=1_000, gt=0)
+    groq_limiter_wait_max_s: float = Field(default=120.0, gt=0)
 
     threshold_fraud_escalate: float = Field(default=0.30, ge=0.0, le=1.0)
     threshold_fraud_high: float = Field(default=0.60, ge=0.0, le=1.0)

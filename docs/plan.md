@@ -189,7 +189,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 | ID | Question | Default assumed | Needed by |
 | --- | --- | --- | --- |
-| OQ-02 | Which model and fallback | Groq primary for the real run, stub until Step 20, Anthropic and OpenAI optional, no fallback by default; confirm current Groq vision model IDs and limits in the console before Step 20 | Step 7 (adapter), Step 20 (model IDs) |
+| OQ-02 | Which model and fallback | Groq primary for the real run, stub until Step 20, Anthropic and OpenAI optional, no fallback by default; Groq models recorded 2026-11-24 (text `openai/gpt-oss-120b`, vision `qwen/qwen3.8-27b` preview; Llama left the free tier); re-confirm in the console before Step 20 | Step 7 (adapter), Step 20 (model IDs) |
 | OQ-04 | Claim submission standard | Authored `claim_submission_standard.v1.json` | Step 10 |
 | OQ-05 | Routing matrix | Spec 6.2 table | Step 12 |
 | OQ-06 | Rule precedence | R1 reliability, R2 fraud, R3 reject, R4 approve | Step 4 |
@@ -201,6 +201,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | LLM provider (confirmed) | Which provider runs during development | `LLM_PROVIDER=stub` in `.env` and `.env.example` until Step 20; real keys only for the evaluation run | Step 7 to Step 19 |
 | D2 (confirmed) | Policy amendments | Decided: always escalate unless KYC fails; report accuracy per category | Step 5c (labels), Step 20 |
 | Known divergence KD-1 | `claim_PT_16658` is labelled REJECT (uncovered procedure) but its $9,950 total is in the near-threshold band, so R2 escalates first | Keep the detector and dataset as is; report as one expected mismatch | Step 20 report |
+| Free-tier evaluation (new, 2026-11-24) | Groq free tier: about 200,000 tokens per day, 1,000 output tokens per minute for Qwen, about 12,000 tokens per document on the vision model (about 15 documents per day) | Stay on the free tier. Evaluate a stratified sample (about 40 dev documents covering every scenario, one holdout run of about 45 documents covering every scenario), run once per day until the report says `partial: false`, with the response cache resuming. Sample sizes are stated in the report | Step 20 |
 | Clock (new) | Date for expiry and recency checks | `cases.received_at`; evaluation sets it from each label's `reference_date` (the dataset is dated 2025) | Step 5b, Step 11 |
 
 **D1 and D2 are both confirmed (2026-10-31).** To reverse either later, change the matching rows in spec 6.2 and 7.8 and the expected-decision table in spec section 11 before running Step 5c.
@@ -226,6 +227,9 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 | 2026-11-07 | Step 12 manual check (real worker) | Found and fixed two bugs that eager-mode tests could not see: the Celery app did not import `apps.worker.tasks` (empty registry, tasks accepted but never run), and a stale API process used the old Redis URL (HTTP 500 at enqueue). Now covered by a registration test and a shared URL builder. A file with no stub fixture ends `NEEDS_REVIEW` as designed. A real-worker run to `DECIDED` is left to the Step 19 evaluation runner |
 | 2026-11-24 | Step 18 | Argon2 login, HS256 JWT (algorithm pinned; expired, tampered and alg:none tokens rejected), role matrix across all routes, upload-scoped service token, per-IP and per-username login limits, upload limit, UI-origin-only CORS, PHI redaction on root, Uvicorn and Celery loggers. Seeded user passwords come from `SEED_TEST_USER_PASSWORD`. 430 tests pass, 0 skipped. Phase 2 and Gate 2 closed |
 | 2026-11-24 | Step 19 | Coverage matrix script; 16 extra clusters (83 documents) appended: 238 documents, 46 clusters. Split dev 25 / 130 documents (81 APPROVE, 12 REJECT, 37 ESCALATE), holdout 21 / 108 (68 / 10 / 30). Original labels a byte prefix, original images and truth unchanged, determinism test passes, oracle engine check on new clusters: 0 mismatches. Seed script updated and idempotent. Every scenario now has dev and holdout coverage |
+| 2026-11-24 | Groq models | Free tier no longer has Llama models; recorded text `openai/gpt-oss-120b` and vision `qwen/qwen3.8-27b` (preview) in ADR-001 v0.3. Limits per model: 30 requests/min, 1,000/day, 8,000 tokens/min, 200,000 tokens/day, so the full dev run needs `--sample`, the cache, and several days (or the paid Developer tier). Test one JSON-mode call per model when the key is set |
+| 2026-11-24 | Step 20 (in progress) | Harness built and run on stub (dev, 130 documents; stub numbers only prove the harness). Real Groq runs found and fixed: placeholder env inherited by VS Code (guard added), prompt/schema mismatch in `kyc_tamper`, KYC treating a government ID number as a member ID, KYC fallback to DOB + name when identifier lookups fail (spec 7.4), prescription refills optional (7.5), Policy `SKIPPED` when no member (7.6), citation check with `...` gaps, ICD-10 not sent to the LLM, `policy_decide` service-category rule (spec v0.2.16), tests isolated from the local `.env`. Dev sample of 5 documents (cluster PT_19116): 5 of 5 decisions correct. Known open items: Groq call layer (output-token cap 1,000 for Qwen on the free tier, timeout counting limiter sleeps), OCR recall (CPT 93000 missed on claim_PT_19116), full dev run, holdout run once at the end. Free tier gives about 15-17 documents per day, so the full dev run needs the paid tier or several days |
+| 2026-11-24 | Plan update | Step 20 now runs on the free tier with a stratified sample (`--stratified N`, about 40 dev and about 45 holdout documents, every scenario covered) and the daily token budget; report states sample sizes. Pending for Step 20: the Groq call-layer prompt (output-token cap, non-retryable request-too-large, limiter reserves output tokens, timeout excludes limiter sleeps) and the stratified option; then daily runs, then the OCR recall issue (CPT 93000 missed). Step 21 (UI) can proceed on the stub provider while quota refills. Optional steps 24 to 29 are deferred |
 | | | |
 
 ## 11. Definition of done
@@ -236,7 +240,7 @@ Blocking items from the PRD (section 13), with the default this plan assumes:
 
 ## 12. Next action
 
-Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Steps 1 to 19 are done. Next: **Step 20 (evaluation harness and first real run)**. Earlier next-step notes, kept for the record:
+Phase 0 and Phase 0b (steps 1 to 5c) are done and Gate 0 has passed. Steps 1 to 19 are done. Step 20 is in progress (harness built, real-model fixes applied, free-tier stratified runs next). Next: **finish Step 20**, and in parallel start **Step 21 (UI, on the stub provider)**. Earlier next-step notes, kept for the record:
 
 1. Replace the four docs in `docs/` with the v0.2 files.
 2. Run **Step 5a** (fix the generator, regenerate once, freeze). Use the Step 5a prompt in `prompts.md`.

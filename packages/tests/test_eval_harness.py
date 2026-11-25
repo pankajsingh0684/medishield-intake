@@ -19,6 +19,7 @@ from packages.eval.run import (
     ordered_labels,
     received_at_override,
     set_case_received_at,
+    stratified_sample_labels,
 )
 
 
@@ -283,3 +284,21 @@ def test_automated_weighted_score_renormalizes_available_scored_metrics() -> Non
     assert automated_weighted_score(metrics)["score"] == pytest.approx(
         (1 * 0.2 + 0.5 * 0.25) / 0.45
     )
+
+
+def test_stratified_selection_covers_scenarios_and_keeps_duplicates_together() -> None:
+    labels = [
+        _label("claim_001", cluster_id="C_001"),
+        _label("claim_001_dup", cluster_id="C_001"),
+        _label("claim_002", cluster_id="C_002"),
+    ]
+    labels[0].scenario = "valid_clean"
+    labels[1].scenario = "duplicate_claim"
+    labels[2].scenario = "missing_field"
+
+    first = stratified_sample_labels(labels, 3)
+    second = stratified_sample_labels(labels, 3)
+    assert first[0] == second[0]
+    selected_ids = {label.doc_id for label in first[0]}
+    assert {"claim_001", "claim_001_dup"}.issubset(selected_ids) or "claim_001" not in selected_ids
+    assert set(first[2]) == {"valid_clean", "duplicate_claim", "missing_field"}

@@ -1,7 +1,7 @@
 ---
 model: vision
 temperature: 0
-max_tokens: 3000
+max_tokens: 1000
 schema: OcrPayload
 ---
 

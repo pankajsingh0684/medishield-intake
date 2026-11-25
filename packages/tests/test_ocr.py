@@ -360,7 +360,7 @@ class TestOCRAgent:
         prompt = PromptLoader(Path("packages/agents/ocr/prompts")).load("ocr", OCR_PROMPT_VERSION)
 
         assert OCR_PROMPT_VERSION == "v3"
-        assert prompt.max_tokens == 3000
+        assert prompt.max_tokens == 1000
         for required_property in (
             "agent_version",
             "started_at",

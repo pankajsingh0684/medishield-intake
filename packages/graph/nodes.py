@@ -449,6 +449,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
         prompt_version="v2",
+        wait_seconds=getattr(runtime.gateway, "wait_seconds", None),
     )
 
     def classify(state: GraphState) -> dict[str, Any]:
@@ -484,6 +485,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
         prompt_version="v3",
+        wait_seconds=getattr(runtime.gateway, "wait_seconds", None),
     )
 
     def ocr(state: GraphState) -> dict[str, Any]:
@@ -515,6 +517,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
         prompt_version="v2",
+        wait_seconds=getattr(runtime.gateway, "wait_seconds", None),
     )
 
     def claims_call(state: GraphState) -> ClaimsResult:
@@ -540,6 +543,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
         prompt_version="v2",
+        wait_seconds=getattr(runtime.gateway, "wait_seconds", None),
     )
 
     def policy_call(state: GraphState) -> PolicyResult:
@@ -584,6 +588,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
         timeout_seconds=timeout,
         backoff_seconds=runtime.retry_backoff_seconds,
         prompt_version="v2",
+        wait_seconds=getattr(runtime.gateway, "wait_seconds", None),
     )
 
     def fraud_call(state: GraphState) -> FraudResult:

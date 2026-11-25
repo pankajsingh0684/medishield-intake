@@ -2,8 +2,10 @@
 
 import argparse
 import json
+import random
 import sys
 import time
+from collections import Counter
 from datetime import UTC, datetime
 from datetime import time as datetime_time
 from pathlib import Path
@@ -287,6 +289,7 @@ def run_evaluation(
     provider: str,
     split_name: str,
     sample: int | None = None,
+    stratified: int | None = None,
     *,
     settings: Settings | None = None,
     api_settings: ApiSettings | None = None,
@@ -315,7 +318,17 @@ def run_evaluation(
         for label in ordered_labels(labels)
         if split_name == "all" or document_splits[label.doc_id] == split_name
     ]
-    if sample is not None:
+    chosen_clusters: list[str] = []
+    scenario_counts: dict[str, int] = {}
+    if sample is not None and stratified is not None:
+        raise ValueError("--sample and --stratified are mutually exclusive")
+    if stratified is not None:
+        selected_labels, chosen_clusters, scenario_counts = stratified_sample_labels(
+            selected_labels, stratified
+        )
+        print("Stratified clusters: " + ", ".join(chosen_clusters))
+        print("Documents per scenario: " + json.dumps(dict(sorted(scenario_counts.items()))))
+    elif sample is not None:
         if sample < 1:
             raise ValueError("--sample must be at least 1")
         selected_labels = selected_labels[:sample]
@@ -491,11 +504,65 @@ def run_evaluation(
         runtime.close()
 
 
+def stratified_sample_labels(
+    labels: list[LabelRecord], target_documents: int, *, seed: int = 5_202_611
+) -> tuple[list[LabelRecord], list[str], dict[str, int]]:
+    if target_documents < 1:
+        raise ValueError("--stratified must be at least 1")
+    clusters: dict[str, list[LabelRecord]] = {}
+    unclustered: dict[str, list[LabelRecord]] = {}
+    for label in labels:
+        cluster = label.cluster_id
+        if cluster:
+            clusters.setdefault(cluster, []).append(label)
+        else:
+            unclustered.setdefault(label.doc_id, []).append(label)
+
+    def scenarios(records: list[LabelRecord]) -> set[str]:
+        return {row.scenario for row in records if row.scenario}
+
+    coverage = {
+        scenario for label in labels for scenario in ({label.scenario} if label.scenario else set())
+    }
+    randomizer = random.Random(seed)
+    units = [(f"cluster:{cluster}", records) for cluster, records in clusters.items()]
+    units.extend((f"document:{doc_id}", records) for doc_id, records in unclustered.items())
+
+    selected_units: list[tuple[str, list[LabelRecord]]] = []
+    covered: set[str] = set()
+    remaining = units.copy()
+    while remaining and not coverage <= covered:
+        candidates = [unit for unit in remaining if scenarios(unit[1]) - covered]
+        if not candidates:
+            candidates = remaining
+        candidates.sort(key=lambda unit: (unit[0],))
+        chosen = randomizer.choice(candidates)
+        selected_units.append(chosen)
+        remaining.remove(chosen)
+        covered.update(scenarios(chosen[1]))
+
+    selected_ids = {row.doc_id for _, records in selected_units for row in records}
+    total = sum(len(records) for _, records in selected_units)
+    while total < target_documents and remaining:
+        remaining.sort(key=lambda unit: (len(unit[1]), unit[0]))
+        chosen = randomizer.choice(remaining)
+        selected_units.append(chosen)
+        remaining.remove(chosen)
+        total += len(chosen[1])
+        selected_ids.update(row.doc_id for row in chosen[1])
+
+    selected_labels = ordered_labels([label for label in labels if label.doc_id in selected_ids])
+    chosen_clusters = sorted({label.cluster_id for label in selected_labels if label.cluster_id})
+    scenario_counts = dict(Counter(label.scenario or "unmatched" for label in selected_labels))
+    return selected_labels, chosen_clusters, scenario_counts
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Evaluate the synthetic MediShield dataset.")
     parser.add_argument("--provider", choices=PROVIDER_CHOICES, required=True)
     parser.add_argument("--split", choices=("dev", "holdout", "all"), required=True)
     parser.add_argument("--sample", type=int)
+    parser.add_argument("--stratified", type=int)
     return parser
 
 
@@ -506,7 +573,9 @@ def main(argv: list[str] | None = None) -> int:
             "WARNING: holdout is for final numbers only. Do not use it to tune prompts or models.",
             file=sys.stderr,
         )
-    report, exit_code, paths = run_evaluation(args.provider, args.split, args.sample)
+    report, exit_code, paths = run_evaluation(
+        args.provider, args.split, args.sample, args.stratified
+    )
     metrics = report["metrics"]
     decision_accuracy = metrics["decision"]["accuracy"]
     decision_text = "n/a" if decision_accuracy is None else f"{decision_accuracy:.3f}"

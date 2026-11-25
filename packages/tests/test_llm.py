@@ -26,6 +26,7 @@ from packages.core.llm.providers import (
     GroqDailyTokenBudget,
     GroqDailyTokenBudgetExceeded,
     GroqProvider,
+    GroqRequestTooLargeError,
     OpenAIProvider,
 )
 
@@ -955,3 +956,102 @@ def test_prompt_loader_reads_front_matter_and_resolves_configured_model(tmp_path
     assert provider.calls[0]["temperature"] == 0
     assert provider.calls[0]["max_tokens"] == 300
     assert provider.calls[0]["request_key"].startswith("classifier.")
+
+
+def test_groq_request_too_large_is_non_retryable() -> None:
+    calls = 0
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            413,
+            json={
+                "error": {
+                    "code": "request_too_large",
+                    "message": "Request too large for model: OTPM: Limit 1000, Requested 1269",
+                }
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = GroqProvider(api_key="mock-key", timeout=1, client=client)
+    with pytest.raises(GroqRequestTooLargeError, match="non-retryable"):
+        provider.complete(
+            model="qwen/qwen3.8-27b",
+            system="",
+            messages=[],
+            images=[],
+            schema=Result,
+            max_tokens=1269,
+        )
+    assert calls == 1
+    client.close()
+
+
+def test_groq_payload_max_tokens_is_capped_by_otpm() -> None:
+    payloads: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payloads.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"value":"ok"}'}}]},
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = GroqProvider(
+        api_key="mock-key",
+        timeout=1,
+        client=client,
+        qwen_otpm_limit=1000,
+        gpt_oss_otpm_limit=800,
+    )
+    provider.complete(
+        model="qwen/qwen3.8-27b",
+        system="",
+        messages=[],
+        images=[],
+        schema=Result,
+        max_tokens=3000,
+    )
+    assert payloads[0]["max_tokens"] == 1000
+    client.close()
+
+
+def test_groq_qwen_uses_configured_tpm_limit() -> None:
+    now = [0.0]
+    waits: list[float] = []
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"value":"ok"}'}}]},
+        )
+
+    def sleep(seconds: float) -> None:
+        waits.append(seconds)
+        now[0] += seconds
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = GroqProvider(
+        api_key="mock-key",
+        timeout=1,
+        client=client,
+        tpm_limit=100,
+        qwen_tpm_limit=20,
+        clock=lambda: now[0],
+        sleeper=sleep,
+    )
+    for _ in range(3):
+        provider.complete(
+            model="qwen/qwen3.8-27b",
+            system="",
+            messages=[],
+            images=[],
+            schema=Result,
+            max_tokens=10,
+        )
+
+    assert waits == [60.0]
+    client.close()

@@ -453,6 +453,11 @@ class Gateway:
         if self.fallback_provider is not None and self.fallback_provider is not self.provider:
             self.fallback_provider.close()
 
+    def wait_seconds(self) -> float:
+        provider_summary = getattr(self.provider, "usage_summary", None)
+        summary = provider_summary() if provider_summary else {}
+        return float(summary.get("seconds_waited", 0.0))
+
     def usage_summary(self) -> dict[str, Any]:
         provider_summary = getattr(self.provider, "usage_summary", None)
         summary = provider_summary() if provider_summary is not None else {}
@@ -495,6 +500,10 @@ def _provider(
             rpm_limit=settings.groq_rpm_limit,
             tpm_limit=settings.groq_tpm_limit,
             daily_budget=daily_budget,
+            qwen_tpm_limit=settings.groq_qwen_tpm_limit,
+            qwen_otpm_limit=settings.groq_qwen_otpm_limit,
+            gpt_oss_otpm_limit=settings.groq_gpt_oss_otpm_limit,
+            limiter_wait_max_s=settings.groq_limiter_wait_max_s,
             sleeper=sleeper,
         )
     if name == "anthropic":

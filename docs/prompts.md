@@ -576,6 +576,7 @@ Create packages/eval/: a runner (uploads each dataset file through the real code
 Add an on-disk cache of model responses keyed by input hash so reruns are cheap.
 Tests: metrics on handcrafted predictions; breakdowns; report generation; exit codes; received_at set only when the override flag is on.
 First run with the stub, then (I will set the key and confirm the model IDs) with the real provider on dev only, and show me the report summary.
+Free tier note (2026-11-24): use --stratified N (about 40 dev documents, every scenario covered) and run once a day until the report says partial: false; Qwen allows 1000 output tokens per minute, so cap max_tokens at that limit.
 Do not: tune prompts yet. Tuning uses dev; final numbers use holdout.
 Done when: a report file exists with all metrics and sample sizes.
 Show me the plan first.

@@ -99,6 +99,7 @@ def instrument[EnvelopeT: Envelope](
     retries: int = 2,
     backoff_seconds: float = 1.0,
     prompt_version: str | None = None,
+    wait_seconds: Callable[[], float] | None = None,
 ) -> Callable[[GraphState], dict[str, object]]:
     """Wrap an agent call; exhausted agent exceptions become typed ERROR envelopes."""
 
@@ -113,7 +114,23 @@ def instrument[EnvelopeT: Envelope](
             executor = ThreadPoolExecutor(max_workers=1)
             future = executor.submit(call, state)
             try:
-                result = future.result(timeout=timeout_seconds)
+                import time
+
+                started_wait = wait_seconds() if wait_seconds is not None else 0.0
+                started_perf = time.monotonic()
+                while True:
+                    limiter_waited = (
+                        wait_seconds() if wait_seconds is not None else 0.0
+                    ) - started_wait
+                    elapsed_in_flight = time.monotonic() - started_perf - limiter_waited
+                    remaining = timeout_seconds - elapsed_in_flight
+                    if remaining <= 0:
+                        raise FutureTimeout()
+                    try:
+                        result = future.result(timeout=min(1.0, remaining))
+                        break
+                    except FutureTimeout:
+                        continue
                 final_error = None
                 executor.shutdown(wait=True)
                 break
