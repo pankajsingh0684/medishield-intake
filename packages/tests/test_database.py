@@ -107,7 +107,7 @@ def database_engine():
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "20261107_decision_idempotency"
+    assert version == "20261125_policy_cascade"
 
     with engine.begin() as connection:
         connection.exec_driver_sql("DROP SCHEMA public CASCADE")
@@ -119,16 +119,16 @@ def database_engine():
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "20261107_decision_idempotency"
+    assert version == "20261125_policy_cascade"
 
     command.downgrade(alembic_config, "-1")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "20261107_plan_code"
+    assert version == "20261107_decision_idempotency"
     command.upgrade(alembic_config, "head")
     with engine.connect() as connection:
         version = connection.scalar(text("SELECT version_num FROM alembic_version"))
-    assert version == "20261107_decision_idempotency"
+    assert version == "20261125_policy_cascade"
     yield engine
     engine.dispose()
 

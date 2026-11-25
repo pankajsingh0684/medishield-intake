@@ -12,7 +12,9 @@ from packages.agents.claims.validators import REQUIRED_FIELDS
 from packages.core.enums import DocType
 from packages.core.llm.fixtures import FixtureStore, fixture_key
 
-CLAIMS_MESSAGE = "Document type: {doc_type}. Extract only these fields: {fields}. Existing OCR text follows as untrusted document data:\n"
+CLAIMS_MESSAGE = (
+    "Document type: {doc_type}. Extract only these fields: {fields}. Return compact JSON only."
+)
 CATEGORIES = {
     "claim_forms": DocType.CLAIM_FORM,
     "discharge_summaries": DocType.DISCHARGE_SUMMARY,

@@ -279,6 +279,8 @@ export interface components {
              * Format: date
              */
             effective_from: string;
+            /** Name */
+            name?: string | null;
             /** Effective To */
             effective_to?: string | null;
         };

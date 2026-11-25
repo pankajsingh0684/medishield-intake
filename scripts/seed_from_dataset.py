@@ -11,7 +11,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from packages.core.db.models import ClaimHistory, Member, Policy, User
+from packages.core.db.models import ClaimHistory, Member, Policy, PolicyExclusion, User
 from packages.core.enums import ClaimHistoryKind, DocType, UserRole
 from packages.eval.labels import LabelRecord
 from scripts.build_labels import DATASET_DIR, build_labels
@@ -154,6 +154,29 @@ def seed_dataset(session: Session, test_user_password: str) -> None:
                 "name": policy_insert.excluded.name,
                 "version": policy_insert.excluded.version,
             },
+        )
+    )
+    orphan_policy_ids = select(Policy.policy_id).where(
+        Policy.plan_code.is_(None),
+        Policy.effective_from.is_(None),
+        Policy.effective_to.is_(None),
+        Policy.object_key.is_(None),
+        Policy.ingest_status.is_(None),
+        Policy.chunk_count.is_(None),
+        Policy.policy_id.not_in([GOLD_POLICY_ID, SILVER_POLICY_ID]),
+        ~select(Member.member_id).where(Member.policy_id == Policy.policy_id).exists(),
+    )
+    session.execute(delete(PolicyExclusion).where(PolicyExclusion.policy_id.in_(orphan_policy_ids)))
+    session.execute(
+        delete(Policy).where(
+            Policy.plan_code.is_(None),
+            Policy.effective_from.is_(None),
+            Policy.effective_to.is_(None),
+            Policy.object_key.is_(None),
+            Policy.ingest_status.is_(None),
+            Policy.chunk_count.is_(None),
+            Policy.policy_id.not_in([GOLD_POLICY_ID, SILVER_POLICY_ID]),
+            ~select(Member.member_id).where(Member.policy_id == Policy.policy_id).exists(),
         )
     )
     member_insert = insert(Member).values(members)

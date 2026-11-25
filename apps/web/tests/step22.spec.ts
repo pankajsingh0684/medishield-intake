@@ -56,10 +56,29 @@ test("auditor cannot see review actions", async ({ page }) => {
 test("supervisor can upload a policy and see ingestion status", async ({ page }) => {
     await login(page, "supervisor@medishield.test");
     await page.goto("/policies");
-    await page.getByLabel("Name").fill("MediShield Gold Plan");
-    await page.getByLabel("Version").fill(`e2e-${Date.now()}`);
-    await page.getByLabel("Effective from").fill("2026-01-01");
-    await page.getByLabel("PDF").setInputFiles(path.resolve(__dirname, "../../../data/synthetic/policy/medishield_gold_plan.pdf"));
-    await page.getByRole("button", { name: "Upload policy" }).click();
-    await expect(page.getByText(/PENDING|PROCESSING|READY|FAILED|COMPLETED/, { exact: true }).first()).toBeVisible();
+    const version = `e2e-${Date.now()}`;
+    let policyId: string | undefined;
+    try {
+        await page.getByLabel("Name").fill("E2E Gold Plan");
+        await page.getByLabel("Version").fill(version);
+        await page.getByLabel("Effective from").fill("2026-01-01");
+        await page.getByLabel("PDF").setInputFiles({ name: "e2e-gold-policy.pdf", mimeType: "application/pdf", buffer: await (await import("node:fs/promises")).readFile(path.resolve(__dirname, "../../../data/synthetic/policy/medishield_gold_plan.pdf")) });
+        await page.getByRole("button", { name: "Upload policy" }).click();
+        await expect.poll(async () => { const result = await page.request.get("/api/backend/policies"); const data = await result.json(); return data.items.some((policy: { version: string }) => policy.version === version); }).toBeTruthy();
+        const response = await page.request.get("/api/backend/policies");
+        expect(response.ok()).toBeTruthy();
+        const body = await response.json();
+        const created = body.items.find((policy: { version: string }) => policy.version === version);
+        expect(created).toBeTruthy();
+        policyId = created.policy_id;
+        expect(created).toMatchObject({ name: "E2E Gold Plan", version, effective_from: "2026-01-01", effective_to: null, plan_code: "GOLD" });
+        const row = page.getByRole("row").filter({ hasText: version });
+        await expect(row).toContainText("2026-01-01");
+        await expect(row).toContainText(/PENDING|PROCESSING|READY|FAILED|COMPLETED/);
+    } finally {
+        if (policyId) {
+            const cleanup = await import("node:child_process");
+            cleanup.execFileSync("uv", ["run", "--directory", "../..", "python", "apps/web/scripts/cleanup-e2e-policy.py", policyId], { stdio: "ignore" });
+        }
+    }
 });

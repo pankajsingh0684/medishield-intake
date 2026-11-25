@@ -2,8 +2,8 @@
 
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
@@ -25,7 +25,7 @@ os.environ.setdefault("QDRANT_API_KEY", "schema-only")
 os.environ.setdefault("JWT_SECRET", "schema-only")
 os.environ.setdefault("SEED_TEST_USER_PASSWORD", "schema-only")
 
-from apps.api.main import app  # noqa: E402
+from apps.api.main import app
 
 output = Path(__file__).resolve().parents[1] / "lib" / "openapi.json"
 output.parent.mkdir(parents=True, exist_ok=True)

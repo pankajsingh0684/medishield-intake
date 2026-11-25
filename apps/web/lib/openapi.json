@@ -881,6 +881,19 @@
             "format": "date",
             "title": "Effective From"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "effective_to": {
             "anyOf": [
               {

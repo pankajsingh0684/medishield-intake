@@ -1,0 +1,181 @@
+{
+  "run": {
+    "provider": "groq",
+    "split": "dev",
+    "sample_requested": 1,
+    "sample_size": 1,
+    "received_at_override": true,
+    "data_as_of_date": "2025-12-31",
+    "run_id": "20261125T113348Z-6c34f57d",
+    "retrieval_csv": "eval_20261125T113348Z-6c34f57d_retrieval.csv"
+  },
+  "metrics": {
+    "sample_size": 1,
+    "classification": {
+      "correct": 1,
+      "sample_size": 1,
+      "accuracy": 1.0
+    },
+    "extraction": {
+      "correct": 0,
+      "sample_size": 0,
+      "completeness": null
+    },
+    "decision": {
+      "correct": 1,
+      "sample_size": 1,
+      "accuracy": 1.0
+    },
+    "confusion_matrix": {
+      "APPROVE": {
+        "APPROVE": 1
+      }
+    },
+    "breakdowns": {
+      "scenario": {
+        "valid_clean": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        }
+      },
+      "document_category": {
+        "ID_DOCUMENT": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        }
+      },
+      "split": {
+        "dev": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        }
+      }
+    },
+    "latency_ms": {
+      "sample_size": 1,
+      "p50": 6346.22609987855,
+      "p95": 6346.22609987855
+    },
+    "calibration": {
+      "sample_size": 1,
+      "bins": [
+        {
+          "lower": 0.6,
+          "upper": 0.8,
+          "sample_size": 1,
+          "mean_confidence": 0.7,
+          "accuracy": 1.0
+        }
+      ],
+      "ece": 0.30000000000000004
+    }
+  },
+  "weighted_score": {
+    "score": 1.0,
+    "sample_size": 2,
+    "method": "Available automated PRD weights (classification 20%, extraction 20%, decision 25%) renormalized to 100%; retrieval is manual, UI and code quality are unscored."
+  },
+  "decision_mismatches": [],
+  "known_divergences": [
+    {
+      "doc_id": "claim_PT_16658",
+      "expected": "REJECT",
+      "known_engine_result": "ESCALATE",
+      "rule": "R2",
+      "reason": "The $9,950 uncovered claim is in the near-threshold band; R2 fires before R3.",
+      "observed": "NOT_EVALUATED"
+    }
+  ],
+  "failures": [],
+  "groq_usage": {
+    "calls_by_model": {},
+    "rate_limit_responses_429": 0,
+    "retries_429": 0,
+    "seconds_waited": 0.0,
+    "estimated_tokens_by_model": {},
+    "daily_tokens_used": 94777,
+    "cache_hits": 4,
+    "usage_by_prompt": {
+      "classifier": {
+        "live": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0
+        },
+        "cached": {
+          "calls": 1,
+          "estimated_input_tokens": 2261,
+          "estimated_output_tokens": 300
+        }
+      },
+      "ocr": {
+        "live": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0
+        },
+        "cached": {
+          "calls": 1,
+          "estimated_input_tokens": 2413,
+          "estimated_output_tokens": 1000
+        }
+      },
+      "kyc_tamper": {
+        "live": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0
+        },
+        "cached": {
+          "calls": 1,
+          "estimated_input_tokens": 2303,
+          "estimated_output_tokens": 300
+        }
+      },
+      "orchestrator_justify": {
+        "live": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0
+        },
+        "cached": {
+          "calls": 1,
+          "estimated_input_tokens": 273,
+          "estimated_output_tokens": 300
+        }
+      }
+    }
+  },
+  "daily_budget_stop": null,
+  "partial": false,
+  "predictions": [
+    {
+      "doc_id": "id_PT_19116",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 6346.22609987855,
+      "terminal_status": "DECIDED",
+      "failures": []
+    }
+  ]
+}

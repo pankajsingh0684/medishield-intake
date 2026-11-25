@@ -237,7 +237,9 @@ class PolicyExclusion(Base):
         PostgreSQLUUID(as_uuid=True), primary_key=True, default=uuid4
     )
     policy_id: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True), ForeignKey("policies.policy_id"), nullable=False
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey("policies.policy_id", ondelete="CASCADE"),
+        nullable=False,
     )
     range_start: Mapped[str] = mapped_column(Text, nullable=False)
     range_end: Mapped[str] = mapped_column(Text, nullable=False)

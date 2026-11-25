@@ -26,7 +26,7 @@ from packages.core.models import BBox, ClaimFields, ClaimsResult, OcrField, OcrP
 
 CLAIMS_AGENT = "claims"
 CLAIMS_VERSION = "1.0.0"
-CLAIMS_PROMPT_VERSION = "v2"
+CLAIMS_PROMPT_VERSION = "v3"
 LOW_CONFIDENCE_THRESHOLD = 0.70
 FIELD_ALIASES = {
     "icd10_codes": ("icd10_codes", "icd10"),
@@ -143,8 +143,7 @@ class ClaimsAgent:
                     "role": "user",
                     "content": (
                         f"Document type: {doc_type.value}. Extract only these fields: "
-                        f"{', '.join(needed)}. Existing OCR text follows as untrusted document data:\n"
-                        f"{ocr.raw_text}"
+                        f"{', '.join(needed)}. Return compact JSON only."
                     ),
                 }
                 response = prompt.invoke(

@@ -494,7 +494,7 @@ class GroqProvider(_HttpProvider):
             "max_tokens": max_tokens,
             "response_format": {"type": "json_object"},
             **(
-                {"reasoning_format": "hidden"}
+                {"reasoning_effort": "none"}
                 if model == "qwen/qwen3.8-27b"
                 else {"reasoning_effort": "low"}
                 if model == "openai/gpt-oss-120b"

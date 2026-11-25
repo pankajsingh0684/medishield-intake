@@ -32,6 +32,7 @@ def upload_policy(
     settings: Annotated[ApiSettings, Depends(get_settings)],
     storage: Annotated[S3Storage, Depends(get_storage)],
     _: Annotated[User, Depends(require_role(UserRole.SUPERVISOR, UserRole.ADMIN))],
+    name: Annotated[str | None, Form(min_length=1, max_length=200)] = None,
     effective_to: Annotated[date | None, Form()] = None,
 ) -> PolicyResponse:
     content = file.file.read(settings.max_upload_mb * 1024 * 1024 + 1)
@@ -65,7 +66,7 @@ def upload_policy(
         policy = Policy(policy_id=policy_id)
         session.add(policy)
     policy.plan_code = plan_code
-    policy.name = f"MediShield {plan_code.title()} Plan"
+    policy.name = name.strip() if name else f"MediShield {plan_code.title()} Plan"
     policy.version = version
     policy.effective_from = effective_from
     policy.effective_to = effective_to

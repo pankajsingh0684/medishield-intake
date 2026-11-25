@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 OCR_AGENT = "ocr"
 OCR_VERSION = "1.1.0"
-OCR_PROMPT_VERSION = "v3"
+OCR_PROMPT_VERSION = "v4"
 
 LOW_CONFIDENCE_THRESHOLD = 0.70
 KEY_FIELDS = {
@@ -78,7 +78,7 @@ REQUIRED_FIELD_ALIASES = {"icd10_codes": "icd10", "cpt_codes": "cpt"}
 
 OCR_MESSAGE: Mapping[str, str] = {
     "role": "user",
-    "content": "Extract all visible fields from the document image. Return JSON with fields, raw_text, bounding_boxes, pages, used_text_layer=false, and confidence.",
+    "content": "Extract only the pipeline-used structured fields from this image. Return compact JSON only.",
 }
 
 

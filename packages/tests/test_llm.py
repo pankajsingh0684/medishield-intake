@@ -189,7 +189,7 @@ def test_gateway_strips_think_tags_and_json_fences(content: str) -> None:
     assert result.value == "ok"
 
 
-def test_gateway_retries_truncation_once_with_higher_max_tokens() -> None:
+def test_gateway_retries_truncation_once_with_compact_instruction() -> None:
     provider = SequenceProvider(
         [
             ProviderResponse('{"value":"partial"}', 10, 40, "length"),
@@ -200,25 +200,26 @@ def test_gateway_retries_truncation_once_with_higher_max_tokens() -> None:
     result = Gateway(provider).complete_json("model", "system", [], None, Result, max_tokens=40)
 
     assert result.value == "complete"
-    assert [call["max_tokens"] for call in provider.calls] == [40, 1040]
-    assert all(call["repair_hint"] is None for call in provider.calls)
+    assert [call["max_tokens"] for call in provider.calls] == [40, 40]
+    assert provider.calls[0]["repair_hint"] is None
+    assert "more compact JSON" in provider.calls[1]["repair_hint"]
 
 
-def test_gateway_reports_second_truncation_with_finish_reason_and_both_limits() -> None:
+def test_gateway_reports_second_truncation_with_finish_reason_and_clear_error() -> None:
     provider = SequenceProvider(
         [
             ProviderResponse('{"value":"partial"}', 10, 40, "length"),
-            ProviderResponse('{"value":"still partial"}', 10, 1040, "length"),
+            ProviderResponse('{"value":"still partial"}', 10, 40, "length"),
         ]
     )
 
     with pytest.raises(
         LLMSchemaError,
-        match=r"finish_reason=length.*max_tokens=40.*max_tokens=1040",
+        match=r"truncated after one compact retry.*finish_reason=length.*max_tokens=40",
     ):
         Gateway(provider).complete_json("model", "system", [], None, Result, max_tokens=40)
 
-    assert [call["max_tokens"] for call in provider.calls] == [40, 1040]
+    assert [call["max_tokens"] for call in provider.calls] == [40, 40]
 
 
 def test_gateway_debug_raw_logs_and_attaches_safe_failure_details(caplog) -> None:
@@ -252,7 +253,7 @@ def test_gateway_debug_raw_logs_and_attaches_safe_failure_details(caplog) -> Non
 @pytest.mark.parametrize(
     ("model", "reasoning_field", "expected"),
     [
-        ("qwen/qwen3.8-27b", "reasoning_format", "hidden"),
+        ("qwen/qwen3.8-27b", "reasoning_effort", "none"),
         ("openai/gpt-oss-120b", "reasoning_effort", "low"),
     ],
 )

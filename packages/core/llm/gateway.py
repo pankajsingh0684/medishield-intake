@@ -199,7 +199,11 @@ class Gateway:
                     )
                     debug_diagnostics.append(diagnostic)
                     logger.error("LLM_DEBUG_RAW %s", diagnostic)
-                max_tokens = max(max_tokens * 2, max_tokens + 1000)
+                compact_hint = (
+                    "The previous reply was truncated. Return a more compact JSON object: "
+                    "omit all free-text transcript and unnecessary metadata, include only the "
+                    "requested fields and the required schema values, and return valid JSON only."
+                )
                 response = self._call_with_retries(
                     selected_provider,
                     model=selected_model,
@@ -210,20 +214,21 @@ class Gateway:
                     request_key=key,
                     temperature=temperature,
                     max_tokens=max_tokens,
+                    repair_hint=compact_hint,
                 )
                 if response.finish_reason == "length":
                     if self.debug_raw:
                         diagnostic = self._raw_failure_diagnostic(
                             response,
-                            f"truncated at max_tokens={max_tokens}",
+                            f"truncated after compact retry at max_tokens={max_tokens}",
                             selected_provider,
                             attempt=2,
                         )
                         debug_diagnostics.append(diagnostic)
                         logger.error("LLM_DEBUG_RAW %s", diagnostic)
                     raise LLMSchemaError(
-                        "Provider response truncated (finish_reason=length) at both "
-                        f"max_tokens={original_max_tokens} and max_tokens={max_tokens}"
+                        "Provider response truncated after one compact retry "
+                        f"(finish_reason=length, max_tokens={max_tokens})"
                         + ("\n" + "\n".join(debug_diagnostics) if debug_diagnostics else "")
                     )
             for schema_attempt in range(2):
