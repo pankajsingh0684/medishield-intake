@@ -286,7 +286,7 @@ def test_automated_weighted_score_renormalizes_available_scored_metrics() -> Non
     )
 
 
-def test_stratified_selection_covers_scenarios_and_keeps_duplicates_together() -> None:
+def test_stratified_selection_is_document_level_covering_scenarios_and_dup_pair() -> None:
     labels = [
         _label("claim_001", cluster_id="C_001"),
         _label("claim_001_dup", cluster_id="C_001"),
@@ -296,9 +296,31 @@ def test_stratified_selection_covers_scenarios_and_keeps_duplicates_together() -
     labels[1].scenario = "duplicate_claim"
     labels[2].scenario = "missing_field"
 
-    first = stratified_sample_labels(labels, 3)
-    second = stratified_sample_labels(labels, 3)
-    assert first[0] == second[0]
-    selected_ids = {label.doc_id for label in first[0]}
-    assert {"claim_001", "claim_001_dup"}.issubset(selected_ids) or "claim_001" not in selected_ids
-    assert set(first[2]) == {"valid_clean", "duplicate_claim", "missing_field"}
+    selected, selected_ids, scenario_counts = stratified_sample_labels(labels, 3)
+
+    assert selected == stratified_sample_labels(labels, 3)[0]
+    assert set(selected_ids) == {label.doc_id for label in selected}
+    assert "claim_001" in selected_ids
+    assert "claim_001_dup" in selected_ids
+    assert selected_ids.index("claim_001") < selected_ids.index("claim_001_dup")
+    assert set(scenario_counts) >= {"valid_clean", "duplicate_claim", "missing_field"}
+
+
+def test_stratified_selection_is_deterministic_and_nested() -> None:
+    labels = []
+    for index in range(1, 31):
+        label = _label(f"claim_{index:03d}", cluster_id=f"C_{index:03d}")
+        label.scenario = "valid_clean" if index % 3 else "missing_field"
+        labels.append(label)
+
+    labels.extend(
+        [_label("claim_500_dup", cluster_id="C_500"), _label("claim_500", cluster_id="C_500")]
+    )
+    labels[-2].scenario = "duplicate_claim"
+    labels[-1].scenario = "valid_clean"
+
+    small = {label.doc_id for label in stratified_sample_labels(labels, 8)[0]}
+    large = {label.doc_id for label in stratified_sample_labels(labels, 16)[0]}
+
+    assert small <= large
+    assert small == {label.doc_id for label in stratified_sample_labels(labels, 8)[0]}

@@ -318,20 +318,23 @@ def run_evaluation(
         for label in ordered_labels(labels)
         if split_name == "all" or document_splits[label.doc_id] == split_name
     ]
-    chosen_clusters: list[str] = []
-    scenario_counts: dict[str, int] = {}
     if sample is not None and stratified is not None:
         raise ValueError("--sample and --stratified are mutually exclusive")
     if stratified is not None:
-        selected_labels, chosen_clusters, scenario_counts = stratified_sample_labels(
-            selected_labels, stratified
-        )
-        print("Stratified clusters: " + ", ".join(chosen_clusters))
-        print("Documents per scenario: " + json.dumps(dict(sorted(scenario_counts.items()))))
+        selected_labels, _, _ = stratified_sample_labels(selected_labels, stratified)
     elif sample is not None:
         if sample < 1:
             raise ValueError("--sample must be at least 1")
         selected_labels = selected_labels[:sample]
+
+    if stratified is not None:
+        print("Stratified documents:")
+        for label in selected_labels:
+            print(
+                f"  {label.doc_id}\tscenario={label.scenario or 'unmatched'}"
+                f"\tsplit={document_splits.get(label.doc_id, 'unknown')}"
+            )
+        print(f"Stratified total: {len(selected_labels)}")
 
     cache = EvaluationResponseCache(ROOT / ".cache" / "eval" / "responses")
     daily_budget = (
@@ -509,52 +512,68 @@ def stratified_sample_labels(
 ) -> tuple[list[LabelRecord], list[str], dict[str, int]]:
     if target_documents < 1:
         raise ValueError("--stratified must be at least 1")
-    clusters: dict[str, list[LabelRecord]] = {}
-    unclustered: dict[str, list[LabelRecord]] = {}
-    for label in labels:
-        cluster = label.cluster_id
-        if cluster:
-            clusters.setdefault(cluster, []).append(label)
-        else:
-            unclustered.setdefault(label.doc_id, []).append(label)
 
-    def scenarios(records: list[LabelRecord]) -> set[str]:
-        return {row.scenario for row in records if row.scenario}
-
-    coverage = {
-        scenario for label in labels for scenario in ({label.scenario} if label.scenario else set())
-    }
     randomizer = random.Random(seed)
-    units = [(f"cluster:{cluster}", records) for cluster, records in clusters.items()]
-    units.extend((f"document:{doc_id}", records) for doc_id, records in unclustered.items())
+    by_id = {label.doc_id: label for label in labels}
+    scenario_units: list[list[LabelRecord]] = []
 
-    selected_units: list[tuple[str, list[LabelRecord]]] = []
-    covered: set[str] = set()
-    remaining = units.copy()
-    while remaining and not coverage <= covered:
-        candidates = [unit for unit in remaining if scenarios(unit[1]) - covered]
-        if not candidates:
-            candidates = remaining
-        candidates.sort(key=lambda unit: (unit[0],))
-        chosen = randomizer.choice(candidates)
-        selected_units.append(chosen)
-        remaining.remove(chosen)
-        covered.update(scenarios(chosen[1]))
+    for scenario in sorted({label.scenario for label in labels if label.scenario is not None}):
+        candidates = [label for label in labels if label.scenario == scenario]
+        randomizer.shuffle(candidates)
+        chosen = candidates[0]
+        if scenario == "duplicate_claim":
+            original = by_id.get(chosen.doc_id.removesuffix("_dup"))
+            unit = [original, chosen] if original is not None else [chosen]
+            scenario_units.append(
+                sorted(unit, key=lambda item: (item.doc_id.endswith("_dup"), item.doc_id))
+            )
+        else:
+            scenario_units.append([chosen])
 
-    selected_ids = {row.doc_id for _, records in selected_units for row in records}
-    total = sum(len(records) for _, records in selected_units)
-    while total < target_documents and remaining:
-        remaining.sort(key=lambda unit: (len(unit[1]), unit[0]))
-        chosen = randomizer.choice(remaining)
-        selected_units.append(chosen)
-        remaining.remove(chosen)
-        total += len(chosen[1])
-        selected_ids.update(row.doc_id for row in chosen[1])
+    scenario_units.sort(key=lambda unit: tuple(sorted(item.doc_id for item in unit)))
+
+    type_units: list[list[LabelRecord]] = []
+    selected_in_units = {item.doc_id for unit in scenario_units for item in unit}
+    for doc_type in (
+        "CLAIM_FORM",
+        "ID_DOCUMENT",
+        "PRESCRIPTION",
+        "DISCHARGE_SUMMARY",
+        "POLICY_AMENDMENT",
+    ):
+        candidates = [label for label in labels if label.doc_type.value == doc_type]
+        pool = [label for label in candidates if label.scenario == "valid_clean"] or candidates
+        randomizer.shuffle(pool)
+        added = 0
+        for label in pool:
+            if label.doc_id in selected_in_units:
+                continue
+            type_units.append([label])
+            selected_in_units.add(label.doc_id)
+            added += 1
+            if added == 2:
+                break
+
+    type_units.sort(key=lambda unit: tuple(sorted(item.doc_id for item in unit)))
+    mandatory_units = scenario_units + type_units
+
+    mandatory_ids = {item.doc_id for unit in mandatory_units for item in unit}
+    remaining = [label for label in labels if label.doc_id not in mandatory_ids]
+    randomizer.shuffle(remaining)
+    ranked_units = mandatory_units + [[label] for label in remaining]
+
+    selected_ids: set[str] = set()
+    for unit in ranked_units:
+        if len(selected_ids) >= target_documents:
+            break
+        unit_ids = {item.doc_id for item in unit}
+        if len(selected_ids) + len(unit_ids) <= target_documents:
+            selected_ids.update(unit_ids)
 
     selected_labels = ordered_labels([label for label in labels if label.doc_id in selected_ids])
-    chosen_clusters = sorted({label.cluster_id for label in selected_labels if label.cluster_id})
+    selected_ids_ordered = [label.doc_id for label in selected_labels]
     scenario_counts = dict(Counter(label.scenario or "unmatched" for label in selected_labels))
-    return selected_labels, chosen_clusters, scenario_counts
+    return selected_labels, selected_ids_ordered, scenario_counts
 
 
 def _parser() -> argparse.ArgumentParser:
