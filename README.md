@@ -1,6 +1,16 @@
 # MediShield Intake
 
-MediShield is a multi-agent insurance-document intake system. It ingests claim documents and policy PDFs, runs OCR/classification/KYC/claims/policy/fraud agents, persists audit evidence, and presents decisions in a Next.js case-management UI.
+MediShield is a multi-agent insurance-document intake system.
+
+> Evaluation (real Groq models, synthetic data): holdout 0.861 decision correctness (93/108), run once; a later re-run after fixes reached 0.898 (not independent); dev 0.950 on a 40-document sample. See [reports/evaluation_summary.md](reports/evaluation_summary.md) and [docs/known-limitations.md](docs/known-limitations.md).
+
+It ingests claim documents and policy PDFs, runs OCR/classification/KYC/claims/policy/fraud agents, persists audit evidence, and presents decisions in a Next.js case-management UI.
+
+## Screenshots
+
+![Sign-in screen](docs/screenshots/login.png)
+
+![Dashboard with synthetic demo cases](docs/screenshots/dashboard.png)
 
 ## Architecture
 
@@ -61,6 +71,7 @@ docker compose --env-file .env -f infra/docker-compose.yml up -d --wait
 uv run python -m scripts.init_local
 uv run alembic upgrade head
 uv run python scripts/seed.py
+uv run python scripts/ingest_policies.py
 npm --prefix apps/web ci
 ```
 
@@ -73,6 +84,7 @@ docker compose --env-file .env -f infra/docker-compose.yml up -d --wait
 uv run python -m scripts.init_local
 uv run alembic upgrade head
 uv run python scripts/seed.py
+uv run python scripts/ingest_policies.py
 npm --prefix apps/web ci
 ```
 
@@ -98,7 +110,22 @@ Web:
 npm --prefix apps/web run dev
 ```
 
-Open `http://localhost:3000`. Seeded login email examples are `reviewer@medishield.test`, `supervisor@medishield.test`, and `admin@medishield.test`; use `SEED_TEST_USER_PASSWORD`.
+Open `http://localhost:3000`. Seeded test users are `reviewer@medishield.test`, `supervisor@medishield.test`, `auditor@medishield.test`, `admin@medishield.test` and `uploader@medishield.test`. Their password comes from `SEED_TEST_USER_PASSWORD` in `.env`; no password is stored in tracked source files.
+
+For a production-mode demo (without the Next.js development indicator):
+
+```bash
+npm --prefix apps/web run build
+npm --prefix apps/web run start
+```
+
+## Demo Data
+
+Preview the local demo reset with `uv run python -m scripts.reset_demo_data`. Add `--yes` to apply it.
+It removes only decisionless cases explicitly marked `DEMO_RESET` with `demo/reset/` object keys,
+and creates five synthetic examples. Unmarked cases, including older uploads of unknown origin,
+are not removed. Policies, users, and canonical dataset records are never changed.
+Stop workers before applying the reset; it refuses remote or production databases.
 
 ## Evaluation
 
@@ -116,7 +143,10 @@ uv run python -m packages.eval.run --provider groq --split holdout --stratified 
 uv run pytest
 uv run ruff check .
 uv run pytest packages/tests/test_decision.py --cov=packages.decision --cov-report=term-missing --cov-fail-under=100
+npm --prefix apps/web run lint
+(cd apps/web && npx tsc --noEmit)
 npm --prefix apps/web run build
+(cd apps/web && npm run test:e2e)
 ```
 
 The database migration suite recreates the test database schema and must use `TEST_DATABASE_URL` for `medishield_test`, never the development database.
@@ -132,3 +162,53 @@ curl -fsS -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:8000/api/v1/cases/
 ```
 
 Expected: upload HTTP 202 with a `case_id` and `RECEIVED`/processing status; the case detail eventually shows a classification, OCR and routed agent results, plus a final `APPROVE`, `REJECT`, or `ESCALATE` decision according to the document scenario.
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Design decisions](docs/design-decisions.md)
+- [Known limitations](docs/known-limitations.md)
+- [Technical specification](docs/spec.md)
+- [Architecture decisions](docs/adr.md)
+- [Evaluation summary](reports/evaluation_summary.md)
+
+## Repository layout
+
+- `apps/api` — FastAPI application and endpoints
+- `apps/worker` — Celery worker and task definitions
+- `apps/web` — Next.js case-management UI
+- `packages/agents` — classifier, OCR, KYC, claims, policy and fraud agents
+- `packages/decision` — deterministic rule precedence and decision engine
+- `packages/graph` — LangGraph state and pipeline routing
+- `packages/rag` — Docling parsing, embeddings, chunking and Qdrant retrieval
+- `packages/core` — configuration, database, storage and LLM adapters
+- `data/synthetic` — synthetic documents, labels and truth data
+- `infra` — Docker Compose and PostgreSQL migrations
+- `scripts` — setup, seeding and policy ingestion utilities
+
+## Full setup
+
+Run infrastructure and application setup from the repository root:
+
+```bash
+uv sync
+docker compose --env-file .env -f infra/docker-compose.yml up -d --wait
+uv run python -m scripts.init_local
+uv run alembic upgrade head
+uv run python scripts/seed.py
+uv run python scripts/ingest_policies.py
+```
+
+`uv run python scripts/seed.py` is the seed entry point and invokes `scripts.seed_from_dataset.seed_dataset` to seed dataset members and history. `scripts/seed_from_dataset.py` is a helper module, not a standalone command. Run `uv run python scripts/ingest_policies.py` after policy infrastructure is healthy.
+
+## Groq configuration
+
+Set `LLM_PROVIDER=groq`, `GROQ_API_KEY`, `LLM_VISION_MODEL=qwen/qwen3.8-27b` and `LLM_TEXT_MODEL=openai/gpt-oss-120b`. Groq settings include `GROQ_RPM_LIMIT`, `GROQ_TPM_LIMIT`, `GROQ_QWEN_TPM_LIMIT`, `GROQ_TPD_LIMIT`, `GROQ_QWEN_OTPM_LIMIT`, `GROQ_GPT_OSS_OTPM_LIMIT`, `GROQ_LIMITER_WAIT_MAX_S` and `LLM_LENGTH_RETRY_MAX_TOKENS`. Use stub/fixture providers for offline tests; never place live credentials in tracked files.
+
+## Evaluation commands
+
+```bash
+uv run python -m packages.eval.run --provider stub --split dev --stratified 40
+uv run python -m packages.eval.run --provider groq --split dev --stratified 40
+uv run python -m packages.eval.run --provider groq --split holdout
+```

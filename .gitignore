@@ -12,6 +12,18 @@ htmlcov/
 node_modules/
 apps/web/.next/
 apps/web/out/
+playwright-report/
+test-results/
+apps/web/test-results/
+apps/web/playwright-report/
 .hypothesis/
 # OCR report cache
 reports/.ocr_cache/
+reports/archive/
+# Ignore generated browser test artifacts and screenshots
+*.zip
+**/trace.zip
+**/traces/**
+docs/screenshots/*.png
+!docs/screenshots/login.png
+!docs/screenshots/dashboard.png
