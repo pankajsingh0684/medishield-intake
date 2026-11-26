@@ -4,13 +4,15 @@ An honest list of what this system does not do, or does only partly, as of v1.0.
 
 ## Data and evaluation
 - **Synthetic data only.** All 238 documents are generated and fictional. Results show how the system behaves on this dataset, not on real claims, and real documents (varied layouts, handwriting, poor scans) would score lower.
-- **Sampled evaluation.** Because of model rate limits and time, the evaluation uses stratified samples of the dev and holdout splits and not every document. The report states each sample size. A few documents per scenario cannot show rare-case accuracy with confidence.
-- **No tuning on holdout, but limited tuning iterations.** Fixes were made on dev, and holdout was run once. The numbers have wide uncertainty at these sample sizes.
+- **Sampled dev evaluation, full holdout.** Dev results come from a 40-document stratified sample of 130 documents, so they are optimistic and each scenario has only one or two documents. The holdout was run in full (108 documents). The unbiased holdout result is 0.861 decision correctness; a later run after fixes reached 0.898 but is not independent, because the fixes were chosen after studying its failures. See `reports/evaluation_summary.md`.
+- **Three false approvals on holdout (2.8%).** A tampered ID, a duplicate claim and a 30-day readmission were approved when they should have gone to a human. Duplicate and readmission detection depend on prior-claim history, which is seeded only for scenario-specific cases, so these detectors did not fire for the extra patient cluster.
+- **ID documents are the weakest category (13/21 on holdout).** The vision model sometimes misreads dates of birth or names, and KYC then fails at low confidence and escalates. This is the safe direction (a human reviews), but it adds reviewer work.
+- **About one in five coverage lookups ends as "undetermined".** When the Policy agent cannot find a verifiable citation, the case escalates. This is safe but conservative.
 - **One known label/engine divergence.** The dataset's `claim_PT_16658` is labelled REJECT, but its $9,950 total falls inside the near-threshold band, so rule R2 (fraud) escalates it first. The detector follows the specification, and the case is reported as an expected mismatch.
 
 ## Models
 - **Preview vision model.** The vision step uses `qwen/qwen3.8-27b`, which the provider labels as a preview model that may change or be withdrawn. Open models can misread small print and detect tampering less reliably than frontier models.
-- **Free-tier output cap.** On the free tier the vision model allows about 1,000 output tokens per minute, so OCR and extraction outputs are kept compact. Very dense forms might need to be split across calls.
+- **Compact vision outputs.** OCR and extraction prompts were kept compact to fit the free tier's output limits. Very dense forms can still be truncated (one occurred in an earlier run and is now retried with a larger cap); splitting them across calls is a possible improvement.
 - **Self-reported confidence is uncalibrated.** The Policy agent's confidence relies on the model's own certainty, which is not calibrated, and low values escalate to a human.
 - **Government ID numbers are not member IDs.** The system looks members up by member ID, policy number, or date of birth plus a fuzzy name. It does not validate government ID numbers against any registry.
 
