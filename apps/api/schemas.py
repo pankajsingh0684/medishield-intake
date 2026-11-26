@@ -140,3 +140,14 @@ class PolicyResponse(BaseModel):
 class PolicyListResponse(BaseModel):
     items: list[PolicyResponse]
     total: int
+
+
+class CaseStatsResponse(BaseModel):
+    processing: int
+    approved: int
+    rejected: int
+    escalated: int
+    needs_review: int
+    failed: int
+    no_decision: int
+    total: int

@@ -41,3 +41,16 @@ test("login and inaccessible sessions show usable errors", async ({ page }) => {
     await page.goto("/cases/not-a-case");
     await expect(page).toHaveURL("/login");
 });
+
+test("dashboard aggregate cards are non-zero after seeding", async ({ page }) => {
+    await expect(page.getByRole("link", { name: /Processing/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Approved/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Rejected/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Escalated/i })).toBeVisible();
+    await expect.poll(async () => {
+        const counts = await page.locator("section[aria-label='Case status counts'] .text-3xl").allTextContents();
+        return counts.some((count) => Number(count) > 0);
+    }).toBeTruthy();
+    await page.getByRole("link", { name: /Approved/i }).click();
+    await expect(page).toHaveURL(/card=approved/);
+});

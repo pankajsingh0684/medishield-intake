@@ -2,11 +2,12 @@
 
 import hashlib
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from sqlalchemy import String, cast, func, or_, select, text
+from sqlalchemy import case as sql_case
 from sqlalchemy.orm import Session
 
 from apps.api.auth import enforce_upload_rate_limit, require_role, require_upload_access
@@ -16,6 +17,7 @@ from apps.api.schemas import (
     CaseDetailResponse,
     CaseListResponse,
     CaseResponse,
+    CaseStatsResponse,
     DecisionResponse,
     OverrideRequest,
     OverrideResponse,
@@ -198,6 +200,39 @@ def upload_case(
     )
 
 
+def _dashboard_cases():
+    latest_decision = (
+        select(Decision.decision)
+        .where(Decision.case_id == Case.case_id)
+        .order_by(Decision.created_at.desc(), Decision.decision_id.desc())
+        .limit(1)
+        .correlate(Case)
+        .scalar_subquery()
+    )
+    latest_override = (
+        select(Override.to_decision)
+        .where(Override.case_id == Case.case_id)
+        .order_by(Override.created_at.desc(), Override.override_id.desc())
+        .limit(1)
+        .correlate(Case)
+        .scalar_subquery()
+    )
+    effective = func.coalesce(latest_override, latest_decision)
+    bucket = sql_case(
+        (effective == DecisionKind.APPROVE, "approved"),
+        (effective == DecisionKind.REJECT, "rejected"),
+        (effective == DecisionKind.ESCALATE, "escalated"),
+        (Case.status == CaseStatus.NEEDS_REVIEW, "needs_review"),
+        (Case.status == CaseStatus.FAILED, "failed"),
+        (
+            Case.status.in_((CaseStatus.RECEIVED, CaseStatus.CLASSIFIED, CaseStatus.PROCESSING)),
+            "processing",
+        ),
+        else_="no_decision",
+    )
+    return select(Case.case_id, effective.label("effective"), bucket.label("bucket")).subquery()
+
+
 @router.get("", response_model=CaseListResponse)
 def list_cases(
     session: Annotated[Session, Depends(get_session)],
@@ -209,6 +244,10 @@ def list_cases(
     ],
     status: CaseStatus | None = None,
     decision: DecisionKind | None = None,
+    card: Literal[
+        "processing", "approved", "rejected", "escalated", "needs_review", "failed", "no_decision"
+    ]
+    | None = None,
     doc_type: DocType | None = None,
     q: str | None = None,
     received_from: Annotated[datetime | None, Query(alias="from")] = None,
@@ -217,16 +256,14 @@ def list_cases(
     page_size: int = Query(default=50, ge=1, le=100),
 ) -> CaseListResponse:
     filters = []
+    dashboard = _dashboard_cases()
+
     if status is not None:
         filters.append(Case.status == status)
     if doc_type is not None:
         filters.append(Case.doc_type == doc_type)
     if decision is not None:
-        filters.append(
-            select(Decision.decision_id)
-            .where(Decision.case_id == Case.case_id, Decision.decision == decision)
-            .exists()
-        )
+        filters.append(dashboard.c.effective == decision)
     if received_from is not None:
         filters.append(Case.received_at >= received_from)
     if received_to is not None:
@@ -236,10 +273,21 @@ def list_cases(
         filters.append(
             or_(cast(Case.case_id, String).ilike(pattern), Case.member_ref.ilike(pattern))
         )
+    if card:
+        filters.append(dashboard.c.bucket == card)
 
-    total = session.scalar(select(func.count()).select_from(Case).where(*filters)) or 0
+    total = (
+        session.scalar(
+            select(func.count())
+            .select_from(Case)
+            .join(dashboard, dashboard.c.case_id == Case.case_id)
+            .where(*filters)
+        )
+        or 0
+    )
     statement = (
         select(Case)
+        .join(dashboard, dashboard.c.case_id == Case.case_id)
         .where(*filters)
         .order_by(Case.created_at.desc(), Case.case_id.desc())
         .limit(page_size)
@@ -248,6 +296,37 @@ def list_cases(
     return CaseListResponse(
         items=[CaseResponse.model_validate(case) for case in session.scalars(statement)],
         total=total,
+    )
+
+
+@router.get("/stats", response_model=CaseStatsResponse)
+def case_stats(
+    session: Annotated[Session, Depends(get_session)],
+    _: Annotated[
+        User,
+        Depends(
+            require_role(UserRole.REVIEWER, UserRole.SUPERVISOR, UserRole.AUDITOR, UserRole.ADMIN)
+        ),
+    ],
+) -> CaseStatsResponse:
+    dashboard = _dashboard_cases()
+    counts = dict(
+        session.execute(select(dashboard.c.bucket, func.count()).group_by(dashboard.c.bucket)).all()
+    )
+    return CaseStatsResponse(
+        **{
+            key: counts.get(key, 0)
+            for key in (
+                "processing",
+                "approved",
+                "rejected",
+                "escalated",
+                "needs_review",
+                "failed",
+                "no_decision",
+            )
+        },
+        total=sum(counts.values()),
     )
 
 

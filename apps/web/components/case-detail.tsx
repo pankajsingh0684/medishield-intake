@@ -51,6 +51,22 @@ function JsonPanel({
         </span>
       </summary>
       <div className="px-3 pb-3">
+        {run.confidence != null && (
+          <div className="mb-3">
+            <label
+              className="text-xs text-slate-600"
+              htmlFor={`confidence-${run.run_id}`}
+            >
+              Confidence
+            </label>
+            <progress
+              id={`confidence-${run.run_id}`}
+              className="block h-2 w-full accent-blue-700"
+              max={1}
+              value={run.confidence}
+            />
+          </div>
+        )}
         <dl className="mb-2 grid grid-cols-2 gap-x-3 text-xs text-slate-600">
           <dt>Version</dt>
           <dd>{run.agent_version}</dd>
@@ -61,7 +77,7 @@ function JsonPanel({
         </dl>
         {run.error ? (
           <p role="alert" className="text-sm text-red-800">
-            {run.error}
+            This step could not be completed. Review the audit log for details.
           </p>
         ) : (
           <div className="space-y-2">
@@ -191,7 +207,9 @@ export function CaseDetailView({ id }: { id: string }) {
               <div className="text-right">
                 <div className="text-xs text-slate-600">Document</div>
                 <div className="text-sm font-semibold">
-                  {item.doc_type?.replaceAll("_", " ") ?? "Pending"}
+                  {item.doc_type && item.doc_type !== "UNKNOWN"
+                    ? item.doc_type.replaceAll("_", " ").toLowerCase()
+                    : "Not yet classified"}
                 </div>
               </div>
             </div>

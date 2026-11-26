@@ -19,6 +19,12 @@ export function statusLabel(
       text: "Processing",
       color: "border-blue-700 bg-blue-50 text-blue-900",
     };
+  if (item.status === "FAILED")
+    return {
+      icon: "!",
+      text: "Failed",
+      color: "border-red-700 bg-red-50 text-red-900",
+    };
   const decision = item.effective_decision;
   if (decision === "APPROVE")
     return {
@@ -32,11 +38,7 @@ export function statusLabel(
       text: "Rejected",
       color: "border-red-700 bg-red-50 text-red-900",
     };
-  if (
-    item.status === "FAILED" ||
-    item.status === "NEEDS_REVIEW" ||
-    decision === "ESCALATE"
-  )
+  if (item.status === "NEEDS_REVIEW" || decision === "ESCALATE")
     return {
       icon: "!",
       text: "Escalated",

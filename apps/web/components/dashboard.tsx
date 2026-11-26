@@ -2,40 +2,66 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { Case, DecisionKind } from "@/lib/types";
 import { LogoutButton } from "@/components/logout-button";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui-state";
 import { AppNav } from "@/components/app-nav";
+import { useRole } from "@/lib/role";
 
 type CatalogItem = Case & { effective_decision: DecisionKind | null };
 type Result = { items: CatalogItem[]; total: number };
 const pageSize = 20;
 
-function statusCount(items: CatalogItem[], kind: string) {
-  if (kind === "Processing")
-    return items.filter(
-      (item) =>
-        !["DECIDED", "OVERRIDDEN", "NEEDS_REVIEW", "FAILED"].includes(
-          item.status,
-        ),
-    ).length;
-  if (kind === "Escalated")
-    return items.filter(
-      (item) =>
-        item.effective_decision === "ESCALATE" ||
-        ["NEEDS_REVIEW", "FAILED"].includes(item.status),
-    ).length;
-  return items.filter((item) => item.effective_decision === kind.toUpperCase())
-    .length;
+function relativeTime(value: string) {
+  const seconds = Math.round((new Date(value).getTime() - Date.now()) / 1000);
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ["year", 31536000],
+    ["month", 2592000],
+    ["day", 86400],
+    ["hour", 3600],
+    ["minute", 60],
+  ];
+  const [unit, size] = units.find(
+    ([, duration]) => Math.abs(seconds) >= duration,
+  ) ?? ["second", 1];
+  return new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }).format(
+    Math.round(seconds / size),
+    unit,
+  );
 }
 
 export function Dashboard() {
+  const searchParams = useSearchParams();
+  const status = searchParams.get("status") ?? "";
+  const decision = searchParams.get("decision") ?? "";
+  const card = searchParams.get("card") ?? "";
+  return (
+    <DashboardContent
+      key={`${status}:${decision}:${card}`}
+      initialStatus={status}
+      initialDecision={decision}
+      initialCard={card}
+    />
+  );
+}
+
+function DashboardContent({
+  initialStatus,
+  initialDecision,
+  initialCard,
+}: {
+  initialStatus: string;
+  initialDecision: string;
+  initialCard: string;
+}) {
   const router = useRouter();
-  const [status, setStatus] = useState("");
-  const [decision, setDecision] = useState("");
+  const role = useRole();
+  const [status, setStatus] = useState(initialStatus);
+  const [decision, setDecision] = useState(initialDecision);
+  const [card, setCard] = useState(initialCard);
   const [docType, setDocType] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -45,6 +71,7 @@ export function Dashboard() {
   });
   if (status) params.set("status", status);
   if (decision) params.set("decision", decision);
+  if (card) params.set("card", card);
   if (docType) params.set("doc_type", docType);
   if (search) params.set("q", search);
   const query = useQuery<Result>({
@@ -77,6 +104,17 @@ export function Dashboard() {
         ? 5000
         : false,
   });
+  const stats = useQuery({
+    queryKey: ["case-stats"],
+    queryFn: () =>
+      fetch("/api/cases/stats", { cache: "no-store" }).then(
+        async (response) => {
+          if (!response.ok)
+            throw new Error("Dashboard counts could not be loaded.");
+          return response.json();
+        },
+      ),
+  });
   const totalPages = Math.max(
     1,
     Math.ceil((query.data?.total ?? 0) / pageSize),
@@ -90,23 +128,126 @@ export function Dashboard() {
             <h1 className="text-xl font-bold">MediShield cases</h1>
             <p className="text-sm text-slate-600">Document intake dashboard</p>
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-slate-700">
+              {role.data?.role.toLowerCase()}
+            </span>
+            <LogoutButton />
+          </div>
         </div>
         <AppNav />
       </header>
       <main className="mx-auto max-w-7xl space-y-5 px-5 py-6">
+        {stats.data && (
+          <div className="flex items-center justify-between text-sm text-slate-700">
+            <Link href="/" className="font-semibold underline">
+              All cases: {stats.data.total}
+            </Link>
+            {card && (
+              <button className="button-secondary" onClick={() => setCard("")}>
+                Clear card filter
+              </button>
+            )}
+          </div>
+        )}
         <section
-          className="grid gap-3 sm:grid-cols-4"
-          aria-label="Status counts for this page"
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+          aria-label="Case status counts"
         >
-          {["Processing", "Approved", "Rejected", "Escalated"].map((kind) => (
-            <div className="panel p-4" key={kind}>
-              <div className="text-sm text-slate-600">{kind}</div>
-              <div className="text-2xl font-bold">
-                {statusCount(query.data?.items ?? [], kind)}
-              </div>
-            </div>
-          ))}
+          {stats.isLoading ? (
+            [1, 2, 3, 4].map((i) => (
+              <div className="panel h-20 animate-pulse" key={i} />
+            ))
+          ) : stats.error ? (
+            <ErrorState message="Dashboard counts could not be loaded." />
+          ) : (
+            [
+              {
+                label: "Processing",
+                count: stats.data?.processing ?? 0,
+                href: "/?card=processing",
+                tone: "neutral",
+                icon: "◷",
+              },
+              {
+                label: "Approved",
+                count: stats.data?.approved ?? 0,
+                href: "/?card=approved",
+                tone: "green",
+                icon: "✓",
+              },
+              {
+                label: "Rejected",
+                count: stats.data?.rejected ?? 0,
+                href: "/?card=rejected",
+                tone: "red",
+                icon: "×",
+              },
+              {
+                label: "Escalated",
+                count: stats.data?.escalated ?? 0,
+                href: "/?card=escalated",
+                tone: "amber",
+                icon: "!",
+              },
+              {
+                label: "Needs review",
+                count: stats.data?.needs_review ?? 0,
+                href: "/?card=needs_review",
+                tone: "amber",
+                icon: "!",
+              },
+              {
+                label: "Failed",
+                count: stats.data?.failed ?? 0,
+                href: "/?card=failed",
+                tone: "red",
+                icon: "✖",
+              },
+              {
+                label: "No decision",
+                count: stats.data?.no_decision ?? 0,
+                href: "/?card=no_decision",
+                tone: "neutral",
+                icon: "⏳",
+              },
+            ]
+              .filter(
+                (card) =>
+                  !["Failed", "No decision"].includes(card.label) ||
+                  card.count > 0,
+              )
+              .map((card) => (
+                <Link
+                  href={card.href}
+                  className="panel block p-4 transition hover:-translate-y-0.5 hover:shadow-md"
+                  key={card.label}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-700">
+                      {card.label}
+                    </span>
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-full font-bold text-white ${
+                        card.tone === "green"
+                          ? "bg-emerald-500"
+                          : card.tone === "red"
+                            ? "bg-red-500"
+                            : card.tone === "amber"
+                              ? "bg-amber-500"
+                              : "bg-slate-400"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      {card.icon}
+                    </span>
+                  </div>
+                  <div className="mt-3 text-3xl font-bold text-slate-950">
+                    {card.count}
+                  </div>
+                </Link>
+              ))
+          )}
         </section>
         <section className="panel p-4" aria-label="Case filters">
           <div className="grid gap-3 md:grid-cols-4">
@@ -144,7 +285,9 @@ export function Dashboard() {
                   "OVERRIDDEN",
                   "FAILED",
                 ].map((v) => (
-                  <option key={v}>{v}</option>
+                  <option key={v} value={v}>
+                    {v.replaceAll("_", " ").toLowerCase()}
+                  </option>
                 ))}
               </select>
             </label>
@@ -160,7 +303,9 @@ export function Dashboard() {
               >
                 <option value="">All decisions</option>
                 {["APPROVE", "REJECT", "ESCALATE"].map((v) => (
-                  <option key={v}>{v}</option>
+                  <option key={v} value={v}>
+                    {v.toLowerCase()}
+                  </option>
                 ))}
               </select>
             </label>
@@ -183,7 +328,11 @@ export function Dashboard() {
                   "POLICY_AMENDMENT",
                   "UNKNOWN",
                 ].map((v) => (
-                  <option key={v}>{v}</option>
+                  <option key={v} value={v}>
+                    {v === "UNKNOWN"
+                      ? "Not yet classified"
+                      : v.replaceAll("_", " ").toLowerCase()}
+                  </option>
                 ))}
               </select>
             </label>
@@ -199,7 +348,7 @@ export function Dashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <caption className="sr-only">MediShield intake cases</caption>
-                <thead className="bg-slate-100 text-slate-700">
+                <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700">
                   <tr>
                     <th className="p-3">Case ID</th>
                     <th className="p-3">Status</th>
@@ -225,10 +374,17 @@ export function Dashboard() {
                         <StatusBadge item={item} />
                       </td>
                       <td className="p-3">
-                        {item.doc_type?.replaceAll("_", " ") ?? "Pending"}
+                        {item.doc_type && item.doc_type !== "UNKNOWN"
+                          ? item.doc_type.replaceAll("_", " ").toLowerCase()
+                          : "Not yet classified"}
                       </td>
                       <td className="p-3">
-                        {new Date(item.received_at).toLocaleString()}
+                        <time
+                          dateTime={item.received_at}
+                          title={new Date(item.received_at).toLocaleString()}
+                        >
+                          {relativeTime(item.received_at)}
+                        </time>
                       </td>
                     </tr>
                   ))}

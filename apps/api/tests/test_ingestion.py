@@ -1723,6 +1723,45 @@ def _add_decision(engine, case_id: UUID, decision_kind: DecisionKind) -> UUID:
     return pipeline_run
 
 
+def test_dashboard_cards_match_filtered_cases(client, test_engine):
+    case_ids = [_insert_graph_case(test_engine) for _ in range(8)]
+    _add_decision(test_engine, case_ids[0], DecisionKind.REJECT)
+    _add_decision(test_engine, case_ids[0], DecisionKind.APPROVE)
+    _add_decision(test_engine, case_ids[1], DecisionKind.REJECT)
+    _add_decision(test_engine, case_ids[2], DecisionKind.ESCALATE)
+    _add_decision(test_engine, case_ids[3], DecisionKind.ESCALATE)
+    with Session(test_engine) as session, session.begin():
+        session.get(Case, case_ids[3]).status = CaseStatus.OVERRIDDEN
+        session.get(Case, case_ids[4]).status = CaseStatus.NEEDS_REVIEW
+        session.get(Case, case_ids[5]).status = CaseStatus.FAILED
+        session.get(Case, case_ids[6]).status = CaseStatus.DECIDED
+        session.add(
+            Override(
+                case_id=case_ids[3],
+                user_id=uuid5(NAMESPACE_URL, "medishield:test-user:REVIEWER"),
+                from_decision=DecisionKind.ESCALATE,
+                to_decision=DecisionKind.APPROVE,
+                reason="Reviewed and approved.",
+            )
+        )
+
+    expected = {
+        "approved": {str(case_ids[0]), str(case_ids[3])},
+        "rejected": {str(case_ids[1])},
+        "escalated": {str(case_ids[2])},
+        "needs_review": {str(case_ids[4])},
+        "failed": {str(case_ids[5])},
+        "no_decision": {str(case_ids[6])},
+        "processing": {str(case_ids[7])},
+    }
+    stats = client.get("/api/v1/cases/stats").json()
+    assert stats["total"] == sum(stats[key] for key in expected) == len(case_ids)
+    for card, case_set in expected.items():
+        listed = client.get("/api/v1/cases", params={"card": card}).json()
+        assert stats[card] == listed["total"] == len(case_set)
+        assert {item["case_id"] for item in listed["items"]} == case_set
+
+
 def test_case_detail_returns_latest_decision_overrides_and_signed_url(client, test_engine):
     case_id = _insert_graph_case(test_engine)
     _add_decision(test_engine, case_id, DecisionKind.ESCALATE)

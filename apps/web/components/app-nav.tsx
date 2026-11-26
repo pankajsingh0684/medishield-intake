@@ -6,7 +6,10 @@ import { useRole } from "@/lib/role";
 export function AppNav() {
   const role = useRole();
   return (
-    <nav aria-label="Primary" className="flex gap-4 text-sm font-semibold">
+    <nav
+      aria-label="Primary"
+      className="mx-auto flex max-w-7xl justify-center gap-5 px-5 py-2 text-sm font-semibold"
+    >
       <Link className="text-blue-800 underline" href="/">
         Cases
       </Link>
