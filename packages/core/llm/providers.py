@@ -31,7 +31,7 @@ MAX_GROQ_IMAGE_BYTES = 4 * 1024 * 1024
 MAX_GROQ_IMAGE_LONG_SIDE = 2000
 PREPARE_GROQ_IMAGE_BYTES = int(3.5 * 1024 * 1024)
 GROQ_MAX_429_RETRIES = 5
-GROQ_MAX_429_WAIT_SECONDS = 120.0
+GROQ_MAX_429_WAIT_SECONDS = 90.0
 GROQ_DEFAULT_RETRY_SECONDS = 20.0
 GROQ_DAILY_BUDGET_FRACTION = 0.90
 
@@ -191,8 +191,15 @@ def _retry_after_seconds(response: httpx.Response, message: str) -> float:
             error_message = error["message"]
     except ValueError:
         pass
-    match = re.search(r"try again in\s+(\d+(?:\.\d+)?)\s*s", error_message, re.IGNORECASE)
-    return float(match.group(1)) if match else GROQ_DEFAULT_RETRY_SECONDS
+    match = re.search(
+        r"try again in\s+((?:\d+(?:\.\d+)?\s*[hms]\s*)+)", error_message, re.IGNORECASE
+    )
+    if match:
+        parts = re.findall(r"(\d+(?:\.\d+)?)\s*([hms])", match.group(1), re.IGNORECASE)
+        return sum(
+            float(value) * {"h": 3600, "m": 60, "s": 1}[unit.lower()] for value, unit in parts
+        )
+    return GROQ_DEFAULT_RETRY_SECONDS
 
 
 class GroqMinuteLimiter:
@@ -212,11 +219,11 @@ class GroqMinuteLimiter:
         self.model_tokens_per_minute = dict(model_tokens_per_minute or {})
         self.clock = clock
         self.sleeper = sleeper
-        self.events: dict[str, list[tuple[float, int]]] = {}
+        self.events: dict[str, list[list[float]]] = {}
         self.wait_seconds = 0.0
         self._lock = threading.Lock()
 
-    def acquire(self, model: str, estimated_tokens: int, wait_max_s: float = 120.0) -> None:
+    def acquire(self, model: str, estimated_tokens: int, wait_max_s: float = 120.0) -> list[float]:
         token_limit = self.model_tokens_per_minute.get(model, self.tokens_per_minute)
         if estimated_tokens > token_limit:
             raise LLMProviderError(
@@ -231,8 +238,9 @@ class GroqMinuteLimiter:
                 request_full = len(active) >= self.requests_per_minute
                 tokens_full = sum(event[1] for event in active) + estimated_tokens > token_limit
                 if not request_full and not tokens_full:
-                    active.append((now, estimated_tokens))
-                    return
+                    event = [now, float(estimated_tokens)]
+                    active.append(event)
+                    return event
                 wait = max(0.01, 60.0 - (now - active[0][0])) if active else 60.0
                 if local_wait + wait > wait_max_s:
                     raise LLMProviderError(
@@ -241,6 +249,10 @@ class GroqMinuteLimiter:
                 local_wait += wait
                 self.wait_seconds += wait
                 self.sleeper(wait)
+
+    def reconcile(self, event: list[float], actual_tokens: int) -> None:
+        with self._lock:
+            event[1] = float(actual_tokens)
 
 
 class GroqDailyTokenBudget:
@@ -411,6 +423,7 @@ class GroqProvider(_HttpProvider):
         self.sleeper = sleeper
         self.request_calls_by_model: dict[str, int] = {}
         self.rate_limit_responses_429 = 0
+        self.rate_limit_errors: list[dict[str, Any]] = []
         self.retries_429 = 0
         self.wait_429_seconds = 0.0
         self.estimated_tokens_by_model: dict[str, int] = {}
@@ -432,7 +445,7 @@ class GroqProvider(_HttpProvider):
             f"code={code if code is not None else 'unknown'}; "
             f"message={message if message is not None else 'no message'}"
         )
-        return detail.replace(self.api_key, "[REDACTED]")[:200]
+        return detail.replace(self.api_key, "[REDACTED]")
 
     def _rate_limit_error(self, response: httpx.Response, message: str) -> GroqRateLimitError:
         return GroqRateLimitError(message, _retry_after_seconds(response, message))
@@ -471,13 +484,18 @@ class GroqProvider(_HttpProvider):
         text_length = len(system) + sum(
             len(str(message.get("content", ""))) for message in messages
         )
-        return math.ceil(text_length / 4) + 2_048 * len(images) + max_tokens
+        image_tokens = 0
+        for image in images:
+            with Image.open(BytesIO(image)) as source:
+                image_tokens += math.ceil(source.width / 512) * math.ceil(source.height / 512) * 256
+        return math.ceil(text_length / 4) + image_tokens + max_tokens
 
     def usage_summary(self) -> dict[str, Any]:
         with self._stats_lock:
             summary = {
                 "calls_by_model": dict(self.request_calls_by_model),
                 "rate_limit_responses_429": self.rate_limit_responses_429,
+                "rate_limit_errors": list(self.rate_limit_errors),
                 "retries_429": self.retries_429,
                 "seconds_waited": self.wait_429_seconds + self.minute_limiter.wait_seconds,
                 "estimated_tokens_by_model": dict(self.estimated_tokens_by_model),
@@ -509,10 +527,12 @@ class GroqProvider(_HttpProvider):
             else GROQ_OTPM_DEFAULT
         )
         max_tokens = min(max_tokens, otpm_limit)
-        estimated_tokens = self.estimate_tokens(system, messages, images, max_tokens)
         images = [_prepare_groq_image(image) for image in images]
         _validate_groq_images(images)
         secure_messages_list = secure_messages(messages)
+        estimated_tokens = self.estimate_tokens(
+            _system_with_repair(system, repair_hint), secure_messages_list, images, max_tokens
+        )
         payload = {
             "model": model,
             "temperature": temperature,
@@ -531,13 +551,12 @@ class GroqProvider(_HttpProvider):
             ],
         }
         retry_count = 0
-        total_retry_wait = 0.0
         if self.daily_budget is not None:
             self.daily_budget.reserve(estimated_tokens)
         budget_reserved = self.daily_budget is not None
         try:
             while True:
-                self.minute_limiter.acquire(
+                reservation = self.minute_limiter.acquire(
                     model, estimated_tokens, wait_max_s=self.limiter_wait_max_s
                 )
                 with self._stats_lock:
@@ -550,6 +569,9 @@ class GroqProvider(_HttpProvider):
                         headers={"Authorization": f"Bearer {self.api_key}"},
                         payload=payload,
                     )
+                    input_tokens, output_tokens = _usage(body)
+                    if input_tokens is not None and output_tokens is not None:
+                        self.minute_limiter.reconcile(reservation, input_tokens + output_tokens)
                     if self.daily_budget is not None:
                         actual_tokens = 0
                         usage = body.get("usage")
@@ -562,13 +584,27 @@ class GroqProvider(_HttpProvider):
                         budget_reserved = False
                     break
                 except GroqRateLimitError as error:
+                    self.minute_limiter.reconcile(reservation, 0)
                     with self._stats_lock:
                         self.rate_limit_responses_429 += 1
-                    remaining_wait = GROQ_MAX_429_WAIT_SECONDS - total_retry_wait
-                    if retry_count >= GROQ_MAX_429_RETRIES or error.retry_after > remaining_wait:
-                        raise
+                        self.rate_limit_errors.append(
+                            {
+                                "model": model,
+                                "message": str(error),
+                                "retry_after_seconds": error.retry_after,
+                            }
+                        )
+                    if retry_count >= GROQ_MAX_429_RETRIES:
+                        raise GroqRateLimitError(
+                            f"Groq 429 retry budget exhausted after {retry_count} retries: {error}",
+                            error.retry_after,
+                        ) from error
+                    if error.retry_after > GROQ_MAX_429_WAIT_SECONDS:
+                        raise GroqRateLimitError(
+                            f"Groq 429 retry wait exceeds {GROQ_MAX_429_WAIT_SECONDS:g}s: {error}",
+                            error.retry_after,
+                        ) from error
                     self.sleeper(error.retry_after)
-                    total_retry_wait += error.retry_after
                     with self._stats_lock:
                         self.wait_429_seconds += error.retry_after
                         self.retries_429 += 1

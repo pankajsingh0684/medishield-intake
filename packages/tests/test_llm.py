@@ -519,6 +519,7 @@ def test_groq_http_429_is_retried_without_network() -> None:
     [
         ({"Retry-After": "7"}, "busy", 7.0),
         ({}, "try again in 4s", 4.0),
+        ({}, "try again in 1m30s", 90.0),
         ({}, "busy", 20.0),
     ],
 )
@@ -582,7 +583,64 @@ def test_groq_429_honors_retry_delay_and_tracks_usage(
     client.close()
 
 
-def test_groq_429_retries_stop_at_total_wait_cap() -> None:
+def test_groq_429_retains_full_redacted_detail_and_rejects_long_wait() -> None:
+    secret = "mock-secret-key"
+    detail = "x" * 220 + f" TPD: Limit 70000, Used 69000, Requested 1200. {secret}"
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda _: httpx.Response(
+                429,
+                headers={"Retry-After": "91"},
+                json={"error": {"code": "rate_limit_exceeded", "message": detail}},
+            )
+        )
+    )
+    provider = GroqProvider(api_key=secret, timeout=1, client=client)
+    with pytest.raises(RetryableLLMError, match="retry wait exceeds 90s") as raised:
+        provider.complete(model="model", system="", messages=[], images=[], schema=Result)
+    assert "Limit 70000, Used 69000, Requested 1200" in str(raised.value)
+    assert secret not in str(raised.value)
+    entry = provider.usage_summary()["rate_limit_errors"][0]
+    assert entry["retry_after_seconds"] == 91
+    assert secret not in entry["message"]
+    client.close()
+
+
+def test_groq_estimate_uses_image_dimensions() -> None:
+    from io import BytesIO
+
+    from PIL import Image
+
+    def image(width: int, height: int) -> bytes:
+        buffer = BytesIO()
+        Image.new("RGB", (width, height)).save(buffer, format="PNG")
+        return buffer.getvalue()
+
+    small = GroqProvider.estimate_tokens("prompt", [], [image(256, 256)], 10)
+    large = GroqProvider.estimate_tokens("prompt", [], [image(1024, 1024)], 10)
+    assert large - small == 768
+
+
+def test_groq_minute_limiter_reconciles_usage_for_next_call() -> None:
+    from packages.core.llm.providers import GroqMinuteLimiter
+
+    now = [0.0]
+    waits: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        waits.append(seconds)
+        now[0] += seconds
+
+    limiter = GroqMinuteLimiter(30, 100, clock=lambda: now[0], sleeper=sleep)
+    first = limiter.acquire("model", 80)
+    limiter.reconcile(first, 20)
+    limiter.acquire("model", 80)
+    assert waits == []
+    limiter.acquire("model", 1)
+    assert waits == [60.0]
+
+
+def test_groq_429_retries_stop_at_retry_budget() -> None:
     calls = 0
     now = [0.0]
 
@@ -604,7 +662,7 @@ def test_groq_429_retries_stop_at_total_wait_cap() -> None:
         clock=lambda: now[0],
     )
 
-    with pytest.raises(RetryableLLMError, match="rate_limit"):
+    with pytest.raises(RetryableLLMError, match="retry budget exhausted.*rate_limit"):
         provider.complete(
             model="groq-text",
             system="",
@@ -615,10 +673,10 @@ def test_groq_429_retries_stop_at_total_wait_cap() -> None:
         )
 
     summary = provider.usage_summary()
-    assert calls == 5
-    assert summary["retries_429"] == 4
-    assert summary["rate_limit_responses_429"] == 5
-    assert summary["seconds_waited"] == 120
+    assert calls == 6
+    assert summary["retries_429"] == 5
+    assert summary["rate_limit_responses_429"] == 6
+    assert summary["seconds_waited"] == 150
     client.close()
 
 
@@ -684,7 +742,7 @@ def test_groq_minute_limiter_is_per_model_and_fake_clock_driven() -> None:
         timeout=1,
         client=client,
         rpm_limit=2,
-        tpm_limit=100,
+        tpm_limit=1000,
         clock=lambda: now[0],
         sleeper=sleep,
     )
@@ -723,7 +781,7 @@ def test_groq_token_limiter_waits_when_tpm_budget_would_be_exceeded() -> None:
         timeout=1,
         client=client,
         rpm_limit=30,
-        tpm_limit=20,
+        tpm_limit=124,
         clock=lambda: now[0],
         sleeper=sleep,
     )
@@ -748,7 +806,7 @@ def test_groq_daily_budget_persists_actual_usage_and_stops_at_90_percent(
 
     now = datetime(2026, 11, 24, 12, 0, tzinfo=UTC)
     budget_path = tmp_path / "usage.json"
-    budget = GroqDailyTokenBudget(30, budget_path, now=lambda: now)
+    budget = GroqDailyTokenBudget(120, budget_path, now=lambda: now)
 
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -778,12 +836,12 @@ def test_groq_daily_budget_persists_actual_usage_and_stops_at_90_percent(
     }
     provider.complete(**args)
     provider.complete(**args)
-    resumed_budget = GroqDailyTokenBudget(30, budget_path, now=lambda: now)
+    resumed_budget = GroqDailyTokenBudget(120, budget_path, now=lambda: now)
 
     assert resumed_budget.used_tokens == 24
     assert provider.usage_summary()["actual_tokens_by_model"] == {"model-a": 24}
     with pytest.raises(GroqDailyTokenBudgetExceeded, match="Groq daily token budget stop"):
-        resumed_budget.check(4)
+        resumed_budget.check(85)
     client.close()
 
 
@@ -1081,7 +1139,7 @@ def test_groq_qwen_uses_configured_tpm_limit() -> None:
         timeout=1,
         client=client,
         tpm_limit=100,
-        qwen_tpm_limit=20,
+        qwen_tpm_limit=124,
         clock=lambda: now[0],
         sleeper=sleep,
     )
