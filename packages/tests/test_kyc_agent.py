@@ -216,6 +216,18 @@ def test_lookup_uses_policy_number_when_member_id_is_absent():
     assert "MEMBER_NOT_FOUND" not in {flag.code for flag in result.flags}
 
 
+def test_medicare_number_is_not_a_policy_mismatch():
+    agent, _ = make_agent()
+    fields = [
+        OcrField(key="dob", value="01/02/1965", confidence=0.98, page=1),
+        OcrField(key="member_name", value="John Johnson X.", confidence=0.98, page=1),
+        OcrField(key="policy_number", value="9FD5-RN9-KA46", confidence=0.98, page=1),
+    ]
+    result = agent.check(DocType.ID_DOCUMENT, make_ocr(fields), RECEIVED_AT)
+    assert result.member_ref == "PT_20745"
+    assert "POLICY_MISMATCH" not in {flag.code for flag in result.flags}
+
+
 def test_lookup_uses_dob_and_name_when_document_has_no_identifier():
     agent, _ = make_agent()
     fields = [
@@ -384,7 +396,17 @@ def test_confidence_uses_largest_flag_penalty_floor_and_no_identifier_cap():
     floor = floor_agent.check(DocType.ID_DOCUMENT, make_ocr(floor_fields), RECEIVED_AT)
 
     assert absent.confidence == pytest.approx(0.45)
-    assert floor.confidence == 0.1
+    assert floor.confidence == pytest.approx(0.95)
+
+
+@pytest.mark.parametrize(("evidence_confidence", "expected"), [(0.95, 0.95), (0.4, 0.1)])
+def test_expired_id_confidence_reflects_extraction(evidence_confidence, expected):
+    agent, _ = make_agent()
+    fields = id_fields(expiry="2025-02-19")
+    fields[-1].confidence = evidence_confidence
+    result = agent.check(DocType.ID_DOCUMENT, make_ocr(fields), RECEIVED_AT)
+    assert not result.kyc_passed
+    assert result.confidence == pytest.approx(expected)
 
 
 def test_medicare_expired_banner_is_detected_from_ocr_before_vision():

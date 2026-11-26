@@ -114,6 +114,9 @@ def test_documented_threshold_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
         "THRESH_FRAUD_HIGH",
         "THRESH_AGENT_CONFIDENCE",
         "THRESH_CLASSIFY_REVIEW",
+        "GROQ_RPM_LIMIT",
+        "GROQ_TPM_LIMIT",
+        "GROQ_TPD_LIMIT",
     ):
         monkeypatch.delenv(name, raising=False)
 

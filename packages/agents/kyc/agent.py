@@ -138,7 +138,7 @@ class KycAgent:
             else:
                 self._check_member_fields(member, fields, ocr, flags)
                 if doc_type not in MEMBER_MATCH_ONLY_TYPES:
-                    self._check_policy(member, fields, received_at, flags)
+                    self._check_policy(member, fields, received_at, flags, doc_type)
 
             visual: TamperAssessment | None = None
             if doc_type not in MEMBER_MATCH_ONLY_TYPES and images:
@@ -164,8 +164,30 @@ class KycAgent:
                         )
                     )
 
-            penalties = [self._penalty(flag, lookup_name_ratio) for flag in flags]
+            evidence_fields = {
+                "DOB_MISMATCH": "dob",
+                "NAME_MISMATCH": "member_name",
+                "POLICY_MISMATCH": "policy_number",
+                "ID_EXPIRED": "id_expiry",
+            }
+            reliable_failures = []
+            penalties = []
+            for flag in flags:
+                field = fields.get(evidence_fields.get(flag.code, ""))
+                evidence_confidence = field.confidence if field else None
+                if flag.code == "ID_EXPIRED" and field is None and visual is not None:
+                    evidence_confidence = visual.confidence
+                if (
+                    flag.severity == "HIGH"
+                    and evidence_confidence is not None
+                    and evidence_confidence >= 0.7
+                ):
+                    reliable_failures.append(evidence_confidence)
+                else:
+                    penalties.append(self._penalty(flag, lookup_name_ratio))
             confidence = max(0.1, 1.0 - max(penalties, default=0.0))
+            if reliable_failures:
+                confidence = min(confidence, *reliable_failures)
             if not self._has_identifier(fields):
                 confidence = min(confidence, 0.55)
             return self._result(
@@ -313,8 +335,15 @@ class KycAgent:
         fields: dict[str, OcrField],
         received_at: datetime,
         flags: list[KycFlag],
+        doc_type: DocType,
     ) -> None:
         policy_number = self._printed_policy_number(fields)
+        if (
+            doc_type == DocType.ID_DOCUMENT
+            and policy_number
+            and re.fullmatch(r"[0-9][A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{4}", policy_number)
+        ):
+            policy_number = None
         mismatch = bool(policy_number and policy_number.strip() != member.policy_number)
         service_value = self._value(fields, "service_date")
         service_date = parse_identity_date(service_value) if service_value else received_at.date()

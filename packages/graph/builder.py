@@ -60,12 +60,20 @@ def build_graph(runtime: GraphRuntime):
             if state.get("infrastructure_error")
             else "mark_needs_review"
             if state["classification"].status == AgentStatus.ERROR
-            or classification_needs_review(
+            else "orchestrator"
+            if state["classification"].doc_type.value == "UNKNOWN"
+            else "mark_needs_review"
+            if classification_needs_review(
                 state["classification"].doc_type, state["classification"].routing_tags
             )
             else "ocr"
         ),
-        {"mark_failed": "mark_failed", "mark_needs_review": "mark_needs_review", "ocr": "ocr"},
+        {
+            "mark_failed": "mark_failed",
+            "mark_needs_review": "mark_needs_review",
+            "orchestrator": "orchestrator",
+            "ocr": "ocr",
+        },
     )
     graph.add_conditional_edges(
         "ocr",
@@ -74,12 +82,14 @@ def build_graph(runtime: GraphRuntime):
             if state.get("infrastructure_error")
             else "mark_needs_review"
             if state["ocr"].status == AgentStatus.ERROR
-            or state["classification"].doc_type.value == "UNKNOWN"
+            else "orchestrator"
+            if state["classification"].doc_type.value == "UNKNOWN"
             else "route_specialists"
         ),
         {
             "mark_failed": "mark_failed",
             "mark_needs_review": "mark_needs_review",
+            "orchestrator": "orchestrator",
             "route_specialists": "route_specialists",
         },
     )

@@ -347,6 +347,10 @@ class TestTextLayerExtraction:
 class TestOCRAgent:
     """Test the OCR agent."""
 
+    def test_numeric_name_suffix_is_preserved(self):
+        fields = extract_fields_from_text("NAME: EXTRA PATIENT 33 ADDRESS: 133 EXTRA AVE")
+        assert fields["member_name"].value == "EXTRA PATIENT 33"
+
     def test_agent_initialization(self):
         """Test agent can be initialized."""
         agent = make_agent()
@@ -642,6 +646,19 @@ class TestExtractorPrecision:
         valid = ExtractedField("service_date", "2025-05-14", 0.9)
         merged = agent._merge_results(llm, ({"service_date": (valid, 1)}, 0.9, []))
         assert [field.value for field in merged.fields] == ["2025-05-14"]
+
+    def test_labeled_tesseract_dob_corrects_vision_disagreement(self):
+        agent = make_agent()
+        llm = make_ocr_payload(
+            fields=[OcrField(key="dob", value="12/15/1983", confidence=0.98, page=1)]
+        )
+        dob = ExtractedField("dob", "02/15/1983", 0.8)
+        words = [OcrWord("DOB:", 0.9, 0, 0, 10, 10, 1), OcrWord(dob.value, 0.8, 15, 0, 30, 10, 1)]
+        merged = agent._merge_results(llm, ({"dob": (dob, 1)}, 0.8, words))
+        assert merged.fields[0].value == "02/15/1983"
+
+        unlabeled = agent._merge_results(llm, ({"dob": (dob, 1)}, 0.8, words[1:]))
+        assert unlabeled.fields[0].value == "12/15/1983"
 
     def test_cache_version_change_invalidates_cache(self, tmp_path):
         content = b"image bytes"

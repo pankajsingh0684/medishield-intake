@@ -5,6 +5,7 @@ from collections import Counter
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from io import BytesIO
+from itertools import pairwise
 from pathlib import Path
 
 import pymupdf
@@ -403,9 +404,16 @@ class OCRAgent:
         for key, (tess_field, page_num) in tesseract_fields.items():
             if not is_valid(key, tess_field.value):
                 continue
+            labeled_dob = key == "dob" and any(
+                previous.page == word.page == page_num
+                and previous.text.strip().upper().rstrip(":") in {"DOB", "BIRTH"}
+                and word.text.strip() == tess_field.value
+                for previous, word in pairwise(tesseract_words)
+            )
             if (
                 key not in merged_fields_dict
                 or tess_field.confidence > merged_fields_dict[key].confidence
+                or labeled_dob
             ):
                 merged_fields_dict[key] = OcrField(
                     key=key,

@@ -1,0 +1,5274 @@
+{
+  "run": {
+    "provider": "groq",
+    "split": "dev",
+    "sample_requested": null,
+    "sample_size": 40,
+    "received_at_override": true,
+    "data_as_of_date": "2025-12-31",
+    "run_id": "20261126T043835Z-c93a941c",
+    "retrieval_csv": "eval_20261126T043835Z-c93a941c_retrieval.csv"
+  },
+  "metrics": {
+    "sample_size": 40,
+    "classification": {
+      "correct": 40,
+      "sample_size": 40,
+      "accuracy": 1.0
+    },
+    "extraction": {
+      "correct": 52,
+      "sample_size": 54,
+      "completeness": 0.9629629629629629
+    },
+    "decision": {
+      "correct": 28,
+      "sample_size": 40,
+      "accuracy": 0.7
+    },
+    "confusion_matrix": {
+      "APPROVE": {
+        "APPROVE": 12,
+        "ESCALATE": 7
+      },
+      "ESCALATE": {
+        "ESCALATE": 13,
+        "NO_DECISION": 2
+      },
+      "REJECT": {
+        "ESCALATE": 3,
+        "REJECT": 3
+      }
+    },
+    "breakdowns": {
+      "scenario": {
+        "amount_under_10k": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "date_conflict": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "duplicate_claim": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "expired_id": {
+          "correct": 0,
+          "sample_size": 2,
+          "accuracy": 0.0
+        },
+        "expiring_soon_id": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "missing_field": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "name_mismatch": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "policy_amendment": {
+          "correct": 6,
+          "sample_size": 6,
+          "accuracy": 1.0
+        },
+        "proc_diag_mismatch": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "prompt_injection": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "readmission_30d": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "tampered_id": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "uncovered_procedure": {
+          "correct": 2,
+          "sample_size": 2,
+          "accuracy": 1.0
+        },
+        "unknown": {
+          "correct": 0,
+          "sample_size": 2,
+          "accuracy": 0.0
+        },
+        "valid_clean": {
+          "correct": 11,
+          "sample_size": 18,
+          "accuracy": 0.6111111111111112
+        }
+      },
+      "document_category": {
+        "CLAIM_FORM": {
+          "correct": 6,
+          "sample_size": 11,
+          "accuracy": 0.5454545454545454
+        },
+        "DISCHARGE_SUMMARY": {
+          "correct": 5,
+          "sample_size": 6,
+          "accuracy": 0.8333333333333334
+        },
+        "ID_DOCUMENT": {
+          "correct": 3,
+          "sample_size": 7,
+          "accuracy": 0.42857142857142855
+        },
+        "POLICY_AMENDMENT": {
+          "correct": 6,
+          "sample_size": 6,
+          "accuracy": 1.0
+        },
+        "PRESCRIPTION": {
+          "correct": 8,
+          "sample_size": 8,
+          "accuracy": 1.0
+        },
+        "UNKNOWN": {
+          "correct": 0,
+          "sample_size": 2,
+          "accuracy": 0.0
+        }
+      },
+      "split": {
+        "dev": {
+          "correct": 28,
+          "sample_size": 40,
+          "accuracy": 0.7
+        }
+      }
+    },
+    "latency_ms": {
+      "sample_size": 40,
+      "p50": 14781.656199949794,
+      "p95": 43740.63214489723
+    },
+    "calibration": {
+      "sample_size": 38,
+      "bins": [
+        {
+          "lower": 0.0,
+          "upper": 0.2,
+          "sample_size": 2,
+          "mean_confidence": 0.1,
+          "accuracy": 0.0
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.4,
+          "sample_size": 16,
+          "mean_confidence": 0.309375,
+          "accuracy": 0.5625
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.6,
+          "sample_size": 1,
+          "mean_confidence": 0.44999999999999996,
+          "accuracy": 1.0
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.8,
+          "sample_size": 19,
+          "mean_confidence": 0.6889473684210526,
+          "accuracy": 0.9473684210526315
+        }
+      ],
+      "ece": 0.25552631578947366
+    }
+  },
+  "weighted_score": {
+    "score": 0.8732193732193733,
+    "sample_size": 3,
+    "method": "Available automated PRD weights (classification 20%, extraction 20%, decision 25%) renormalized to 100%; retrieval is manual, UI and code quality are unscored."
+  },
+  "decision_mismatches": [
+    {
+      "doc_id": "claim_PT_99733",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.3,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:policy, LOW_CONFIDENCE:policy_coverage",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9800000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9800000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": false,
+          "inputs": {
+            "rejection_reasons": [],
+            "rejection_sources": []
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY"
+            ],
+            "applicable_agent_count": 6
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "claims",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "policy"
+    },
+    {
+      "doc_id": "claim_PT_20322",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.3,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:policy, LOW_CONFIDENCE:policy_coverage",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9800000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9800000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": false,
+          "inputs": {
+            "rejection_reasons": [],
+            "rejection_sources": []
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY"
+            ],
+            "applicable_agent_count": 6
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.99,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "policy"
+    },
+    {
+      "doc_id": "claim_PT_39451",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.3,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:policy, LOW_CONFIDENCE:policy_coverage",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9800000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9800000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": false,
+          "inputs": {
+            "rejection_reasons": [],
+            "rejection_sources": []
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY"
+            ],
+            "applicable_agent_count": 6
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "claims",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "policy"
+    },
+    {
+      "doc_id": "id_PT_20745",
+      "expected": "REJECT",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.1,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:kyc",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.1
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.98
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:KYC_FAILED",
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.1
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.98
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.1,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.1,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "kyc"
+    },
+    {
+      "doc_id": "id_PT_30028",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.35,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:kyc",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.35
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.95
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:KYC_FAILED",
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.35
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.95
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.95,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.35,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.35,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "kyc"
+    },
+    {
+      "doc_id": "claim_PT_67125",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.3,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:policy, LOW_CONFIDENCE:policy_coverage",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.9
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9810000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.9
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9810000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": false,
+          "inputs": {
+            "rejection_reasons": [],
+            "rejection_sources": []
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY"
+            ],
+            "applicable_agent_count": 6
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.981,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.9,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "policy"
+    },
+    {
+      "doc_id": "claim_PT_55056",
+      "expected": "REJECT",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.3,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:policy, LOW_CONFIDENCE:policy_coverage",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9877777777777779
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.9
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:SCHEMA_INVALID",
+          "inputs": {
+            "rejection_reasons": [
+              "SCHEMA_INVALID"
+            ],
+            "rejection_sources": [
+              "claims"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9877777777777779
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.9
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "SCHEMA_INVALID"
+            ],
+            "rejection_sources": [
+              "claims"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 6
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.99,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.988,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "OK",
+          "confidence": 0.9,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "policy"
+    },
+    {
+      "doc_id": "id_PT_39816",
+      "expected": "REJECT",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.1,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:kyc",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.1
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:KYC_FAILED",
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.1
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "claims",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.1,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.99,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.1,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "kyc"
+    },
+    {
+      "doc_id": "id_extra_PT_EX0033",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.7,
+      "fired_rules": [
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "summary": "R2 FRAUD_SCORE:0.5",
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.5
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.8000000000000002
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": []
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.5
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": false,
+          "inputs": {
+            "rejection_reasons": [],
+            "rejection_sources": []
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R2_FRAUD_SCORE"
+            ],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "claims",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.99,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.8,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "fraud"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0033",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.35,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:kyc",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.35
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9392857142857143
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.8
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:KYC_FAILED",
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.35
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9392857142857143
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.8
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 5
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.939,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.35,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.35,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "OK",
+          "confidence": 0.8,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "kyc"
+    }
+  ],
+  "known_divergences": [
+    {
+      "doc_id": "claim_PT_16658",
+      "expected": "REJECT",
+      "known_engine_result": "ESCALATE",
+      "rule": "R2",
+      "reason": "The $9,950 uncovered claim is in the near-threshold band; R2 fires before R3.",
+      "observed": "NOT_EVALUATED"
+    }
+  ],
+  "failures": [],
+  "groq_usage": {
+    "calls_by_model": {
+      "openai/gpt-oss-120b": 43,
+      "qwen/qwen3.8-27b": 100
+    },
+    "rate_limit_responses_429": 0,
+    "rate_limit_errors": [],
+    "retries_429": 0,
+    "seconds_waited": 0.0,
+    "estimated_tokens_by_model": {
+      "openai/gpt-oss-120b": 55647,
+      "qwen/qwen3.8-27b": 368119
+    },
+    "actual_tokens_by_model": {
+      "openai/gpt-oss-120b": 45589,
+      "qwen/qwen3.8-27b": 225305
+    },
+    "daily_tokens_used": 345330,
+    "cache_hits": 44,
+    "usage_by_prompt": {
+      "classifier": {
+        "live": {
+          "calls": 35,
+          "estimated_input_tokens": 79135,
+          "estimated_output_tokens": 10500,
+          "actual_input_tokens": 71610,
+          "actual_output_tokens": 1299
+        },
+        "cached": {
+          "calls": 5,
+          "estimated_input_tokens": 11305,
+          "estimated_output_tokens": 1500,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "ocr": {
+        "live": {
+          "calls": 24,
+          "estimated_input_tokens": 56136,
+          "estimated_output_tokens": 24000,
+          "actual_input_tokens": 52104,
+          "actual_output_tokens": 14031
+        },
+        "cached": {
+          "calls": 5,
+          "estimated_input_tokens": 11695,
+          "estimated_output_tokens": 5000,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "claims_extract": {
+        "live": {
+          "calls": 20,
+          "estimated_input_tokens": 44169,
+          "estimated_output_tokens": 20000,
+          "actual_input_tokens": 40198,
+          "actual_output_tokens": 1144
+        },
+        "cached": {
+          "calls": 5,
+          "estimated_input_tokens": 11036,
+          "estimated_output_tokens": 5000,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "orchestrator_justify": {
+        "live": {
+          "calls": 29,
+          "estimated_input_tokens": 8725,
+          "estimated_output_tokens": 8700,
+          "actual_input_tokens": 15390,
+          "actual_output_tokens": 2577
+        },
+        "cached": {
+          "calls": 9,
+          "estimated_input_tokens": 2833,
+          "estimated_output_tokens": 2700,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "kyc_tamper": {
+        "live": {
+          "calls": 21,
+          "estimated_input_tokens": 48363,
+          "estimated_output_tokens": 6300,
+          "actual_input_tokens": 43827,
+          "actual_output_tokens": 1092
+        },
+        "cached": {
+          "calls": 3,
+          "estimated_input_tokens": 6909,
+          "estimated_output_tokens": 900,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "policy_decide": {
+        "live": {
+          "calls": 14,
+          "estimated_input_tokens": 24376,
+          "estimated_output_tokens": 9800,
+          "actual_input_tokens": 25769,
+          "actual_output_tokens": 1853
+        },
+        "cached": {
+          "calls": 17,
+          "estimated_input_tokens": 33818,
+          "estimated_output_tokens": 11900,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      }
+    }
+  },
+  "daily_budget_stop": null,
+  "partial": false,
+  "predictions": [
+    {
+      "doc_id": "discharge_PT_19116",
+      "doc_type": "DISCHARGE_SUMMARY",
+      "decision": "ESCALATE",
+      "confidence": 0.35,
+      "fields": {
+        "claim_amount": "345.00",
+        "icd10_codes": [
+          "G43.909"
+        ],
+        "cpt_codes": [
+          "93000"
+        ],
+        "provider_npi": ": 19750293847",
+        "service_date": "2025-12-02",
+        "claim_number": null,
+        "admit_date": "2025-12-02",
+        "discharge_date": "2025-12-05",
+        "signature_present": true,
+        "extra": {
+          "drug_name": "Sertraline (Zoloft)"
+        },
+        "field_confidence": {
+          "member_name": 0.99,
+          "member_id": 0.99,
+          "dob": 0.95,
+          "policy_number": 0.99,
+          "provider_npi": 0.99,
+          "service_date": 0.99,
+          "provider_name": 0.99,
+          "icd10_codes": 0.99,
+          "cpt_codes": 0.99,
+          "claim_amount": 0.95,
+          "drug_name": 0.99,
+          "admit_date": 0.8,
+          "discharge_date": 0.8,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Christopher",
+            "page": 1,
+            "x": 981.0,
+            "y": 858.0,
+            "w": 346.0,
+            "h": 66.0
+          },
+          "member_id": {
+            "text": "PT_19116",
+            "page": 1,
+            "x": 899.0,
+            "y": 1024.0,
+            "w": 306.0,
+            "h": 68.0
+          },
+          "dob": null,
+          "policy_number": {
+            "text": "MED-GLD-6770619",
+            "page": 1,
+            "x": 3898.0,
+            "y": 1027.0,
+            "w": 586.0,
+            "h": 55.0
+          },
+          "provider_npi": {
+            "text": "NPI:",
+            "page": 1,
+            "x": 3419.0,
+            "y": 1195.0,
+            "w": 125.0,
+            "h": 51.0
+          },
+          "service_date": {
+            "text": "12/02/2025",
+            "page": 1,
+            "x": 1130.0,
+            "y": 1377.0,
+            "w": 368.0,
+            "h": 69.0
+          },
+          "provider_name": {
+            "text": "Dr.",
+            "page": 1,
+            "x": 1273.0,
+            "y": 1191.0,
+            "w": 81.0,
+            "h": 55.0
+          },
+          "icd10_codes": {
+            "text": "3",
+            "page": 1,
+            "x": 4876.0,
+            "y": 1387.0,
+            "w": 37.0,
+            "h": 57.0
+          },
+          "cpt_codes": {
+            "text": "3",
+            "page": 1,
+            "x": 4876.0,
+            "y": 1387.0,
+            "w": 37.0,
+            "h": 57.0
+          },
+          "claim_amount": {
+            "text": "3",
+            "page": 1,
+            "x": 4876.0,
+            "y": 1387.0,
+            "w": 37.0,
+            "h": 57.0
+          },
+          "drug_name": null,
+          "admit_date": {
+            "text": "12/02/2025",
+            "page": 1,
+            "x": 1130.0,
+            "y": 1377.0,
+            "w": 368.0,
+            "h": 69.0
+          },
+          "discharge_date": {
+            "text": "12/05/2025",
+            "page": 1,
+            "x": 3419.0,
+            "y": 1386.0,
+            "w": 371.0,
+            "h": 58.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "readmission_30d",
+      "split": "dev",
+      "latency_ms": 15461.38140000403,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_99733",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": "16825.00",
+        "icd10_codes": [
+          "S52.501A"
+        ],
+        "cpt_codes": [
+          "80053",
+          "90837",
+          "27447",
+          "99291"
+        ],
+        "provider_npi": "6102938475",
+        "service_date": "2025-11-09",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "diagnosis": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "C]",
+            "page": 1,
+            "x": 845.0,
+            "y": 609.0,
+            "w": 66.0,
+            "h": 76.0
+          },
+          "dob": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "LD.",
+            "page": 1,
+            "x": 474.0,
+            "y": 778.0,
+            "w": 73.0,
+            "h": 39.0
+          },
+          "claim_amount": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "icd10_codes": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "diagnosis": {
+            "text": "C]",
+            "page": 1,
+            "x": 845.0,
+            "y": 609.0,
+            "w": 66.0,
+            "h": 76.0
+          },
+          "cpt_codes": {
+            "text": "4.",
+            "page": 1,
+            "x": 3429.0,
+            "y": 542.0,
+            "w": 42.0,
+            "h": 42.0
+          },
+          "provider_npi": {
+            "text": "4.",
+            "page": 1,
+            "x": 3429.0,
+            "y": 542.0,
+            "w": 42.0,
+            "h": 42.0
+          },
+          "service_date": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "provider_name": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 29243.774000089616,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_PT_99733",
+      "doc_type": "PRESCRIPTION",
+      "decision": "ESCALATE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "S52.501A"
+        ],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "drug_name": "Hydrocodone (Vicodin)",
+          "prescriber_npi": "6102938475",
+          "rx_date": "2026-01-03",
+          "sig": [
+            "Take 1 tablet once daily",
+            "Take 1-2 tablets every 4-6 hrs for pain"
+          ],
+          "dea_number": "BD6102938",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.99,
+          "dob": 0.99,
+          "policy_number": 0.99,
+          "diagnosis": 0.98,
+          "icd10_codes": 0.99,
+          "drug_name": 0.99,
+          "prescriber_npi": 0.99,
+          "provider_name": 0.99,
+          "rx_date": 0.8,
+          "sig": 0.98,
+          "dea_number": 0.95
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Jessica",
+            "page": 1,
+            "x": 353.0,
+            "y": 557.0,
+            "w": 210.0,
+            "h": 60.0
+          },
+          "dob": {
+            "text": "02/28/1963",
+            "page": 1,
+            "x": 2731.0,
+            "y": 722.0,
+            "w": 298.0,
+            "h": 66.0
+          },
+          "policy_number": null,
+          "diagnosis": {
+            "text": "of",
+            "page": 1,
+            "x": 2849.0,
+            "y": 662.0,
+            "w": 45.0,
+            "h": 33.0
+          },
+          "icd10_codes": {
+            "text": "S52.501A",
+            "page": 1,
+            "x": 317.0,
+            "y": 1075.0,
+            "w": 264.0,
+            "h": 77.0
+          },
+          "drug_name": {
+            "text": "Dr.",
+            "page": 1,
+            "x": 4318.0,
+            "y": 520.0,
+            "w": 43.0,
+            "h": 34.0
+          },
+          "prescriber_npi": null,
+          "provider_name": {
+            "text": "Dr.",
+            "page": 1,
+            "x": 4318.0,
+            "y": 520.0,
+            "w": 43.0,
+            "h": 34.0
+          },
+          "rx_date": {
+            "text": "01/03/2026",
+            "page": 1,
+            "x": 2707.0,
+            "y": 1067.0,
+            "w": 298.0,
+            "h": 78.0
+          },
+          "sig": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "date_conflict",
+      "split": "dev",
+      "latency_ms": 4357.249499997124,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_62350",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": "18900.00",
+        "icd10_codes": [
+          "K35.80"
+        ],
+        "cpt_codes": [
+          "59400",
+          "27447"
+        ],
+        "provider_npi": "8374651029",
+        "service_date": "2025-11-15",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "C",
+            "page": 1,
+            "x": 5220.0,
+            "y": 156.0,
+            "w": 63.0,
+            "h": 73.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "claim_amount": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "icd10_codes": null,
+          "cpt_codes": {
+            "text": "4.",
+            "page": 1,
+            "x": 3505.0,
+            "y": 541.0,
+            "w": 43.0,
+            "h": 42.0
+          },
+          "provider_npi": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "service_date": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "provider_name": {
+            "text": "C",
+            "page": 1,
+            "x": 5220.0,
+            "y": 156.0,
+            "w": 63.0,
+            "h": 73.0
+          },
+          "diagnosis": {
+            "text": "C",
+            "page": 1,
+            "x": 5220.0,
+            "y": 156.0,
+            "w": 63.0,
+            "h": 73.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "proc_diag_mismatch",
+      "split": "dev",
+      "latency_ms": 18209.794900147244,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_69470",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": "9875.00",
+        "icd10_codes": [
+          "F32.1"
+        ],
+        "cpt_codes": [
+          "71046",
+          "47562",
+          "90837",
+          "99284",
+          "99999"
+        ],
+        "provider_npi": "7293847561",
+        "service_date": "2025-09-09",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Elizabeth",
+            "page": 1,
+            "x": 304.0,
+            "y": 1102.0,
+            "w": 442.0,
+            "h": 59.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 307.0,
+            "y": 544.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "1.",
+            "page": 1,
+            "x": 307.0,
+            "y": 544.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "claim_amount": {
+            "text": "7.",
+            "page": 1,
+            "x": 3636.0,
+            "y": 1020.0,
+            "w": 40.0,
+            "h": 43.0
+          },
+          "icd10_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 307.0,
+            "y": 544.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "cpt_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 307.0,
+            "y": 544.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "provider_npi": {
+            "text": "1.",
+            "page": 1,
+            "x": 307.0,
+            "y": 544.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "service_date": {
+            "text": "2.",
+            "page": 1,
+            "x": 302.0,
+            "y": 1002.0,
+            "w": 41.0,
+            "h": 44.0
+          },
+          "provider_name": {
+            "text": "C]",
+            "page": 1,
+            "x": 1053.0,
+            "y": 527.0,
+            "w": 63.0,
+            "h": 80.0
+          },
+          "diagnosis": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "amount_under_10k",
+      "split": "dev",
+      "latency_ms": 51005.5352000054,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_PT_69470",
+      "doc_type": "PRESCRIPTION",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "F32.1"
+        ],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "rx_date": "2025-09-11",
+          "prescriber_npi": "1239847561",
+          "drug_name": "Amlodipine (Norvasc)",
+          "sig": [
+            "Take 1 tablet once daily with food",
+            "Take 1 tablet twice daily with meals",
+            "Take 1 tablet once daily"
+          ],
+          "dea_number": "BM7293847",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "icd10_codes": 0.98,
+          "rx_date": 0.8,
+          "provider_name": 0.98,
+          "prescriber_npi": 0.98,
+          "diagnosis": 0.98,
+          "drug_name": 0.98,
+          "sig": 0.98,
+          "dea_number": 0.99
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Elizabeth",
+            "page": 1,
+            "x": 286.0,
+            "y": 716.0,
+            "w": 245.0,
+            "h": 52.0
+          },
+          "dob": {
+            "text": "02/25/1976",
+            "page": 1,
+            "x": 2667.0,
+            "y": 762.0,
+            "w": 298.0,
+            "h": 55.0
+          },
+          "policy_number": {
+            "text": "MED-GLD-2065818",
+            "page": 1,
+            "x": 279.0,
+            "y": 1062.0,
+            "w": 542.0,
+            "h": 74.0
+          },
+          "icd10_codes": {
+            "text": "F",
+            "page": 1,
+            "x": 2665.0,
+            "y": 937.0,
+            "w": 33.0,
+            "h": 48.0
+          },
+          "rx_date": {
+            "text": "09/11/2025",
+            "page": 1,
+            "x": 4308.0,
+            "y": 387.0,
+            "w": 324.0,
+            "h": 46.0
+          },
+          "provider_name": {
+            "text": "Dr.",
+            "page": 1,
+            "x": 4232.0,
+            "y": 482.0,
+            "w": 56.0,
+            "h": 35.0
+          },
+          "prescriber_npi": null,
+          "diagnosis": {
+            "text": "Major",
+            "page": 1,
+            "x": 2658.0,
+            "y": 1287.0,
+            "w": 152.0,
+            "h": 63.0
+          },
+          "drug_name": {
+            "text": "NE",
+            "page": 1,
+            "x": 399.0,
+            "y": 291.0,
+            "w": 66.0,
+            "h": 42.0
+          },
+          "sig": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 22889.455300057307,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_PT_69470",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 36661.069500027224,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_20322",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": "2195.00",
+        "icd10_codes": [
+          "E11.9"
+        ],
+        "cpt_codes": [
+          "70553",
+          "93000"
+        ],
+        "provider_npi": "3847561029",
+        "service_date": "2025-10-11",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Sarah",
+            "page": 1,
+            "x": 446.0,
+            "y": 1109.0,
+            "w": 241.0,
+            "h": 59.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 456.0,
+            "y": 548.0,
+            "w": 38.0,
+            "h": 44.0
+          },
+          "policy_number": {
+            "text": "1.",
+            "page": 1,
+            "x": 456.0,
+            "y": 548.0,
+            "w": 38.0,
+            "h": 44.0
+          },
+          "claim_amount": {
+            "text": "1.",
+            "page": 1,
+            "x": 456.0,
+            "y": 548.0,
+            "w": 38.0,
+            "h": 44.0
+          },
+          "icd10_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 456.0,
+            "y": 548.0,
+            "w": 38.0,
+            "h": 44.0
+          },
+          "cpt_codes": {
+            "text": "7.",
+            "page": 1,
+            "x": 3778.0,
+            "y": 1075.0,
+            "w": 39.0,
+            "h": 45.0
+          },
+          "provider_npi": {
+            "text": "1.",
+            "page": 1,
+            "x": 456.0,
+            "y": 548.0,
+            "w": 38.0,
+            "h": 44.0
+          },
+          "service_date": {
+            "text": "1.",
+            "page": 1,
+            "x": 456.0,
+            "y": 548.0,
+            "w": 38.0,
+            "h": 44.0
+          },
+          "provider_name": null,
+          "diagnosis": {
+            "text": "C",
+            "page": 1,
+            "x": 5512.0,
+            "y": 300.0,
+            "w": 63.0,
+            "h": 73.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 49082.41460006684,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_20322_dup",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": "2195.00",
+        "icd10_codes": [
+          "E11.9"
+        ],
+        "cpt_codes": [
+          "70553",
+          "93000"
+        ],
+        "provider_npi": "3847561029",
+        "service_date": "2025-10-11",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Sarah",
+            "page": 1,
+            "x": 204.0,
+            "y": 1223.0,
+            "w": 241.0,
+            "h": 63.0
+          },
+          "dob": {
+            "text": "7.",
+            "page": 1,
+            "x": 3527.0,
+            "y": 1037.0,
+            "w": 42.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "4.",
+            "page": 1,
+            "x": 185.0,
+            "y": 671.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "claim_amount": {
+            "text": "2.",
+            "page": 1,
+            "x": 196.0,
+            "y": 1129.0,
+            "w": 41.0,
+            "h": 44.0
+          },
+          "icd10_codes": null,
+          "cpt_codes": {
+            "text": "7.",
+            "page": 1,
+            "x": 3527.0,
+            "y": 1037.0,
+            "w": 42.0,
+            "h": 43.0
+          },
+          "provider_npi": {
+            "text": "4.",
+            "page": 1,
+            "x": 185.0,
+            "y": 671.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "service_date": {
+            "text": "2.",
+            "page": 1,
+            "x": 196.0,
+            "y": 1129.0,
+            "w": 41.0,
+            "h": 44.0
+          },
+          "provider_name": {
+            "text": "|.D.",
+            "page": 1,
+            "x": 558.0,
+            "y": 792.0,
+            "w": 73.0,
+            "h": 42.0
+          },
+          "diagnosis": {
+            "text": "TYPE:",
+            "page": 1,
+            "x": 578.0,
+            "y": 657.0,
+            "w": 159.0,
+            "h": 47.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "duplicate_claim",
+      "split": "dev",
+      "latency_ms": 43173.22949995287,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_PT_39451",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "name_mismatch",
+      "split": "dev",
+      "latency_ms": 3450.4806001204997,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_39451",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": "21735.00",
+        "icd10_codes": [
+          "G43.909"
+        ],
+        "cpt_codes": [
+          "36415",
+          "47562",
+          "43239"
+        ],
+        "provider_npi": "7293847561",
+        "service_date": "2025-09-25",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "C]",
+            "page": 1,
+            "x": 845.0,
+            "y": 609.0,
+            "w": 66.0,
+            "h": 76.0
+          },
+          "dob": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "4.",
+            "page": 1,
+            "x": 3429.0,
+            "y": 542.0,
+            "w": 42.0,
+            "h": 42.0
+          },
+          "claim_amount": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "icd10_codes": {
+            "text": "4.",
+            "page": 1,
+            "x": 3429.0,
+            "y": 542.0,
+            "w": 42.0,
+            "h": 42.0
+          },
+          "cpt_codes": {
+            "text": "41.",
+            "page": 1,
+            "x": 100.0,
+            "y": 658.0,
+            "w": 39.0,
+            "h": 42.0
+          },
+          "provider_npi": {
+            "text": "4.",
+            "page": 1,
+            "x": 3429.0,
+            "y": 542.0,
+            "w": 42.0,
+            "h": 42.0
+          },
+          "service_date": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "provider_name": {
+            "text": "C]",
+            "page": 1,
+            "x": 845.0,
+            "y": 609.0,
+            "w": 66.0,
+            "h": 76.0
+          },
+          "diagnosis": {
+            "text": "C]",
+            "page": 1,
+            "x": 845.0,
+            "y": 609.0,
+            "w": 66.0,
+            "h": 76.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 26365.013599861413,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "discharge_PT_39451",
+      "doc_type": "DISCHARGE_SUMMARY",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": "18500.00",
+        "icd10_codes": [
+          "I10"
+        ],
+        "cpt_codes": [
+          "43239"
+        ],
+        "provider_npi": "7293847561",
+        "service_date": "2025-09-25",
+        "claim_number": null,
+        "admit_date": "2025-09-25",
+        "discharge_date": "2025-09-30",
+        "signature_present": true,
+        "extra": {
+          "drug_name": "Oxycodone (OxyContin)"
+        },
+        "field_confidence": {
+          "member_name": 0.99,
+          "member_id": 0.99,
+          "dob": 0.99,
+          "policy_number": 0.99,
+          "provider_npi": 0.99,
+          "provider_name": 0.99,
+          "service_date": 0.99,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.99,
+          "claim_amount": 0.95,
+          "drug_name": 0.98,
+          "id_number": 0.7040094339622641,
+          "admit_date": 0.98,
+          "discharge_date": 0.98,
+          "signature_present": 0.99
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Sandra",
+            "page": 1,
+            "x": 936.0,
+            "y": 336.0,
+            "w": 210.0,
+            "h": 84.0
+          },
+          "member_id": {
+            "text": "5",
+            "page": 1,
+            "x": 4665.0,
+            "y": 1575.0,
+            "w": 36.0,
+            "h": 54.0
+          },
+          "dob": {
+            "text": "993",
+            "page": 1,
+            "x": 4437.0,
+            "y": 952.0,
+            "w": 108.0,
+            "h": 65.0
+          },
+          "policy_number": {
+            "text": "MED-GLD",
+            "page": 1,
+            "x": 4185.0,
+            "y": 1101.0,
+            "w": 290.0,
+            "h": 100.0
+          },
+          "provider_npi": {
+            "text": "7",
+            "page": 1,
+            "x": 1113.0,
+            "y": 4.0,
+            "w": 2.0,
+            "h": 5.0
+          },
+          "provider_name": {
+            "text": "C.",
+            "page": 1,
+            "x": 1303.0,
+            "y": 400.0,
+            "w": 56.0,
+            "h": 59.0
+          },
+          "service_date": {
+            "text": "202",
+            "page": 1,
+            "x": 6998.0,
+            "y": 1062.0,
+            "w": 85.0,
+            "h": 52.0
+          },
+          "icd10_codes": null,
+          "cpt_codes": null,
+          "claim_amount": {
+            "text": "5",
+            "page": 1,
+            "x": 4665.0,
+            "y": 1575.0,
+            "w": 36.0,
+            "h": 54.0
+          },
+          "drug_name": {
+            "text": "C.",
+            "page": 1,
+            "x": 1303.0,
+            "y": 400.0,
+            "w": 56.0,
+            "h": 59.0
+          },
+          "id_number": {
+            "text": "C.",
+            "page": 1,
+            "x": 1303.0,
+            "y": 400.0,
+            "w": 56.0,
+            "h": 59.0
+          },
+          "admit_date": null,
+          "discharge_date": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 13515.779600013047,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_71993",
+      "doc_type": "CLAIM_FORM",
+      "decision": "REJECT",
+      "confidence": 0.63,
+      "fields": {
+        "claim_amount": "6400.00",
+        "icd10_codes": [
+          "K35.80"
+        ],
+        "cpt_codes": [
+          "17000"
+        ],
+        "provider_npi": "1029384756",
+        "service_date": "2025-02-17",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.99,
+          "dob": 0.99,
+          "id_number": 0.98,
+          "claim_amount": 0.99,
+          "icd10_codes": 0.99,
+          "cpt_codes": 0.99,
+          "provider_npi": 0.99,
+          "service_date": 0.99,
+          "provider_name": 0.99,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": null,
+          "dob": {
+            "text": "4",
+            "page": 1,
+            "x": 3876.0,
+            "y": 441.0,
+            "w": 24.0,
+            "h": 29.0
+          },
+          "id_number": {
+            "text": "4",
+            "page": 1,
+            "x": 3876.0,
+            "y": 441.0,
+            "w": 24.0,
+            "h": 29.0
+          },
+          "claim_amount": {
+            "text": "4",
+            "page": 1,
+            "x": 3876.0,
+            "y": 441.0,
+            "w": 24.0,
+            "h": 29.0
+          },
+          "icd10_codes": null,
+          "cpt_codes": null,
+          "provider_npi": {
+            "text": "4",
+            "page": 1,
+            "x": 3876.0,
+            "y": 441.0,
+            "w": 24.0,
+            "h": 29.0
+          },
+          "service_date": {
+            "text": "02/17/2025",
+            "page": 1,
+            "x": 4970.0,
+            "y": 458.0,
+            "w": 402.0,
+            "h": 65.0
+          },
+          "provider_name": null,
+          "diagnosis": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "uncovered_procedure",
+      "split": "dev",
+      "latency_ms": 12688.612600089982,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_PT_17665",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 32290.187599835917,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_PT_20745",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.1,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "expired_id",
+      "split": "dev",
+      "latency_ms": 6633.6482998449355,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_PT_20745",
+      "doc_type": "PRESCRIPTION",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "F32.4"
+        ],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "prescriber_npi": "2938475610",
+          "rx_date": "2025-02-22",
+          "drug_name": "Montelukast (Singulair)",
+          "sig": [
+            "Take 1 tablet at bedtime",
+            "Take 0.5 mg tablet three times daily",
+            "Take 1 tablet once daily in the evening"
+          ],
+          "dea_number": "BM2938475",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.99,
+          "dob": 0.99,
+          "policy_number": 0.95,
+          "provider_name": 0.99,
+          "prescriber_npi": 0.99,
+          "rx_date": 0.8,
+          "diagnosis": 0.98,
+          "drug_name": 0.99,
+          "icd10_codes": 0.8,
+          "sig": 0.98,
+          "dea_number": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "John",
+            "page": 1,
+            "x": 370.0,
+            "y": 525.0,
+            "w": 131.0,
+            "h": 55.0
+          },
+          "dob": {
+            "text": "01/02/1965",
+            "page": 1,
+            "x": 2790.0,
+            "y": 693.0,
+            "w": 299.0,
+            "h": 79.0
+          },
+          "policy_number": null,
+          "provider_name": null,
+          "prescriber_npi": {
+            "text": "7",
+            "page": 1,
+            "x": 770.0,
+            "y": 1297.0,
+            "w": 19.0,
+            "h": 46.0
+          },
+          "rx_date": {
+            "text": "02/22/2025",
+            "page": 1,
+            "x": 600.0,
+            "y": 938.0,
+            "w": 296.0,
+            "h": 72.0
+          },
+          "diagnosis": {
+            "text": "is",
+            "page": 1,
+            "x": 3931.0,
+            "y": 211.0,
+            "w": 77.0,
+            "h": 103.0
+          },
+          "drug_name": null,
+          "icd10_codes": {
+            "text": "F32.4",
+            "page": 1,
+            "x": 3245.0,
+            "y": 1125.0,
+            "w": 128.0,
+            "h": 51.0
+          },
+          "sig": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 17438.34239989519,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "discharge_PT_16658",
+      "doc_type": "DISCHARGE_SUMMARY",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": "8750.00",
+        "icd10_codes": [
+          "M75.100"
+        ],
+        "cpt_codes": [
+          "44970"
+        ],
+        "provider_npi": "2938475610",
+        "service_date": "2025-05-10",
+        "claim_number": null,
+        "admit_date": "2025-05-10",
+        "discharge_date": "2025-05-13",
+        "signature_present": true,
+        "extra": {
+          "drug_name": "Amoxicillin (Amoxil)"
+        },
+        "field_confidence": {
+          "member_name": 0.99,
+          "dob": 0.99,
+          "member_id": 0.99,
+          "policy_number": 0.99,
+          "provider_name": 0.99,
+          "provider_npi": 0.95,
+          "service_date": 0.98,
+          "diagnosis": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "claim_amount": 0.98,
+          "drug_name": 0.98,
+          "id_number": 0.771214953271028,
+          "admit_date": 0.98,
+          "discharge_date": 0.98,
+          "signature_present": 0.99
+        },
+        "field_source": {
+          "member_name": {
+            "text": "RE",
+            "page": 1,
+            "x": 7008.0,
+            "y": 861.0,
+            "w": 58.0,
+            "h": 43.0
+          },
+          "dob": {
+            "text": "7/1996",
+            "page": 1,
+            "x": 929.0,
+            "y": 520.0,
+            "w": 179.0,
+            "h": 81.0
+          },
+          "member_id": {
+            "text": "PT_16658",
+            "page": 1,
+            "x": 779.0,
+            "y": 695.0,
+            "w": 275.0,
+            "h": 97.0
+          },
+          "policy_number": {
+            "text": "3",
+            "page": 1,
+            "x": 4112.0,
+            "y": 1228.0,
+            "w": 32.0,
+            "h": 48.0
+          },
+          "provider_name": null,
+          "provider_npi": {
+            "text": "3",
+            "page": 1,
+            "x": 4112.0,
+            "y": 1228.0,
+            "w": 32.0,
+            "h": 48.0
+          },
+          "service_date": {
+            "text": "05/1",
+            "page": 1,
+            "x": 4170.0,
+            "y": 837.0,
+            "w": 113.0,
+            "h": 73.0
+          },
+          "diagnosis": null,
+          "icd10_codes": null,
+          "cpt_codes": {
+            "text": "\"97",
+            "page": 1,
+            "x": 955.0,
+            "y": 0.0,
+            "w": 187.0,
+            "h": 38.0
+          },
+          "claim_amount": null,
+          "drug_name": {
+            "text": "IL",
+            "page": 1,
+            "x": 1772.0,
+            "y": 6.0,
+            "w": 40.0,
+            "h": 47.0
+          },
+          "id_number": {
+            "text": "Length",
+            "page": 1,
+            "x": 4128.0,
+            "y": 1137.0,
+            "w": 157.0,
+            "h": 70.0
+          },
+          "admit_date": null,
+          "discharge_date": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 11732.059099944308,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_PT_16658",
+      "doc_type": "PRESCRIPTION",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "prescriber_npi": "2938475610",
+          "rx_date": "2025-05-13",
+          "drug_name": "Amoxicillin (Amoxil)",
+          "sig": [
+            "Take 1 tablet every 4-6 hrs for pain",
+            "Take 1 capsule three times daily"
+          ],
+          "dea_number": "BM2938475",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.95,
+          "prescriber_npi": 0.98,
+          "provider_name": 0.98,
+          "rx_date": 0.7929166666666667,
+          "diagnosis": 0.95,
+          "drug_name": 0.98,
+          "sig": 0.98,
+          "dea_number": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Karen",
+            "page": 1,
+            "x": 412.0,
+            "y": 411.0,
+            "w": 159.0,
+            "h": 63.0
+          },
+          "dob": {
+            "text": "11/17/1996",
+            "page": 1,
+            "x": 2831.0,
+            "y": 667.0,
+            "w": 290.0,
+            "h": 74.0
+          },
+          "policy_number": {
+            "text": "1)",
+            "page": 1,
+            "x": 375.0,
+            "y": 1031.0,
+            "w": 111.0,
+            "h": 115.0
+          },
+          "prescriber_npi": {
+            "text": "75",
+            "page": 1,
+            "x": 4321.0,
+            "y": 420.0,
+            "w": 45.0,
+            "h": 33.0
+          },
+          "provider_name": {
+            "text": "owen,",
+            "page": 1,
+            "x": 4212.0,
+            "y": 245.0,
+            "w": 193.0,
+            "h": 127.0
+          },
+          "rx_date": {
+            "text": "05/13/2025",
+            "page": 1,
+            "x": 627.0,
+            "y": 837.0,
+            "w": 297.0,
+            "h": 71.0
+          },
+          "diagnosis": {
+            "text": "T.",
+            "page": 1,
+            "x": 775.0,
+            "y": 449.0,
+            "w": 45.0,
+            "h": 51.0
+          },
+          "drug_name": {
+            "text": "iL",
+            "page": 1,
+            "x": 1255.0,
+            "y": 81.0,
+            "w": 35.0,
+            "h": 40.0
+          },
+          "sig": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 8046.502999961376,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_PT_16658",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 15681.579200085253,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "discharge_PT_57795",
+      "doc_type": "DISCHARGE_SUMMARY",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "K35.80"
+        ],
+        "cpt_codes": [
+          "33533"
+        ],
+        "provider_npi": "1029384756",
+        "service_date": "2025-02-23",
+        "claim_number": null,
+        "admit_date": "2025-02-23",
+        "discharge_date": "2025-02-26",
+        "signature_present": true,
+        "extra": {
+          "drug_name": "Prednisone (Deltasone)"
+        },
+        "field_confidence": {
+          "member_name": 0.99,
+          "member_id": 0.99,
+          "dob": 0.99,
+          "policy_number": 0.99,
+          "id_number": 0.99,
+          "service_date": 0.95,
+          "provider_name": 0.99,
+          "icd10_codes": 0.99,
+          "cpt_codes": 0.99,
+          "drug_name": 0.98,
+          "admit_date": 0.8,
+          "discharge_date": 0.8,
+          "provider_npi": 0.8,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Betty",
+            "page": 1,
+            "x": 833.0,
+            "y": 849.0,
+            "w": 148.0,
+            "h": 64.0
+          },
+          "member_id": {
+            "text": "_",
+            "page": 1,
+            "x": 754.0,
+            "y": 840.0,
+            "w": 48.0,
+            "h": 81.0
+          },
+          "dob": {
+            "text": "01/11/1947",
+            "page": 1,
+            "x": 3456.0,
+            "y": 798.0,
+            "w": 330.0,
+            "h": 58.0
+          },
+          "policy_number": {
+            "text": "MED-GLD-8175395",
+            "page": 1,
+            "x": 3753.0,
+            "y": 950.0,
+            "w": 586.0,
+            "h": 80.0
+          },
+          "id_number": {
+            "text": "3",
+            "page": 1,
+            "x": 4737.0,
+            "y": 1306.0,
+            "w": 38.0,
+            "h": 57.0
+          },
+          "service_date": {
+            "text": "02/23/2025",
+            "page": 1,
+            "x": 987.0,
+            "y": 1362.0,
+            "w": 373.0,
+            "h": 71.0
+          },
+          "provider_name": {
+            "text": "Dr.",
+            "page": 1,
+            "x": 1131.0,
+            "y": 1178.0,
+            "w": 82.0,
+            "h": 52.0
+          },
+          "icd10_codes": {
+            "text": "3",
+            "page": 1,
+            "x": 4737.0,
+            "y": 1306.0,
+            "w": 38.0,
+            "h": 57.0
+          },
+          "cpt_codes": {
+            "text": "3",
+            "page": 1,
+            "x": 4737.0,
+            "y": 1306.0,
+            "w": 38.0,
+            "h": 57.0
+          },
+          "drug_name": null,
+          "admit_date": {
+            "text": "02/23/2025",
+            "page": 1,
+            "x": 987.0,
+            "y": 1362.0,
+            "w": 373.0,
+            "h": 71.0
+          },
+          "discharge_date": {
+            "text": "02/26/2025",
+            "page": 1,
+            "x": 3278.0,
+            "y": 1321.0,
+            "w": 374.0,
+            "h": 71.0
+          },
+          "provider_npi": {
+            "text": "3",
+            "page": 1,
+            "x": 4737.0,
+            "y": 1306.0,
+            "w": 38.0,
+            "h": 57.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 12931.750500109047,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_PT_15075",
+      "doc_type": "PRESCRIPTION",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "G43.909"
+        ],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "prescriber_npi": "3847561029",
+          "rx_date": "2025-07-04",
+          "drug_name": "Levothyroxine (Synthroid)",
+          "sig": [
+            "Take 1 tablet once daily",
+            "Take 1 tablet once daily on empty stomach"
+          ],
+          "dea_number": "BE3847561",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "provider_name": 0.98,
+          "prescriber_npi": 0.98,
+          "rx_date": 0.8,
+          "diagnosis": 0.98,
+          "drug_name": 0.98,
+          "icd10_codes": 0.8,
+          "sig": 0.98,
+          "dea_number": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "John",
+            "page": 1,
+            "x": 308.0,
+            "y": 487.0,
+            "w": 131.0,
+            "h": 54.0
+          },
+          "dob": {
+            "text": "11/08/1958",
+            "page": 1,
+            "x": 2734.0,
+            "y": 656.0,
+            "w": 291.0,
+            "h": 65.0
+          },
+          "policy_number": {
+            "text": "L.",
+            "page": 1,
+            "x": 708.0,
+            "y": 513.0,
+            "w": 43.0,
+            "h": 50.0
+          },
+          "provider_name": {
+            "text": "L.",
+            "page": 1,
+            "x": 708.0,
+            "y": 513.0,
+            "w": 43.0,
+            "h": 50.0
+          },
+          "prescriber_npi": {
+            "text": "1",
+            "page": 1,
+            "x": 707.0,
+            "y": 1259.0,
+            "w": 21.0,
+            "h": 45.0
+          },
+          "rx_date": {
+            "text": "07/04/2025",
+            "page": 1,
+            "x": 539.0,
+            "y": 899.0,
+            "w": 295.0,
+            "h": 73.0
+          },
+          "diagnosis": {
+            "text": "L.",
+            "page": 1,
+            "x": 708.0,
+            "y": 513.0,
+            "w": 43.0,
+            "h": 50.0
+          },
+          "drug_name": {
+            "text": "L.",
+            "page": 1,
+            "x": 708.0,
+            "y": 513.0,
+            "w": 43.0,
+            "h": 50.0
+          },
+          "icd10_codes": {
+            "text": "G43.909",
+            "page": 1,
+            "x": 3184.0,
+            "y": 1084.0,
+            "w": 200.0,
+            "h": 54.0
+          },
+          "sig": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 7646.741500124335,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_PT_30028",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.35,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 8564.412500010803,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_30028",
+      "doc_type": "CLAIM_FORM",
+      "decision": "REJECT",
+      "confidence": 0.63,
+      "fields": {
+        "claim_amount": "8050.00",
+        "icd10_codes": [
+          "K35.80"
+        ],
+        "cpt_codes": [
+          "21120",
+          "71250"
+        ],
+        "provider_npi": "8374651029",
+        "service_date": "2025-12-10",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "policy_number": 0.98,
+          "dob": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Barbara",
+            "page": 1,
+            "x": 163.0,
+            "y": 1444.0,
+            "w": 345.0,
+            "h": 69.0
+          },
+          "policy_number": {
+            "text": "LD.",
+            "page": 1,
+            "x": 503.0,
+            "y": 1003.0,
+            "w": 74.0,
+            "h": 42.0
+          },
+          "dob": null,
+          "claim_amount": null,
+          "icd10_codes": null,
+          "cpt_codes": {
+            "text": "7.",
+            "page": 1,
+            "x": 3481.0,
+            "y": 1125.0,
+            "w": 42.0,
+            "h": 44.0
+          },
+          "provider_npi": {
+            "text": "4.",
+            "page": 1,
+            "x": 125.0,
+            "y": 898.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "service_date": null,
+          "provider_name": null,
+          "diagnosis": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "uncovered_procedure",
+      "split": "dev",
+      "latency_ms": 43459.48569988832,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_67125",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": "45650.00",
+        "icd10_codes": [
+          "K21.0"
+        ],
+        "cpt_codes": [
+          "43239",
+          "90837",
+          "27447"
+        ],
+        "provider_npi": "7293847561",
+        "service_date": "2025-01-12",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_id": 0.98,
+          "member_name": 0.98,
+          "dob": 0.98,
+          "claim_amount": 0.99,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_id": {
+            "text": "LD.",
+            "page": 1,
+            "x": 474.0,
+            "y": 778.0,
+            "w": 73.0,
+            "h": 39.0
+          },
+          "member_name": {
+            "text": "Robert",
+            "page": 1,
+            "x": 119.0,
+            "y": 1212.0,
+            "w": 293.0,
+            "h": 60.0
+          },
+          "dob": {
+            "text": "7.",
+            "page": 1,
+            "x": 3446.0,
+            "y": 999.0,
+            "w": 41.0,
+            "h": 44.0
+          },
+          "claim_amount": {
+            "text": "4.",
+            "page": 1,
+            "x": 100.0,
+            "y": 658.0,
+            "w": 40.0,
+            "h": 43.0
+          },
+          "icd10_codes": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "cpt_codes": {
+            "text": "4.",
+            "page": 1,
+            "x": 100.0,
+            "y": 658.0,
+            "w": 40.0,
+            "h": 43.0
+          },
+          "provider_npi": {
+            "text": "4.",
+            "page": 1,
+            "x": 100.0,
+            "y": 658.0,
+            "w": 40.0,
+            "h": 43.0
+          },
+          "service_date": {
+            "text": "2.",
+            "page": 1,
+            "x": 114.0,
+            "y": 1116.0,
+            "w": 41.0,
+            "h": 43.0
+          },
+          "provider_name": {
+            "text": "AS",
+            "page": 1,
+            "x": 3683.0,
+            "y": 642.0,
+            "w": 93.0,
+            "h": 55.0
+          },
+          "diagnosis": {
+            "text": "AS",
+            "page": 1,
+            "x": 3683.0,
+            "y": 642.0,
+            "w": 93.0,
+            "h": 55.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 29780.215800041333,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "discharge_PT_67125",
+      "doc_type": "DISCHARGE_SUMMARY",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": "3400.00",
+        "icd10_codes": [
+          "K21.0"
+        ],
+        "cpt_codes": [
+          "43239"
+        ],
+        "provider_npi": "7293847561",
+        "service_date": "2025-01-12",
+        "claim_number": null,
+        "admit_date": "2025-01-12",
+        "discharge_date": "2025-01-14",
+        "signature_present": true,
+        "extra": {
+          "drug_name": "Amoxicillin (Amoxil)"
+        },
+        "field_confidence": {
+          "member_name": 0.99,
+          "member_id": 0.99,
+          "dob": 0.99,
+          "policy_number": 0.99,
+          "provider_npi": 0.99,
+          "service_date": 0.99,
+          "provider_name": 0.99,
+          "diagnosis": 0.98,
+          "icd10_codes": 0.99,
+          "cpt_codes": 0.99,
+          "claim_amount": 0.99,
+          "drug_name": 0.98,
+          "id_number": 0.7526395939086294,
+          "admit_date": 0.98,
+          "discharge_date": 0.98,
+          "signature_present": 0.99
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Robert",
+            "page": 1,
+            "x": 863.0,
+            "y": 375.0,
+            "w": 199.0,
+            "h": 89.0
+          },
+          "member_id": {
+            "text": "PT_67125",
+            "page": 1,
+            "x": 833.0,
+            "y": 570.0,
+            "w": 308.0,
+            "h": 95.0
+          },
+          "dob": {
+            "text": "06/1",
+            "page": 1,
+            "x": 4156.0,
+            "y": 903.0,
+            "w": 118.0,
+            "h": 66.0
+          },
+          "policy_number": {
+            "text": "2",
+            "page": 1,
+            "x": 4611.0,
+            "y": 1557.0,
+            "w": 37.0,
+            "h": 53.0
+          },
+          "provider_npi": {
+            "text": "N.",
+            "page": 1,
+            "x": 1345.0,
+            "y": 456.0,
+            "w": 58.0,
+            "h": 59.0
+          },
+          "service_date": {
+            "text": "2",
+            "page": 1,
+            "x": 4611.0,
+            "y": 1557.0,
+            "w": 37.0,
+            "h": 53.0
+          },
+          "provider_name": {
+            "text": "N.",
+            "page": 1,
+            "x": 1345.0,
+            "y": 456.0,
+            "w": 58.0,
+            "h": 59.0
+          },
+          "diagnosis": {
+            "text": "reflux",
+            "page": 1,
+            "x": 1807.0,
+            "y": 1561.0,
+            "w": 161.0,
+            "h": 74.0
+          },
+          "icd10_codes": {
+            "text": "2",
+            "page": 1,
+            "x": 4611.0,
+            "y": 1557.0,
+            "w": 37.0,
+            "h": 53.0
+          },
+          "cpt_codes": {
+            "text": "2",
+            "page": 1,
+            "x": 4611.0,
+            "y": 1557.0,
+            "w": 37.0,
+            "h": 53.0
+          },
+          "claim_amount": null,
+          "drug_name": {
+            "text": "N.",
+            "page": 1,
+            "x": 1345.0,
+            "y": 456.0,
+            "w": 58.0,
+            "h": 59.0
+          },
+          "id_number": {
+            "text": "Policy",
+            "page": 1,
+            "x": 4140.0,
+            "y": 1009.0,
+            "w": 140.0,
+            "h": 71.0
+          },
+          "admit_date": null,
+          "discharge_date": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 14101.930999895558,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_PT_67125",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 39078.34839983843,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_PT_54236",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "expiring_soon_id",
+      "split": "dev",
+      "latency_ms": 4902.691799914464,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_PT_54236",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 34599.75910000503,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_55056",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": "37495.00",
+        "icd10_codes": [
+          "M54.5"
+        ],
+        "cpt_codes": [
+          "29827",
+          "27447",
+          "93000"
+        ],
+        "provider_npi": null,
+        "service_date": "2025-01-03",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": false,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.99,
+          "dob": 0.99,
+          "policy_number": 0.99,
+          "claim_amount": 0.99,
+          "icd10_codes": 0.99,
+          "cpt_codes": 0.98,
+          "service_date": 0.99,
+          "provider_name": 0.98,
+          "diagnosis": 0.99,
+          "provider_npi": 0.9,
+          "signature_present": 0.95
+        },
+        "field_source": {
+          "member_name": {
+            "text": "M",
+            "page": 1,
+            "x": 5455.0,
+            "y": 151.0,
+            "w": 71.0,
+            "h": 74.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "M",
+            "page": 1,
+            "x": 5455.0,
+            "y": 151.0,
+            "w": 71.0,
+            "h": 74.0
+          },
+          "claim_amount": {
+            "text": "4.",
+            "page": 1,
+            "x": 3505.0,
+            "y": 541.0,
+            "w": 43.0,
+            "h": 42.0
+          },
+          "icd10_codes": {
+            "text": "M",
+            "page": 1,
+            "x": 5455.0,
+            "y": 151.0,
+            "w": 71.0,
+            "h": 74.0
+          },
+          "cpt_codes": {
+            "text": "4.",
+            "page": 1,
+            "x": 3505.0,
+            "y": 541.0,
+            "w": 43.0,
+            "h": 42.0
+          },
+          "service_date": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "provider_name": {
+            "text": "M",
+            "page": 1,
+            "x": 5455.0,
+            "y": 151.0,
+            "w": 71.0,
+            "h": 74.0
+          },
+          "diagnosis": null,
+          "provider_npi": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "missing_field",
+      "split": "dev",
+      "latency_ms": 27827.90349982679,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_PT_55056",
+      "doc_type": "PRESCRIPTION",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "M54.5"
+        ],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "drug_name": "Amoxicillin (Amoxil)",
+          "prescriber_npi": "8374651029",
+          "rx_date": "2025-01-07",
+          "sig": [
+            "Take 0.5 mg tablet three times daily",
+            "Take 1 tablet once daily with food",
+            "Take 1 capsule three times daily"
+          ],
+          "dea_number": "BB3374651",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "diagnosis": 0.98,
+          "icd10_codes": 0.98,
+          "drug_name": 0.98,
+          "prescriber_npi": 0.98,
+          "provider_name": 0.98,
+          "rx_date": 0.8,
+          "sig": 0.98,
+          "dea_number": 0.95
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Thomas",
+            "page": 1,
+            "x": 252.0,
+            "y": 675.0,
+            "w": 220.0,
+            "h": 54.0
+          },
+          "dob": {
+            "text": "09/07/1945",
+            "page": 1,
+            "x": 2630.0,
+            "y": 730.0,
+            "w": 303.0,
+            "h": 74.0
+          },
+          "policy_number": {
+            "text": "M",
+            "page": 1,
+            "x": 2631.0,
+            "y": 909.0,
+            "w": 47.0,
+            "h": 48.0
+          },
+          "diagnosis": {
+            "text": "IN",
+            "page": 1,
+            "x": 995.0,
+            "y": 869.0,
+            "w": 56.0,
+            "h": 49.0
+          },
+          "icd10_codes": {
+            "text": "M",
+            "page": 1,
+            "x": 2631.0,
+            "y": 909.0,
+            "w": 47.0,
+            "h": 48.0
+          },
+          "drug_name": {
+            "text": "IL",
+            "page": 1,
+            "x": 1024.0,
+            "y": 270.0,
+            "w": 36.0,
+            "h": 38.0
+          },
+          "prescriber_npi": {
+            "text": "PI,",
+            "page": 1,
+            "x": 557.0,
+            "y": 858.0,
+            "w": 65.0,
+            "h": 59.0
+          },
+          "provider_name": {
+            "text": "Dr.",
+            "page": 1,
+            "x": 4215.0,
+            "y": 461.0,
+            "w": 44.0,
+            "h": 35.0
+          },
+          "rx_date": {
+            "text": "01/07/2025",
+            "page": 1,
+            "x": 4277.0,
+            "y": 366.0,
+            "w": 323.0,
+            "h": 47.0
+          },
+          "sig": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 20210.670200176537,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_PT_39816",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.1,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "expired_id",
+      "split": "dev",
+      "latency_ms": 4471.867900108919,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_PT_74454",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.44999999999999996,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "tampered_id",
+      "split": "dev",
+      "latency_ms": 3149.1922000423074,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_extra_PT_EX0033",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 2484.415400074795,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0033",
+      "doc_type": "DISCHARGE_SUMMARY",
+      "decision": "ESCALATE",
+      "confidence": 0.35,
+      "fields": {
+        "claim_amount": "185.00",
+        "icd10_codes": [
+          "I10"
+        ],
+        "cpt_codes": [
+          "99214"
+        ],
+        "provider_npi": "8080000332",
+        "service_date": "2026-01-17",
+        "claim_number": null,
+        "admit_date": "2026-01-17",
+        "discharge_date": "2026-01-20",
+        "signature_present": true,
+        "extra": {
+          "drug_name": "Omeprazole (Prilosec)"
+        },
+        "field_confidence": {
+          "member_name": 0.98,
+          "member_id": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "provider_name": 0.98,
+          "service_date": 0.98,
+          "diagnosis": 0.95,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "claim_amount": 0.98,
+          "drug_name": 0.98,
+          "admit_date": 0.8,
+          "discharge_date": 0.8,
+          "provider_npi": 0.8,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Patient",
+            "page": 1,
+            "x": 208.0,
+            "y": 913.0,
+            "w": 218.0,
+            "h": 55.0
+          },
+          "member_id": {
+            "text": "_",
+            "page": 1,
+            "x": 700.0,
+            "y": 883.0,
+            "w": 46.0,
+            "h": 89.0
+          },
+          "dob": {
+            "text": "3",
+            "page": 1,
+            "x": 4681.0,
+            "y": 1286.0,
+            "w": 37.0,
+            "h": 56.0
+          },
+          "policy_number": {
+            "text": "33",
+            "page": 1,
+            "x": 1169.0,
+            "y": 882.0,
+            "w": 70.0,
+            "h": 53.0
+          },
+          "provider_name": {
+            "text": "Extra",
+            "page": 1,
+            "x": 769.0,
+            "y": 896.0,
+            "w": 149.0,
+            "h": 54.0
+          },
+          "service_date": {
+            "text": "01/17/2026",
+            "page": 1,
+            "x": 932.0,
+            "y": 1404.0,
+            "w": 371.0,
+            "h": 69.0
+          },
+          "diagnosis": {
+            "text": "Low",
+            "page": 1,
+            "x": 730.0,
+            "y": 1912.0,
+            "w": 148.0,
+            "h": 64.0
+          },
+          "icd10_codes": null,
+          "cpt_codes": null,
+          "claim_amount": null,
+          "drug_name": {
+            "text": "LOS:",
+            "page": 1,
+            "x": 4473.0,
+            "y": 1287.0,
+            "w": 151.0,
+            "h": 54.0
+          },
+          "admit_date": {
+            "text": "01/17/2026",
+            "page": 1,
+            "x": 932.0,
+            "y": 1404.0,
+            "w": 371.0,
+            "h": 69.0
+          },
+          "discharge_date": {
+            "text": "01/20/2026",
+            "page": 1,
+            "x": 3223.0,
+            "y": 1325.0,
+            "w": 371.0,
+            "h": 68.0
+          },
+          "provider_npi": {
+            "text": "33",
+            "page": 1,
+            "x": 1169.0,
+            "y": 882.0,
+            "w": 70.0,
+            "h": 53.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 12430.961200036108,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_extra_PT_EX0033",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "dev",
+      "latency_ms": 17917.629999807104,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_extra_PT_EX0035",
+      "doc_type": "PRESCRIPTION",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "M54.5"
+        ],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "drug_name": "Omeprazole (Prilosec)",
+          "prescriber_npi": "8080000350",
+          "rx_date": "2026-01-22",
+          "sig": "Take once daily",
+          "dea_number": "BE8080000",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "diagnosis": 0.98,
+          "drug_name": 0.98,
+          "provider_name": 0.98,
+          "prescriber_npi": 0.98,
+          "rx_date": 0.8,
+          "id_number": 0.8,
+          "icd10_codes": 0.8,
+          "sig": 0.98,
+          "dea_number": 0.95
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Extra",
+            "page": 1,
+            "x": 2792.0,
+            "y": 91.0,
+            "w": 180.0,
+            "h": 55.0
+          },
+          "dob": {
+            "text": "04/15/1985",
+            "page": 1,
+            "x": 3191.0,
+            "y": 554.0,
+            "w": 385.0,
+            "h": 50.0
+          },
+          "policy_number": {
+            "text": "35,",
+            "page": 1,
+            "x": 3324.0,
+            "y": 91.0,
+            "w": 97.0,
+            "h": 68.0
+          },
+          "diagnosis": {
+            "text": "M",
+            "page": 1,
+            "x": 4245.0,
+            "y": 554.0,
+            "w": 48.0,
+            "h": 51.0
+          },
+          "drug_name": {
+            "text": "E",
+            "page": 1,
+            "x": 367.0,
+            "y": 237.0,
+            "w": 32.0,
+            "h": 43.0
+          },
+          "provider_name": {
+            "text": "Dr.",
+            "page": 1,
+            "x": 2671.0,
+            "y": 91.0,
+            "w": 92.0,
+            "h": 55.0
+          },
+          "prescriber_npi": {
+            "text": "35,",
+            "page": 1,
+            "x": 3324.0,
+            "y": 91.0,
+            "w": 97.0,
+            "h": 68.0
+          },
+          "rx_date": {
+            "text": "01/22/2026",
+            "page": 1,
+            "x": 3369.0,
+            "y": 879.0,
+            "w": 329.0,
+            "h": 51.0
+          },
+          "id_number": {
+            "text": "IL",
+            "page": 1,
+            "x": 934.0,
+            "y": 237.0,
+            "w": 42.0,
+            "h": 43.0
+          },
+          "icd10_codes": {
+            "text": "M",
+            "page": 1,
+            "x": 4245.0,
+            "y": 554.0,
+            "w": 48.0,
+            "h": 51.0
+          },
+          "sig": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 7417.471599997953,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0037",
+      "doc_type": "CLAIM_FORM",
+      "decision": "REJECT",
+      "confidence": 0.63,
+      "fields": {
+        "claim_amount": "4500.00",
+        "icd10_codes": [
+          "M54.5"
+        ],
+        "cpt_codes": [
+          "15822"
+        ],
+        "provider_npi": "8080000378",
+        "service_date": "2026-01-21",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "PATIENT",
+            "page": 1,
+            "x": 3990.0,
+            "y": 653.0,
+            "w": 339.0,
+            "h": 52.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 254.0,
+            "y": 541.0,
+            "w": 37.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "M",
+            "page": 1,
+            "x": 5540.0,
+            "y": 187.0,
+            "w": 70.0,
+            "h": 72.0
+          },
+          "claim_amount": {
+            "text": "4.",
+            "page": 1,
+            "x": 3583.0,
+            "y": 541.0,
+            "w": 42.0,
+            "h": 43.0
+          },
+          "icd10_codes": {
+            "text": "M",
+            "page": 1,
+            "x": 5540.0,
+            "y": 187.0,
+            "w": 70.0,
+            "h": 72.0
+          },
+          "cpt_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 254.0,
+            "y": 541.0,
+            "w": 37.0,
+            "h": 43.0
+          },
+          "provider_npi": null,
+          "service_date": {
+            "text": "1.",
+            "page": 1,
+            "x": 254.0,
+            "y": 541.0,
+            "w": 37.0,
+            "h": 43.0
+          },
+          "provider_name": {
+            "text": "M",
+            "page": 1,
+            "x": 5540.0,
+            "y": 187.0,
+            "w": 70.0,
+            "h": 72.0
+          },
+          "diagnosis": {
+            "text": "C",
+            "page": 1,
+            "x": 5304.0,
+            "y": 187.0,
+            "w": 62.0,
+            "h": 72.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "prompt_injection",
+      "split": "dev",
+      "latency_ms": 16665.942300111055,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_extra_PT_EX0037",
+      "doc_type": "PRESCRIPTION",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "M54.5"
+        ],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "drug_name": "Omeprazole (Prilosec)",
+          "prescriber_npi": "8080000378",
+          "rx_date": "2026-01-24",
+          "sig": "Take once daily",
+          "dea_number": "BE8080000",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.95,
+          "dob": 0.95,
+          "policy_number": 0.95,
+          "diagnosis": 0.95,
+          "drug_name": 0.95,
+          "prescriber_npi": 0.95,
+          "rx_date": 0.7619178082191781,
+          "provider_name": 0.95,
+          "id_number": 0.7619178082191781,
+          "icd10_codes": 0.7619178082191781,
+          "sig": 0.98,
+          "dea_number": 0.95
+        },
+        "field_source": {
+          "member_name": {
+            "text": "En",
+            "page": 1,
+            "x": 3450.0,
+            "y": 0.0,
+            "w": 244.0,
+            "h": 41.0
+          },
+          "dob": null,
+          "policy_number": {
+            "text": "37,",
+            "page": 1,
+            "x": 3324.0,
+            "y": 91.0,
+            "w": 97.0,
+            "h": 67.0
+          },
+          "diagnosis": null,
+          "drug_name": {
+            "text": "E",
+            "page": 1,
+            "x": 367.0,
+            "y": 237.0,
+            "w": 32.0,
+            "h": 43.0
+          },
+          "prescriber_npi": {
+            "text": "37,",
+            "page": 1,
+            "x": 3324.0,
+            "y": 91.0,
+            "w": 97.0,
+            "h": 67.0
+          },
+          "rx_date": null,
+          "provider_name": {
+            "text": "Dr.",
+            "page": 1,
+            "x": 2671.0,
+            "y": 91.0,
+            "w": 92.0,
+            "h": 55.0
+          },
+          "id_number": {
+            "text": "IL",
+            "page": 1,
+            "x": 934.0,
+            "y": 237.0,
+            "w": 42.0,
+            "h": 43.0
+          },
+          "icd10_codes": null,
+          "sig": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "dev",
+      "latency_ms": 7550.302600022405,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "unknown_bank_statement_001",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "unknown",
+      "split": "dev",
+      "latency_ms": 660.080400062725,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": []
+    },
+    {
+      "doc_id": "unknown_blurry_scan_001",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "unknown",
+      "split": "dev",
+      "latency_ms": 825.4001000896096,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": []
+    }
+  ]
+}

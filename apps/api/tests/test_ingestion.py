@@ -1529,7 +1529,7 @@ def test_pipeline_rerun_uses_new_pipeline_run_and_latest_status(
     assert len(decisions) == 1 and decisions[0].pipeline_run == first_pipeline
 
 
-def test_unknown_document_stops_for_review_without_a_decision(test_engine):
+def test_unknown_document_persists_escalation_decision(test_engine):
     case_id = _insert_graph_case(test_engine)
     classification, _, _, _ = _graph_payloads()
     unknown = classification.model_copy(
@@ -1547,10 +1547,12 @@ def test_unknown_document_stops_for_review_without_a_decision(test_engine):
     )
     state = build_graph(runtime).invoke(initial_state(str(case_id), str(uuid4())))
 
-    assert state["terminal_status"] == CaseStatus.NEEDS_REVIEW.value
-    assert "decision" not in state
+    assert state["terminal_status"] == CaseStatus.DECIDED.value
+    assert state["decision"].decision.value == "ESCALATE"
+    assert state["decision"].rule_trace[0].rule == "UNKNOWN_DOCUMENT_TYPE"
     with Session(test_engine) as session:
-        assert session.scalar(select(Decision).where(Decision.case_id == case_id)) is None
+        decision = session.scalar(select(Decision).where(Decision.case_id == case_id))
+        assert decision is not None and decision.decision.value == "ESCALATE"
 
 
 def test_decision_persistence_is_idempotent_per_pipeline_run(test_engine):
@@ -2054,7 +2056,7 @@ def test_fixed_type_graph_path_bypasses_classifier(test_engine):
     assert classifier_runs == []
 
 
-def test_fixed_unknown_type_routes_to_review_without_decision(test_engine):
+def test_fixed_unknown_type_persists_escalation(test_engine):
     case_id = _insert_graph_case(test_engine)
     _, ocr_result, _, _ = _graph_payloads()
     image = (DATASET_DIR / "unknown" / "unknown_utility_bill_001.png").read_bytes()
@@ -2073,10 +2075,12 @@ def test_fixed_unknown_type_routes_to_review_without_decision(test_engine):
         initial_state(str(case_id), str(uuid4()), DocType.UNKNOWN.value)
     )
 
-    assert state["terminal_status"] == CaseStatus.NEEDS_REVIEW.value
-    assert "decision" not in state
+    assert state["terminal_status"] == CaseStatus.DECIDED.value
+    assert state["decision"].decision.value == "ESCALATE"
+    assert state["decision"].rule_trace[0].rule == "UNKNOWN_DOCUMENT_TYPE"
     with Session(test_engine) as session:
-        assert session.scalar(select(Decision).where(Decision.case_id == case_id)) is None
+        decision = session.scalar(select(Decision).where(Decision.case_id == case_id))
+        assert decision is not None and decision.decision.value == "ESCALATE"
 
 
 class RetryRequested(Exception):

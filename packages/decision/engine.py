@@ -84,6 +84,19 @@ def decide(
     cfg: Thresholds,
 ) -> tuple[DecisionKind, list[RuleStep], float]:
     """Apply precedence rules and return decision, trace, and confidence."""
+    classification = state.get("classification")
+    if classification is not None and classification.doc_type == DocType.UNKNOWN:
+        return (
+            DecisionKind.ESCALATE,
+            [
+                RuleStep(
+                    rule="UNKNOWN_DOCUMENT_TYPE",
+                    fired=True,
+                    inputs={"reason": "UNKNOWN_DOCUMENT_TYPE"},
+                )
+            ],
+            min(classification.confidence, 0.59),
+        )
     routed_agent_names = _routed_agent_names(state)
     results, missing_agents = _collect_agent_results(state, routed_agent_names)
     confidence = _confidence(results)

@@ -28,7 +28,7 @@ from packages.rag.retrieve import Reranker, RetrievedChunk
 
 POLICY_AGENT = "policy"
 POLICY_VERSION = "1.0.0"
-POLICY_PROMPT_VERSION = "v3"
+POLICY_PROMPT_VERSION = "v4"
 CPT_DESCRIPTIONS_PATH = Path(__file__).resolve().parents[3] / "data" / "cpt_descriptions.json"
 ICD10_DESCRIPTIONS_PATH = Path(__file__).resolve().parents[3] / "data" / "icd10_descriptions.json"
 
@@ -296,15 +296,42 @@ class PolicyAgent:
             description=description,
             chunks=chunks,
         )
-        if answer.covered is None:
-            return None, None, 0.3, None, []
         scores = {chunk.point_id: score for chunk, score in top_five}
         ranks = {chunk.point_id: rank for rank, (chunk, _) in enumerate(top_five, start=1)}
-        if answer.clause_id not in scores or not answer.policy_clause:
+        citation_failed = (
+            not answer.policy_clause
+            or answer.clause_id not in scores
+            or not self._citation_is_verbatim(
+                answer.policy_clause or "",
+                next((chunk.text for chunk in chunks if chunk.point_id == answer.clause_id), ""),
+            )
+        )
+        if answer.covered is None or citation_failed:
+            answer = self._ask(
+                mode="claim",
+                code_type=code_type,
+                code=code,
+                description=description,
+                chunks=chunks,
+                repair=True,
+            )
+            citation_failed = (
+                not answer.policy_clause
+                or answer.clause_id not in scores
+                or not self._citation_is_verbatim(
+                    answer.policy_clause or "",
+                    next(
+                        (chunk.text for chunk in chunks if chunk.point_id == answer.clause_id), ""
+                    ),
+                )
+            )
+        if answer.covered is None:
+            return None, None, 0.3, None, []
+        if citation_failed:
+            return None, None, 0.3, None, []
+        if not answer.policy_clause or answer.clause_id not in scores:
             return None, None, 0.3, None, []
         chunk = next(chunk for chunk in chunks if chunk.point_id == answer.clause_id)
-        if not self._citation_is_verbatim(answer.policy_clause, chunk.text):
-            return None, None, 0.3, None, []
         clause = self._policy_clause(
             policy.policy_id, chunk, answer.policy_clause, scores[chunk.point_id]
         )
@@ -359,15 +386,50 @@ class PolicyAgent:
                 warnings=warnings,
             )
         top_five = ranked[:5]
+        chunks = [chunk for chunk, _ in top_five]
         answer = self._ask(
             mode="amendment",
             code_type="AMENDMENT",
             code=member.policy_number,
             description=f"Compare this amendment with the current {policy.name or 'policy'} policy",
-            chunks=[chunk for chunk, _ in top_five],
+            chunks=chunks,
             amendment_fields=amendment_fields,
         )
-        if answer.covered is None:
+        scores = {chunk.point_id: score for chunk, score in top_five}
+        ranks = {chunk.point_id: rank for rank, (chunk, _) in enumerate(top_five, start=1)}
+        repair_needed = (
+            answer.covered is None
+            or not answer.policy_clause
+            or not answer.clause_id
+            or answer.clause_id not in scores
+            or not self._citation_is_verbatim(
+                answer.policy_clause or "",
+                next((chunk.text for chunk in chunks if chunk.point_id == answer.clause_id), ""),
+            )
+        )
+        if repair_needed:
+            answer = self._ask(
+                mode="amendment",
+                code_type="AMENDMENT",
+                code=member.policy_number,
+                description=f"Compare this amendment with the current {policy.name or 'policy'} policy",
+                chunks=chunks,
+                amendment_fields=amendment_fields,
+                repair=True,
+            )
+            repair_needed = (
+                answer.covered is None
+                or not answer.policy_clause
+                or not answer.clause_id
+                or answer.clause_id not in scores
+                or not self._citation_is_verbatim(
+                    answer.policy_clause or "",
+                    next(
+                        (chunk.text for chunk in chunks if chunk.point_id == answer.clause_id), ""
+                    ),
+                )
+            )
+        if answer.covered is None or repair_needed:
             return self._result(
                 AgentStatus.OK,
                 None,
@@ -379,17 +441,11 @@ class PolicyAgent:
                 model_name,
                 warnings=warnings,
             )
-        scores = {chunk.point_id: score for chunk, score in top_five}
-        ranks = {chunk.point_id: rank for rank, (chunk, _) in enumerate(top_five, start=1)}
         if not answer.clause_id or answer.clause_id not in scores or not answer.policy_clause:
             return self._result(
                 AgentStatus.OK, None, None, None, [], 0.3, started, model_name, warnings=warnings
             )
         chunk = next(chunk for chunk, _ in top_five if chunk.point_id == answer.clause_id)
-        if not self._citation_is_verbatim(answer.policy_clause, chunk.text):
-            return self._result(
-                AgentStatus.OK, None, None, None, [], 0.3, started, model_name, warnings=warnings
-            )
         clause = self._policy_clause(
             policy.policy_id, chunk, answer.policy_clause, scores[chunk.point_id]
         )
@@ -419,6 +475,22 @@ class PolicyAgent:
 
     @staticmethod
     def _normalise_citation(text: str) -> str:
+        text = (
+            text.replace("\u2018", "'")
+            .replace("\u2019", "'")
+            .replace("\u201c", '"')
+            .replace("\u201d", '"')
+            .replace("\u2010", "-")
+            .replace("\u2011", "-")
+            .replace("\u2012", "-")
+            .replace("\u2013", "-")
+            .replace("\u2014", "-")
+            .replace("\u2022", "-")
+            .replace("\u2023", "-")
+            .replace("\u2024", ".")
+        )
+        text = re.sub(r"(?m)^\s{0,3}(?:[-*+]\s+|\d+[.)]\s+)", "", text)
+        text = re.sub(r"\*\*|__|`", "", text)
         return re.sub(r"\s+", " ", text).strip()
 
     @classmethod
@@ -452,24 +524,31 @@ class PolicyAgent:
         description: str,
         chunks: list[RetrievedChunk],
         amendment_fields: dict[str, str] | None = None,
+        repair: bool = False,
     ) -> PolicyAnswer:
         prompt = self.prompt_loader.load("policy_decide", POLICY_PROMPT_VERSION)
-        return prompt.invoke(
-            self.gateway,
-            self.settings,
-            [
-                build_policy_message(
-                    mode=mode,
-                    code_type=code_type,
-                    code=code,
-                    description=description,
-                    chunks=chunks,
-                    amendment_fields=amendment_fields,
-                )
-            ],
-            [],
-            PolicyAnswer,
-        )
+        messages = [
+            build_policy_message(
+                mode=mode,
+                code_type=code_type,
+                code=code,
+                description=description,
+                chunks=chunks,
+                amendment_fields=amendment_fields,
+            )
+        ]
+        if repair:
+            messages.append(
+                {
+                    "role": "user",
+                    "content": (
+                        "Your previous answer had no verifiable citation. Copy one passage word for "
+                        "word from the numbered excerpts, or answer covered=null if none supports "
+                        "a decision."
+                    ),
+                }
+            )
+        return prompt.invoke(self.gateway, self.settings, messages, [], PolicyAnswer)
 
     @staticmethod
     def _policy_clause(

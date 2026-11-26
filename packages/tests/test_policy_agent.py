@@ -57,7 +57,9 @@ class FakeGateway:
 
     def complete_json(self, model, system, messages, images, schema, **kwargs):
         self.calls += 1
-        self.messages.extend(dict(message) for message in messages)
+        self.messages.append(
+            {"content": " ".join(dict(message)["content"] for message in messages)}
+        )
         return schema.model_validate(self.answer)
 
 
@@ -463,6 +465,69 @@ def test_llm_null_answer_returns_unknown_with_confidence_03() -> None:
     engine.dispose()
 
 
+def test_policy_citation_repair_is_attempted_once_and_succeeds() -> None:
+    engine, policy_id = _policy_fixture()
+    retriever = FakeRetriever()
+    retriever.chunks["default"] = _chunk(policy_id)
+
+    class RepairGateway(FakeGateway):
+        def complete_json(self, model, system, messages, images, schema, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return schema.model_validate(
+                    {
+                        "covered": None,
+                        "coverage_percentage": None,
+                        "clause_id": None,
+                        "policy_clause": None,
+                        "exclusions": [],
+                        "certainty": 0.3,
+                    }
+                )
+            self.messages.append(
+                {"content": " ".join(dict(message)["content"] for message in messages)}
+            )
+            return schema.model_validate(_answer(retriever.chunks["default"]))
+
+    gateway = RepairGateway({})
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
+    kyc, claims, ocr = _envelopes()
+
+    result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
+
+    assert result.covered is True
+    assert gateway.calls == 2
+    assert "no verifiable citation" in gateway.messages[-1]["content"]
+    _session.close()
+    engine.dispose()
+
+
+def test_policy_citation_repair_exhaustion_keeps_unknown() -> None:
+    engine, policy_id = _policy_fixture()
+    retriever = FakeRetriever()
+    retriever.chunks["default"] = _chunk(policy_id)
+    gateway = FakeGateway(
+        {
+            "covered": None,
+            "coverage_percentage": None,
+            "clause_id": None,
+            "policy_clause": None,
+            "exclusions": [],
+            "certainty": 0.3,
+        }
+    )
+    agent, _session = _agent(engine, policy_id, gateway, retriever)
+    kyc, claims, ocr = _envelopes()
+
+    result = agent.evaluate(DocType.CLAIM_FORM, kyc, claims, ocr, datetime.now(UTC))
+
+    assert result.covered is None
+    assert result.confidence == 0.3
+    assert gateway.calls == 2
+    _session.close()
+    engine.dispose()
+
+
 @pytest.mark.parametrize(
     ("cited_rank", "certainty", "expected_confidence"),
     [(1, 0.8, 0.8), (4, 0.8, 0.72), (1, 1.0, 0.9)],
@@ -781,6 +846,28 @@ def test_gap_citation_accepts_normalized_segments_from_same_chunk() -> None:
         " ... Additional   unrelated text appears here for gap testing."
     )
     assert PolicyAgent._citation_is_verbatim(citation, chunk.text)
+
+
+def test_reversed_passage_order_is_accepted_from_same_chunk() -> None:
+    policy_id = uuid4()
+    chunk = _chunk(
+        policy_id,
+        "Day Care Procedures as defined in Section 2.\n\n"
+        "Surgical services: physician fees, anesthesia, operating room, post-operative care.",
+    )
+    citation = (
+        "Surgical services: physician fees, anesthesia, operating room, post-operative care."
+        " ... Day Care Procedures as defined in Section 2."
+    )
+    assert PolicyAgent._citation_is_verbatim(citation, chunk.text)
+
+
+def test_segments_from_two_chunks_are_rejected() -> None:
+    assert not PolicyAgent._citation_is_verbatim(
+        "This first segment comes from one retrieved excerpt. "
+        "... This second segment comes from a different retrieved excerpt.",
+        "This first segment comes from one retrieved excerpt.",
+    )
 
 
 @pytest.mark.parametrize(

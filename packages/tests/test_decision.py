@@ -472,7 +472,7 @@ def test_claim_warnings_and_low_expiring_id_flag_do_not_change_decision(
     )
     expected = (
         DecisionKind.ESCALATE
-        if doc_type == DocType.POLICY_AMENDMENT
+        if doc_type in (DocType.POLICY_AMENDMENT, DocType.UNKNOWN)
         else (
             DecisionKind.APPROVE
             if doc_type in (DocType.DISCHARGE_SUMMARY, DocType.PRESCRIPTION)

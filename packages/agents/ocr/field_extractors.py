@@ -273,7 +273,7 @@ def extract_member_name(text: str) -> str | None:
     """Extract a member or patient name, not a provider name."""
     match = re.search(
         r"(?<!PROVIDER )\b(?:MEMBER\s+|PATIENT\s+)?NAME[:\s]+"
-        r"([A-Z][A-Za-z'-]+(?:\s+(?!PROVIDER\b)[A-Z][A-Za-z'-]+){0,2})",
+        r"([A-Z][A-Za-z'-]+(?:\s+(?!PROVIDER\b)[A-Z][A-Za-z'-]+){0,2}(?:\s+\d+\b)?)",
         text,
         re.IGNORECASE,
     )
