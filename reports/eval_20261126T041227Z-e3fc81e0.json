@@ -1,0 +1,1076 @@
+{
+  "run": {
+    "provider": "groq",
+    "split": "holdout",
+    "sample_requested": null,
+    "sample_size": 10,
+    "received_at_override": true,
+    "data_as_of_date": "2025-12-31",
+    "run_id": "20261126T041227Z-e3fc81e0",
+    "retrieval_csv": "eval_20261126T041227Z-e3fc81e0_retrieval.csv"
+  },
+  "metrics": {
+    "sample_size": 10,
+    "classification": {
+      "correct": 5,
+      "sample_size": 10,
+      "accuracy": 0.5
+    },
+    "extraction": {
+      "correct": 10,
+      "sample_size": 30,
+      "completeness": 0.3333333333333333
+    },
+    "decision": {
+      "correct": 2,
+      "sample_size": 10,
+      "accuracy": 0.2
+    },
+    "confusion_matrix": {
+      "APPROVE": {
+        "NO_DECISION": 2
+      },
+      "ESCALATE": {
+        "ESCALATE": 1,
+        "NO_DECISION": 4
+      },
+      "REJECT": {
+        "ESCALATE": 2,
+        "REJECT": 1
+      }
+    },
+    "breakdowns": {
+      "scenario": {
+        "amount_under_10k": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "duplicate_claim": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "expired_id": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "policy_amendment": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "proc_diag_mismatch": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "prompt_injection": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "readmission_30d": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "uncovered_procedure": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "valid_clean": {
+          "correct": 0,
+          "sample_size": 2,
+          "accuracy": 0.0
+        }
+      },
+      "document_category": {
+        "CLAIM_FORM": {
+          "correct": 1,
+          "sample_size": 6,
+          "accuracy": 0.16666666666666666
+        },
+        "DISCHARGE_SUMMARY": {
+          "correct": 0,
+          "sample_size": 2,
+          "accuracy": 0.0
+        },
+        "ID_DOCUMENT": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "POLICY_AMENDMENT": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        }
+      },
+      "split": {
+        "holdout": {
+          "correct": 2,
+          "sample_size": 10,
+          "accuracy": 0.2
+        }
+      }
+    },
+    "latency_ms": {
+      "sample_size": 10,
+      "p50": 904.5734499813989,
+      "p95": 61989.95837996479
+    },
+    "calibration": {
+      "sample_size": 4,
+      "bins": [
+        {
+          "lower": 0.0,
+          "upper": 0.2,
+          "sample_size": 2,
+          "mean_confidence": 0.05,
+          "accuracy": 0.0
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.4,
+          "sample_size": 1,
+          "mean_confidence": 0.3,
+          "accuracy": 1.0
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.8,
+          "sample_size": 1,
+          "mean_confidence": 0.63,
+          "accuracy": 1.0
+        }
+      ],
+      "ece": 0.2925
+    }
+  },
+  "weighted_score": {
+    "score": 0.3333333333333333,
+    "sample_size": 3,
+    "method": "Available automated PRD weights (classification 20%, extraction 20%, decision 25%) renormalized to 100%; retrieval is manual, UI and code quality are unscored."
+  },
+  "decision_mismatches": [
+    {
+      "doc_id": "id_PT_47353",
+      "expected": "REJECT",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.1,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:kyc",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.1
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.8000000000000002
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:KYC_FAILED",
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.1
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.8000000000000002
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.8,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.1,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.1,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "kyc"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0038",
+      "expected": "REJECT",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.0,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:kyc, AGENT_ERROR:kyc",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [
+              "kyc"
+            ],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "ERROR",
+                "confidence": 0.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9800000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:KYC_FAILED",
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [
+              "kyc"
+            ],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "ERROR",
+                "confidence": 0.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9800000000000001
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.98
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 5
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.99,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "ERROR",
+          "confidence": 0.0,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.0,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "kyc"
+    }
+  ],
+  "known_divergences": [
+    {
+      "doc_id": "claim_PT_16658",
+      "expected": "REJECT",
+      "known_engine_result": "ESCALATE",
+      "rule": "R2",
+      "reason": "The $9,950 uncovered claim is in the near-threshold band; R2 fires before R3.",
+      "observed": "NOT_EVALUATED"
+    }
+  ],
+  "failures": [
+    {
+      "doc_id": "claim_extra_PT_EX0038",
+      "agent": "kyc",
+      "message": "GroqRateLimitError"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0039",
+      "agent": "ocr",
+      "message": "OCR processing failed: Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199839, Requested 2598. Please try again in 17m32.783999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0041",
+      "agent": "classification",
+      "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199839, Requested 2473. Please try again in 16m38.784s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0042",
+      "agent": "classification",
+      "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199838, Requested 2473. Please try again in 16m38.352s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0042_dup",
+      "agent": "classification",
+      "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199838, Requested 2473. Please try again in 16m38.352s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0045",
+      "agent": "classification",
+      "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199837, Requested 2473. Please try again in 16m37.92s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0046",
+      "agent": "classification",
+      "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199836, Requested 2473. Please try again in 16m37.488s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+    }
+  ],
+  "groq_usage": {
+    "calls_by_model": {
+      "qwen/qwen3.8-27b": 8,
+      "openai/gpt-oss-120b": 1
+    },
+    "rate_limit_responses_429": 6,
+    "rate_limit_errors": [
+      {
+        "model": "qwen/qwen3.8-27b",
+        "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199867, Requested 2374. Please try again in 16m8.112s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+        "retry_after_seconds": 969.0
+      },
+      {
+        "model": "qwen/qwen3.8-27b",
+        "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199839, Requested 2598. Please try again in 17m32.783999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+        "retry_after_seconds": 1053.0
+      },
+      {
+        "model": "qwen/qwen3.8-27b",
+        "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199839, Requested 2473. Please try again in 16m38.784s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+        "retry_after_seconds": 999.0
+      },
+      {
+        "model": "qwen/qwen3.8-27b",
+        "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199838, Requested 2473. Please try again in 16m38.352s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+        "retry_after_seconds": 999.0
+      },
+      {
+        "model": "qwen/qwen3.8-27b",
+        "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199837, Requested 2473. Please try again in 16m37.92s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+        "retry_after_seconds": 998.0
+      },
+      {
+        "model": "qwen/qwen3.8-27b",
+        "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199836, Requested 2473. Please try again in 16m37.488s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+        "retry_after_seconds": 998.0
+      }
+    ],
+    "retries_429": 0,
+    "seconds_waited": 58.031999999890104,
+    "estimated_tokens_by_model": {
+      "qwen/qwen3.8-27b": 8720,
+      "openai/gpt-oss-120b": 696
+    },
+    "actual_tokens_by_model": {
+      "qwen/qwen3.8-27b": 4857,
+      "openai/gpt-oss-120b": 593
+    },
+    "daily_tokens_used": 74436,
+    "cache_hits": 16,
+    "usage_by_prompt": {
+      "classifier": {
+        "live": {
+          "calls": 4,
+          "estimated_input_tokens": 9044,
+          "estimated_output_tokens": 1200,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        },
+        "cached": {
+          "calls": 5,
+          "estimated_input_tokens": 11305,
+          "estimated_output_tokens": 1500,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "kyc_tamper": {
+        "live": {
+          "calls": 1,
+          "estimated_input_tokens": 2303,
+          "estimated_output_tokens": 300,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        },
+        "cached": {
+          "calls": 3,
+          "estimated_input_tokens": 6909,
+          "estimated_output_tokens": 900,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "orchestrator_justify": {
+        "live": {
+          "calls": 1,
+          "estimated_input_tokens": 305,
+          "estimated_output_tokens": 300,
+          "actual_input_tokens": 546,
+          "actual_output_tokens": 47
+        },
+        "cached": {
+          "calls": 3,
+          "estimated_input_tokens": 926,
+          "estimated_output_tokens": 900,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "ocr": {
+        "live": {
+          "calls": 2,
+          "estimated_input_tokens": 4678,
+          "estimated_output_tokens": 2000,
+          "actual_input_tokens": 2171,
+          "actual_output_tokens": 648
+        },
+        "cached": {
+          "calls": 2,
+          "estimated_input_tokens": 4678,
+          "estimated_output_tokens": 2000,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "claims_extract": {
+        "live": {
+          "calls": 1,
+          "estimated_input_tokens": 2207,
+          "estimated_output_tokens": 1000,
+          "actual_input_tokens": 2007,
+          "actual_output_tokens": 31
+        },
+        "cached": {
+          "calls": 1,
+          "estimated_input_tokens": 2207,
+          "estimated_output_tokens": 1000,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "policy_decide": {
+        "live": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        },
+        "cached": {
+          "calls": 2,
+          "estimated_input_tokens": 3124,
+          "estimated_output_tokens": 1400,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      }
+    }
+  },
+  "daily_budget_stop": null,
+  "partial": false,
+  "predictions": [
+    {
+      "doc_id": "id_PT_47353",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.1,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "expired_id",
+      "split": "holdout",
+      "latency_ms": 1436.4652999211103,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_24208",
+      "doc_type": "CLAIM_FORM",
+      "decision": "REJECT",
+      "confidence": 0.63,
+      "fields": {
+        "claim_amount": "8050.00",
+        "icd10_codes": [
+          "F32.1"
+        ],
+        "cpt_codes": [
+          "21120",
+          "71250"
+        ],
+        "provider_npi": "5610293847",
+        "service_date": "2025-05-12",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Joseph",
+            "page": 1,
+            "x": 188.0,
+            "y": 1152.0,
+            "w": 292.0,
+            "h": 74.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "claim_amount": null,
+          "icd10_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "cpt_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "provider_npi": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "service_date": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "provider_name": null,
+          "diagnosis": {
+            "text": "G.",
+            "page": 1,
+            "x": 986.0,
+            "y": 1145.0,
+            "w": 80.0,
+            "h": 55.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "uncovered_procedure",
+      "split": "holdout",
+      "latency_ms": 52073.74789984897,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_PT_45400",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "holdout",
+      "latency_ms": 21764.977199956775,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0038",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.0,
+      "fields": {
+        "claim_amount": "4500.00",
+        "icd10_codes": [
+          "M54.5"
+        ],
+        "cpt_codes": [
+          "15822"
+        ],
+        "provider_npi": "8080000387",
+        "service_date": "2026-01-22",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "PATIENT",
+            "page": 1,
+            "x": 3990.0,
+            "y": 653.0,
+            "w": 339.0,
+            "h": 52.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 254.0,
+            "y": 541.0,
+            "w": 37.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "M",
+            "page": 1,
+            "x": 5540.0,
+            "y": 187.0,
+            "w": 70.0,
+            "h": 72.0
+          },
+          "claim_amount": {
+            "text": "4.",
+            "page": 1,
+            "x": 3583.0,
+            "y": 541.0,
+            "w": 42.0,
+            "h": 43.0
+          },
+          "icd10_codes": {
+            "text": "M",
+            "page": 1,
+            "x": 5540.0,
+            "y": 187.0,
+            "w": 70.0,
+            "h": 72.0
+          },
+          "cpt_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 254.0,
+            "y": 541.0,
+            "w": 37.0,
+            "h": 43.0
+          },
+          "provider_npi": {
+            "text": "7.",
+            "page": 1,
+            "x": 3585.0,
+            "y": 999.0,
+            "w": 40.0,
+            "h": 43.0
+          },
+          "service_date": {
+            "text": "1.",
+            "page": 1,
+            "x": 254.0,
+            "y": 541.0,
+            "w": 37.0,
+            "h": 43.0
+          },
+          "provider_name": {
+            "text": "M",
+            "page": 1,
+            "x": 5540.0,
+            "y": 187.0,
+            "w": 70.0,
+            "h": 72.0
+          },
+          "diagnosis": null,
+          "signature_present": null
+        }
+      },
+      "scenario": "prompt_injection",
+      "split": "holdout",
+      "latency_ms": 70103.22150005959,
+      "terminal_status": "DECIDED",
+      "failures": [
+        {
+          "agent": "kyc",
+          "message": "GroqRateLimitError"
+        }
+      ]
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0039",
+      "doc_type": "CLAIM_FORM",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "amount_under_10k",
+      "split": "holdout",
+      "latency_ms": 9365.218499908224,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "ocr",
+          "message": "OCR processing failed: Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199839, Requested 2598. Please try again in 17m32.783999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+        }
+      ]
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0041",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "holdout",
+      "latency_ms": 302.2072999738157,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199839, Requested 2473. Please try again in 16m38.784s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+        }
+      ]
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0042",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "holdout",
+      "latency_ms": 372.6816000416875,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199838, Requested 2473. Please try again in 16m38.352s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+        }
+      ]
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0042_dup",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "duplicate_claim",
+      "split": "holdout",
+      "latency_ms": 0.0,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199838, Requested 2473. Please try again in 16m38.352s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+        }
+      ],
+      "duplicate_of": "f7fa25b2-4145-48a9-a9d4-1fd021fb5246"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0045",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "proc_diag_mismatch",
+      "split": "holdout",
+      "latency_ms": 327.11729989387095,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199837, Requested 2473. Please try again in 16m37.92s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+        }
+      ]
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0046",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "readmission_30d",
+      "split": "holdout",
+      "latency_ms": 292.77039994485676,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "Groq 429 retry wait exceeds 90s: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199836, Requested 2473. Please try again in 16m37.488s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing"
+        }
+      ]
+    }
+  ]
+}
