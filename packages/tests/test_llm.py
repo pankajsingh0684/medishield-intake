@@ -210,16 +210,55 @@ def test_gateway_reports_second_truncation_with_finish_reason_and_clear_error() 
         [
             ProviderResponse('{"value":"partial"}', 10, 40, "length"),
             ProviderResponse('{"value":"still partial"}', 10, 40, "length"),
+            ProviderResponse('{"value":"still truncated"}', 10, 2000, "length"),
         ]
     )
 
     with pytest.raises(
         LLMSchemaError,
-        match=r"truncated after one compact retry.*finish_reason=length.*max_tokens=40",
+        match=r"compact and higher-budget retries.*retry_max_tokens=2000",
     ):
-        Gateway(provider).complete_json("model", "system", [], None, Result, max_tokens=40)
+        Gateway(provider, length_retry_max_tokens=2000).complete_json(
+            "model", "system", [], None, Result, max_tokens=40
+        )
 
-    assert [call["max_tokens"] for call in provider.calls] == [40, 40]
+    assert [call["max_tokens"] for call in provider.calls] == [40, 40, 2000]
+
+
+def test_gateway_retries_truncated_response_at_higher_budget() -> None:
+    provider = SequenceProvider(
+        [
+            ProviderResponse('{"value":"partial"}', 10, 40, "length"),
+            ProviderResponse('{"value":"still partial"}', 10, 40, "length"),
+            ProviderResponse('{"value":"complete"}', 10, 120, "stop"),
+        ]
+    )
+
+    result = Gateway(provider, length_retry_max_tokens=2000).complete_json(
+        "model", "system", [], None, Result, max_tokens=40
+    )
+
+    assert result.value == "complete"
+    assert [call["max_tokens"] for call in provider.calls] == [40, 40, 2000]
+
+
+def test_gateway_reports_final_truncation_after_higher_budget() -> None:
+    provider = SequenceProvider(
+        [
+            ProviderResponse('{"value":"partial"}', 10, 40, "length"),
+            ProviderResponse('{"value":"still partial"}', 10, 40, "length"),
+            ProviderResponse('{"value":"still truncated"}', 10, 2000, "length"),
+        ]
+    )
+
+    with pytest.raises(
+        LLMSchemaError, match=r"compact and higher-budget retries.*retry_max_tokens=2000"
+    ):
+        Gateway(provider, length_retry_max_tokens=2000).complete_json(
+            "model", "system", [], None, Result, max_tokens=40
+        )
+
+    assert [call["max_tokens"] for call in provider.calls] == [40, 40, 2000]
 
 
 def test_gateway_debug_raw_logs_and_attaches_safe_failure_details(caplog) -> None:

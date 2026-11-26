@@ -103,6 +103,7 @@ class Settings(EnvFileSettings):
     langsmith_enabled: bool = False
     langsmith_api_key: SecretStr | None = None
     phi_log_redaction: bool = True
+    llm_length_retry_max_tokens: int = Field(default=2000, gt=0)
 
     @model_validator(mode="after")
     def reject_production_clock_override(self) -> "Settings":

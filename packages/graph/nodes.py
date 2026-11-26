@@ -608,6 +608,7 @@ def build_nodes(runtime: GraphRuntime) -> dict[str, Callable[[GraphState], dict[
                 state["kyc"],
                 state["ocr"],
                 state["received_at"],
+                current_case_id=state["case_id"],
             )
 
     fraud_node = instrument(

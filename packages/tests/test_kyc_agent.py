@@ -591,3 +591,28 @@ def test_dob_and_name_fallback_when_identifiers_find_no_member() -> None:
 
     assert result.member_ref == "PT_20745"
     assert not any(flag.code == "MEMBER_NOT_FOUND" for flag in result.flags)
+
+
+@pytest.mark.parametrize(
+    "doc_type", [DocType.CLAIM_FORM, DocType.PRESCRIPTION, DocType.DISCHARGE_SUMMARY]
+)
+def test_expiry_is_not_checked_outside_id_documents(doc_type: DocType):
+    agent, _ = make_agent()
+    fields = id_fields(expiry="2020-01-01")
+    result = agent.check(doc_type, make_ocr(fields), RECEIVED_AT)
+    assert "ID_EXPIRED" not in {flag.code for flag in result.flags}
+
+
+@pytest.mark.parametrize("dob", ["01/01/1965", "2035-01-01", "1900-01-01"])
+def test_implausible_identity_dob_is_rejected(dob: str):
+    agent, _ = make_agent()
+    fields = id_fields(dob=dob, expiry="01/01/1965")
+    result = agent.check(DocType.ID_DOCUMENT, make_ocr(fields), RECEIVED_AT)
+    assert "DOB_MISMATCH" in {flag.code for flag in result.flags}
+
+
+def test_policy_format_member_id_is_not_used_as_member_lookup():
+    agent, _ = make_agent()
+    fields = id_fields(member_id="MED-GLD-1954280", name="John Johnson X.", dob="01/02/1965")
+    result = agent.check(DocType.ID_DOCUMENT, make_ocr(fields), RECEIVED_AT)
+    assert result.member_ref == "PT_20745"

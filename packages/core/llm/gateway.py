@@ -87,6 +87,7 @@ class Gateway:
         response_cache: Any | None = None,
         cache_hits: int = 0,
         debug_raw: bool = False,
+        length_retry_max_tokens: int = 2000,
     ) -> None:
         self.provider = provider
         self.fallback_provider = fallback_provider
@@ -101,6 +102,7 @@ class Gateway:
         self.response_cache = response_cache
         self.cache_hits = cache_hits
         self.debug_raw = debug_raw
+        self.length_retry_max_tokens = length_retry_max_tokens
         self._usage_lock = threading.Lock()
         self._prompt_usage: dict[str, dict[str, Any]] = {}
 
@@ -214,25 +216,42 @@ class Gateway:
                     images=image_bytes,
                     schema=schema,
                     request_key=key,
+                    repair_hint=compact_hint,
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    repair_hint=compact_hint,
                 )
                 if response.finish_reason == "length":
-                    if self.debug_raw:
-                        diagnostic = self._raw_failure_diagnostic(
-                            response,
-                            f"truncated after compact retry at max_tokens={max_tokens}",
-                            selected_provider,
-                            attempt=2,
-                        )
-                        debug_diagnostics.append(diagnostic)
-                        logger.error("LLM_DEBUG_RAW %s", diagnostic)
-                    raise LLMSchemaError(
-                        "Provider response truncated after one compact retry "
-                        f"(finish_reason=length, max_tokens={max_tokens})"
-                        + ("\n" + "\n".join(debug_diagnostics) if debug_diagnostics else "")
+                    retry_max_tokens = self.length_retry_max_tokens
+                    response = self._call_with_retries(
+                        selected_provider,
+                        model=selected_model,
+                        system=system,
+                        messages=canonical_messages,
+                        images=image_bytes,
+                        schema=schema,
+                        request_key=key,
+                        repair_hint=(
+                            compact_hint + " You may use up to the available output budget."
+                        ),
+                        temperature=temperature,
+                        max_tokens=retry_max_tokens,
                     )
+                    if response.finish_reason == "length":
+                        if self.debug_raw:
+                            diagnostic = self._raw_failure_diagnostic(
+                                response,
+                                f"truncated after compact and higher-budget retries at max_tokens={retry_max_tokens}",
+                                selected_provider,
+                                attempt=2,
+                            )
+                            debug_diagnostics.append(diagnostic)
+                            logger.error("LLM_DEBUG_RAW %s", diagnostic)
+                        raise LLMSchemaError(
+                            "Provider response truncated after compact and higher-budget retries "
+                            f"(finish_reason=length, original_max_tokens={original_max_tokens}, "
+                            f"compact_max_tokens={max_tokens}, retry_max_tokens={retry_max_tokens})"
+                            + ("\n" + "\n".join(debug_diagnostics) if debug_diagnostics else "")
+                        )
             for schema_attempt in range(2):
                 try:
                     result = schema.model_validate(self._decode_content(response.content))
@@ -576,4 +595,5 @@ def build_gateway(
         sleeper=sleeper,
         response_cache=response_cache,
         debug_raw=settings.llm_debug_raw,
+        length_retry_max_tokens=settings.llm_length_retry_max_tokens,
     )

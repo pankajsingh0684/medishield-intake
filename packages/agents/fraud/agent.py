@@ -68,6 +68,7 @@ class FraudAgent:
         received_at: datetime,
         *,
         prior_processed_claims: list[dict[str, Any]] | None = None,
+        current_case_id: str | None = None,
     ) -> FraudResult:
         started = datetime.now(UTC)
         warnings: list[str] = []
@@ -77,7 +78,9 @@ class FraudAgent:
                 since=received_at.date() - timedelta(days=365)
             )
             earlier_cases = (
-                self.history_repo.earlier_processed_claims(member_id, received_at)
+                self.history_repo.earlier_processed_claims(
+                    member_id, received_at, exclude_case_id=current_case_id
+                )
                 if member_id
                 else []
             )
@@ -157,7 +160,10 @@ class FraudAgent:
             ):
                 add("DUPLICATE_CLAIM", f"claim_id={row.claim_id}; member={member_id}")
                 return
-        for case, run in earlier_cases:
+        for earlier in earlier_cases:
+            if isinstance(earlier, dict):
+                continue
+            case, run = earlier
             output = run.output
             extracted = output.get("extracted_fields", {}) if isinstance(output, dict) else {}
             if fields.claim_number and extracted.get("claim_number") == fields.claim_number:
@@ -177,7 +183,8 @@ class FraudAgent:
                 return
         for earlier in prior_processed_claims or []:
             if (
-                earlier.get("member_id") == member_id
+                isinstance(earlier, dict)
+                and earlier.get("member_id") == member_id
                 and fields.claim_number
                 and earlier.get("claim_number") == fields.claim_number
             ):

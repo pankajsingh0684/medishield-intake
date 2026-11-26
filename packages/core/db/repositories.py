@@ -238,19 +238,21 @@ class ClaimHistoryRepo:
         return list(self._session.scalars(statement))
 
     def earlier_processed_claims(
-        self, member_id: str, before: datetime
+        self, member_id: str, before: datetime, *, exclude_case_id=None
     ) -> list[tuple[Case, AgentRun]]:
         statement = (
             select(Case, AgentRun)
             .join(AgentRun, AgentRun.case_id == Case.case_id)
             .where(
                 Case.member_ref == member_id,
-                Case.created_at < before,
+                Case.received_at < before,
                 AgentRun.agent == "claims",
                 AgentRun.status == "OK",
             )
             .order_by(Case.created_at.asc(), Case.case_id.asc())
         )
+        if exclude_case_id is not None:
+            statement = statement.where(Case.case_id != exclude_case_id)
         return list(self._session.execute(statement).all())
 
 

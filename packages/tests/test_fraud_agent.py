@@ -32,7 +32,7 @@ class FakeHistoryRepo:
     def all_prior_claims(self, **kwargs):
         return list(self.rows)
 
-    def earlier_processed_claims(self, member_id, before):
+    def earlier_processed_claims(self, member_id, before, **kwargs):
         return list(self.earlier)
 
 
@@ -164,6 +164,37 @@ def test_original_then_duplicate_and_reverse_order_duplicate_detection():
         ],
     )
     assert any(anomaly.type == "DUPLICATE_CLAIM" for anomaly in reverse.anomalies)
+
+
+def test_duplicate_detector_matches_two_processed_cases_in_order():
+    first_claim, kyc, ocr, received = envelopes(claim_number="SYN-1", member_id="SYN-MEMBER")
+    first_claim = first_claim.model_copy(
+        update={
+            "extracted_fields": first_claim.extracted_fields.model_copy(
+                update={
+                    "claim_number": "SYN-1",
+                    "provider_npi": "1234567893",
+                    "service_date": date(2025, 1, 1),
+                    "cpt_codes": ["99214"],
+                }
+            )
+        }
+    )
+    second_claim = first_claim
+
+    earlier = [{"member_id": "SYN-MEMBER", "claim_number": "SYN-1", "case_id": "earlier-case"}]
+    agent = FraudAgent(FakeHistoryRepo(rows=[], earlier=earlier), settings())
+    result = agent.score(
+        DocType.CLAIM_FORM,
+        "SYN-MEMBER",
+        second_claim,
+        kyc,
+        ocr,
+        received,
+        prior_processed_claims=earlier,
+    )
+
+    assert any(anomaly.type == "DUPLICATE_CLAIM" for anomaly in result.anomalies)
 
 
 @pytest.mark.parametrize(

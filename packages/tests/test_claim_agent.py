@@ -3,14 +3,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import pytest
 from pydantic import BaseModel
 
-from packages.agents.claims.agent import ClaimsAgent
+from packages.agents.claims.agent import ClaimsAgent, ExtractedValue
+from packages.agents.claims.validators import normalize_dea, normalize_npi, validate_claim
 from packages.core.config import Settings
 from packages.core.enums import AgentStatus, DocType
 from packages.core.llm.fixtures import FixtureStore
 from packages.core.llm.gateway import Gateway, StubProvider
-from packages.core.models import BBox, OcrField, OcrPayload
+from packages.core.models import BBox, ClaimFields, OcrField, OcrPayload
 from scripts.make_claims_fixtures import generate_fixtures
 
 DATASET_DIR = Path("data/synthetic/dataset")
@@ -232,3 +234,30 @@ def test_low_ocr_confidence_page_keeps_low_confidence():
 
     assert not result.schema_valid
     assert result.confidence == 0.5
+
+
+@pytest.mark.parametrize(
+    "placeholder", ["[ILLEGIBLE]", "ILLEGIBLE", "N/A", "?", "---", "unreadable"]
+)
+def test_placeholder_sig_is_missing_placeholder(placeholder: str) -> None:
+    values = ClaimsAgent._build_fields(
+        {"sig": ExtractedValue(value=placeholder, confidence=0.95, page=1)}
+    )
+    assert values.extra.get("sig") is None
+
+
+def test_npi_and_dea_normalization_reject_invalid_lengths() -> None:
+    assert normalize_npi("NPI: 123-456-7890") == "1234567890"
+    assert normalize_dea("DEA-AB1234563") == "AB1234563"
+
+    fields = ClaimFields(
+        claim_amount=None,
+        icd10_codes=[],
+        cpt_codes=[],
+        provider_npi="123",
+        service_date=None,
+        extra={"prescriber_npi": "NPI: 123", "dea_number": "SHORT"},
+    )
+    errors, _warnings = validate_claim(fields, DocType.PRESCRIPTION, RECEIVED_AT)
+    assert any("NPI_FORMAT" in error for error in errors)
+    assert any("DEA_FORMAT" in error for error in errors)

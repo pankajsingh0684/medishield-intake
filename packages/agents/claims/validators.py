@@ -70,12 +70,32 @@ LABELS = {
 }
 
 
+PLACEHOLDER_RE = re.compile(
+    r"^(?:\[?\s*(?:illegible|unreadable|missing|n/?a|none)\s*\]?|\?|-{2,}|_{2,})$",
+    re.IGNORECASE,
+)
+
+
 def normalize_code(value: str) -> str:
     return value.strip().upper()
 
 
+def is_placeholder(value: Any) -> bool:
+    if value is None:
+        return True
+    return isinstance(value, str) and bool(PLACEHOLDER_RE.fullmatch(value.strip()))
+
+
 def normalize_npi(value: str) -> str:
-    return re.sub(r"^\s*NPI\s*-?\s*", "", value, flags=re.IGNORECASE).strip()
+    cleaned = re.sub(r"[^A-Z0-9]", "", value, flags=re.IGNORECASE).upper()
+    cleaned = re.sub(r"^NPI", "", cleaned)
+    cleaned = re.sub(r"^PROVIDER", "", cleaned)
+    return cleaned
+
+
+def normalize_dea(value: str) -> str:
+    cleaned = re.sub(r"[^A-Z0-9]", "", value, flags=re.IGNORECASE).upper()
+    return re.sub(r"^DEA", "", cleaned)
 
 
 def normalize_amount(value: Any) -> Decimal | None:
@@ -139,7 +159,7 @@ def validate_claim(
             if field in REQUIRED_FIELDS[DocType.PRESCRIPTION]
             else getattr(fields, field, None)
         )
-        if value is None or value == "" or value == []:
+        if is_placeholder(value) or value == []:
             errors.append(f"{field.upper()}: required field is missing")
 
     for code in fields.icd10_codes:
@@ -168,6 +188,12 @@ def validate_claim(
             errors.append("NPI_FORMAT: prescriber NPI must contain 10 digits")
         elif not has_valid_npi_luhn(normalized_npi):
             (errors if luhn_strict else warnings).append("NPI_CHECKSUM: NPI failed Luhn checksum")
+
+    dea_number = fields.extra.get("dea_number")
+    if dea_number:
+        normalized_dea = normalize_dea(str(dea_number))
+        if not re.fullmatch(r"[A-Z][A-Z0-9]{8}", normalized_dea):
+            errors.append("DEA_FORMAT: DEA must contain one letter and eight alphanumerics")
 
     if fields.claim_amount is not None and not Decimal(0) < fields.claim_amount <= claim_amount_max:
         errors.append(

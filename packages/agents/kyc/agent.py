@@ -136,7 +136,7 @@ class KycAgent:
                     )
                 )
             else:
-                self._check_member_fields(member, fields, ocr, flags)
+                self._check_member_fields(member, fields, ocr, received_at, flags)
                 if doc_type not in MEMBER_MATCH_ONLY_TYPES:
                     self._check_policy(member, fields, received_at, flags, doc_type)
 
@@ -152,7 +152,7 @@ class KycAgent:
                     TamperAssessment,
                 )
 
-            if doc_type not in MEMBER_MATCH_ONLY_TYPES:
+            if doc_type == DocType.ID_DOCUMENT:
                 self._check_expiry(member, fields, ocr, received_at, flags, visual)
                 if visual is not None and visual.tampering_detected:
                     corroborated = any(flag.code in TAMPER_CORROBORATING_FLAGS for flag in flags)
@@ -218,7 +218,10 @@ class KycAgent:
         member_id = self._value(fields, "member_id")
         policy_number = self._printed_policy_number(fields)
         if doc_type == DocType.ID_DOCUMENT:
-            if member_id and not SEEDED_MEMBER_ID_PATTERN.fullmatch(member_id):
+            if member_id and (
+                not SEEDED_MEMBER_ID_PATTERN.fullmatch(member_id)
+                or SEEDED_POLICY_NUMBER_PATTERN.fullmatch(member_id)
+            ):
                 member_id = None
             if policy_number and not SEEDED_POLICY_NUMBER_PATTERN.fullmatch(policy_number):
                 policy_number = None
@@ -253,12 +256,15 @@ class KycAgent:
         member: Member,
         fields: dict[str, OcrField],
         ocr: OcrPayload,
+        received_at: datetime,
         flags: list[KycFlag],
     ) -> None:
         dob_value = self._value(fields, "dob")
         if dob_value and member.date_of_birth:
             dob = parse_identity_date(dob_value)
-            if dob is not None and dob != member.date_of_birth:
+            if not self._valid_identity_dob(dob_value, received_at) or (
+                dob is not None and dob != member.date_of_birth
+            ):
                 flags.append(
                     KycFlag(
                         code="DOB_MISMATCH",
@@ -458,3 +464,13 @@ class KycAgent:
             flags=flags,
             member_ref=member_ref,
         )
+
+    def _valid_identity_dob(self, dob_value: str | None, received_at: datetime) -> bool:
+        if not dob_value:
+            return True
+        dob = parse_identity_date(dob_value)
+        if dob is None:
+            return False
+        reference = received_at.date()
+        age = reference.year - dob.year - ((reference.month, reference.day) < (dob.month, dob.day))
+        return dob <= reference and 0 <= age <= 120

@@ -11,9 +11,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from packages.agents.claims.validators import (
     REQUIRED_FIELDS,
     has_confirmed_absence,
+    is_placeholder,
     normalize_amount,
     normalize_code,
     normalize_date,
+    normalize_dea,
     normalize_npi,
     validate_claim,
 )
@@ -276,6 +278,14 @@ class ClaimsAgent:
                         extracted_value = int(extracted.value)
                     except (TypeError, ValueError):
                         extracted_value = extracted.value
+            elif key == "sig":
+                extracted_value = (
+                    None if is_placeholder(extracted.value) else _text_or_list(extracted.value)
+                )
+            elif key == "dea_number":
+                extracted_value = (
+                    None if is_placeholder(extracted.value) else normalize_dea(str(extracted.value))
+                )
             elif key in LIST_FIELDS:
                 extracted_value = _text_or_list(extracted.value)
             else:

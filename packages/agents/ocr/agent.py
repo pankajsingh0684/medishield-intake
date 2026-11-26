@@ -410,10 +410,25 @@ class OCRAgent:
                 and word.text.strip() == tess_field.value
                 for previous, word in pairwise(tesseract_words)
             )
+            labeled_identity = key in {"dob", "member_name", "member_id"} and any(
+                previous.page == word.page == page_num
+                and previous.text.strip().upper().rstrip(":")
+                in {"DOB", "BIRTH", "NAME", "MEMBER NAME", "PATIENT NAME", "MEMBER ID", "ID"}
+                and word.text.strip() == tess_field.value
+                for previous, word in pairwise(tesseract_words)
+            )
+            labeled_date = key in {"admit_date", "discharge_date"} and any(
+                previous.page == word.page == page_num
+                and previous.text.strip().upper().rstrip(":") in {"ADMIT", "ADMISSION", "DISCHARGE"}
+                and word.text.strip() == tess_field.value
+                for previous, word in pairwise(tesseract_words)
+            )
             if (
                 key not in merged_fields_dict
                 or tess_field.confidence > merged_fields_dict[key].confidence
                 or labeled_dob
+                or labeled_identity
+                or labeled_date
             ):
                 merged_fields_dict[key] = OcrField(
                     key=key,
@@ -421,6 +436,25 @@ class OCRAgent:
                     confidence=tess_field.confidence,
                     page=page_num,
                 )
+
+        # Downgrade discharge admit/discharge dates when Tesseract and vision disagree or the order is invalid.
+        admit = next(
+            (field for field in merged_fields_dict.values() if field.key == "admit_date"), None
+        )
+        discharge = next(
+            (field for field in merged_fields_dict.values() if field.key == "discharge_date"), None
+        )
+        if admit is not None and discharge is not None:
+            from packages.agents.ocr.validators import parse_date
+
+            admit_date = parse_date(admit.value)
+            discharge_date = parse_date(discharge.value)
+            if (
+                admit_date is not None
+                and discharge_date is not None
+                and admit_date > discharge_date
+            ):
+                admit.confidence = min(admit.confidence, 0.49)
 
         total_pages = max(
             llm_result.pages,
