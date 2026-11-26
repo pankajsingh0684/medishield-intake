@@ -1,4 +1,153 @@
 {
-  "date": "2026-11-25",
-  "estimated_tokens": 120791
+  "reset_window": "rolling_24h_utc",
+  "events": [
+    {
+      "timestamp": "2026-11-26T02:59:04.162335+00:00",
+      "actual_tokens": 2079
+    },
+    {
+      "timestamp": "2026-11-26T02:59:06.112796+00:00",
+      "actual_tokens": 2141
+    },
+    {
+      "timestamp": "2026-11-26T02:59:06.860262+00:00",
+      "actual_tokens": 570
+    },
+    {
+      "timestamp": "2026-11-26T03:00:04.189347+00:00",
+      "actual_tokens": 2080
+    },
+    {
+      "timestamp": "2026-11-26T03:00:15.861211+00:00",
+      "actual_tokens": 2830
+    },
+    {
+      "timestamp": "2026-11-26T03:01:04.078582+00:00",
+      "actual_tokens": 2038
+    },
+    {
+      "timestamp": "2026-11-26T03:01:14.597518+00:00",
+      "actual_tokens": 2141
+    },
+    {
+      "timestamp": "2026-11-26T03:02:35.239854+00:00",
+      "actual_tokens": 2037
+    },
+    {
+      "timestamp": "2026-11-26T03:02:36.195169+00:00",
+      "actual_tokens": 729
+    },
+    {
+      "timestamp": "2026-11-26T03:02:38.769419+00:00",
+      "actual_tokens": 2083
+    },
+    {
+      "timestamp": "2026-11-26T03:03:14.562176+00:00",
+      "actual_tokens": 2134
+    },
+    {
+      "timestamp": "2026-11-26T03:03:18.222000+00:00",
+      "actual_tokens": 602
+    },
+    {
+      "timestamp": "2026-11-26T03:03:20.263740+00:00",
+      "actual_tokens": 2085
+    },
+    {
+      "timestamp": "2026-11-26T03:04:15.733117+00:00",
+      "actual_tokens": 2846
+    },
+    {
+      "timestamp": "2026-11-26T03:04:20.586433+00:00",
+      "actual_tokens": 2038
+    },
+    {
+      "timestamp": "2026-11-26T03:05:14.552455+00:00",
+      "actual_tokens": 2141
+    },
+    {
+      "timestamp": "2026-11-26T03:05:21.688095+00:00",
+      "actual_tokens": 2688
+    },
+    {
+      "timestamp": "2026-11-26T03:05:24.893940+00:00",
+      "actual_tokens": 762
+    },
+    {
+      "timestamp": "2026-11-26T03:05:25.857710+00:00",
+      "actual_tokens": 2083
+    },
+    {
+      "timestamp": "2026-11-26T03:06:14.859981+00:00",
+      "actual_tokens": 2403
+    },
+    {
+      "timestamp": "2026-11-26T03:06:25.841289+00:00",
+      "actual_tokens": 2157
+    },
+    {
+      "timestamp": "2026-11-26T03:06:26.518722+00:00",
+      "actual_tokens": 532
+    },
+    {
+      "timestamp": "2026-11-26T03:07:14.856232+00:00",
+      "actual_tokens": 2081
+    },
+    {
+      "timestamp": "2026-11-26T03:07:26.105157+00:00",
+      "actual_tokens": 2369
+    },
+    {
+      "timestamp": "2026-11-26T03:08:14.643392+00:00",
+      "actual_tokens": 2141
+    },
+    {
+      "timestamp": "2026-11-26T03:08:15.372005+00:00",
+      "actual_tokens": 567
+    },
+    {
+      "timestamp": "2026-11-26T03:08:26.013403+00:00",
+      "actual_tokens": 2081
+    },
+    {
+      "timestamp": "2026-11-26T03:09:15.371134+00:00",
+      "actual_tokens": 2677
+    },
+    {
+      "timestamp": "2026-11-26T03:09:26.160804+00:00",
+      "actual_tokens": 2146
+    },
+    {
+      "timestamp": "2026-11-26T03:09:26.923088+00:00",
+      "actual_tokens": 696
+    },
+    {
+      "timestamp": "2026-11-26T03:10:14.431783+00:00",
+      "actual_tokens": 2084
+    },
+    {
+      "timestamp": "2026-11-26T03:10:32.228330+00:00",
+      "actual_tokens": 2486
+    },
+    {
+      "timestamp": "2026-11-26T03:11:14.623671+00:00",
+      "actual_tokens": 2141
+    },
+    {
+      "timestamp": "2026-11-26T03:11:19.912039+00:00",
+      "actual_tokens": 1551
+    },
+    {
+      "timestamp": "2026-11-26T03:11:20.583030+00:00",
+      "actual_tokens": 598
+    },
+    {
+      "timestamp": "2026-11-26T03:11:31.591681+00:00",
+      "actual_tokens": 2085
+    },
+    {
+      "timestamp": "2026-11-26T03:13:45.656765+00:00",
+      "actual_tokens": 2084
+    }
+  ]
 }

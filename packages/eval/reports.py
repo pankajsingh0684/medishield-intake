@@ -114,7 +114,8 @@ def report_markdown(report: dict[str, Any]) -> str:
                 f"- 429 retries: {usage.get('retries_429', 0)}",
                 f"- Total wait: {usage.get('seconds_waited', 0.0):.2f} seconds",
                 f"- Estimated tokens by model: `{json.dumps(usage.get('estimated_tokens_by_model', {}), sort_keys=True)}`",
-                f"- Daily estimated tokens used: {usage.get('daily_tokens_used', 0)}",
+                f"- Actual tokens by model: `{json.dumps(usage.get('actual_tokens_by_model', {}), sort_keys=True)}`",
+                f"- Daily actual tokens used (UTC rolling 24h): {usage.get('daily_tokens_used', 0)}",
                 f"- Cache hits: {usage.get('cache_hits', 0)}",
                 "- Usage by prompt: `"
                 + json.dumps(usage.get("usage_by_prompt", {}), sort_keys=True)

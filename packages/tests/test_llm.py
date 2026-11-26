@@ -741,19 +741,22 @@ def test_groq_token_limiter_waits_when_tpm_budget_would_be_exceeded() -> None:
     client.close()
 
 
-def test_groq_daily_budget_persists_successful_usage_and_stops_at_90_percent(
+def test_groq_daily_budget_persists_actual_usage_and_stops_at_90_percent(
     tmp_path: Path,
 ) -> None:
-    from datetime import date
+    from datetime import UTC, datetime
 
-    day = date(2026, 11, 24)
+    now = datetime(2026, 11, 24, 12, 0, tzinfo=UTC)
     budget_path = tmp_path / "usage.json"
-    budget = GroqDailyTokenBudget(30, budget_path, today=lambda: day)
+    budget = GroqDailyTokenBudget(30, budget_path, now=lambda: now)
 
     def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
-            json={"choices": [{"message": {"content": '{"value":"ok"}'}}]},
+            json={
+                "choices": [{"message": {"content": '{"value":"ok"}'}}],
+                "usage": {"prompt_tokens": 9, "completion_tokens": 3},
+            },
         )
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
@@ -775,12 +778,50 @@ def test_groq_daily_budget_persists_successful_usage_and_stops_at_90_percent(
     }
     provider.complete(**args)
     provider.complete(**args)
-    resumed_budget = GroqDailyTokenBudget(30, budget_path, today=lambda: day)
+    resumed_budget = GroqDailyTokenBudget(30, budget_path, now=lambda: now)
 
-    assert resumed_budget.used_tokens == 22
-    with pytest.raises(GroqDailyTokenBudgetExceeded, match="90% of GROQ_TPD_LIMIT"):
-        resumed_budget.check(6)
-    assert resumed_budget.budget_exceeded is True
+    assert resumed_budget.used_tokens == 24
+    assert provider.usage_summary()["actual_tokens_by_model"] == {"model-a": 24}
+    with pytest.raises(GroqDailyTokenBudgetExceeded, match="Groq daily token budget stop"):
+        resumed_budget.check(4)
+    client.close()
+
+
+def test_groq_daily_budget_does_not_record_rejected_429_usage(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    now = datetime(2026, 11, 24, 12, 0, tzinfo=UTC)
+    budget_path = tmp_path / "usage.json"
+    budget = GroqDailyTokenBudget(1000, budget_path, now=lambda: now)
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            429,
+            headers={"Retry-After": "0"},
+            json={"error": {"message": "rate limited"}},
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = GroqProvider(
+        api_key="mock-key",
+        timeout=1,
+        client=client,
+        daily_budget=budget,
+        sleeper=lambda _: None,
+    )
+
+    with pytest.raises(RetryableLLMError):
+        provider.complete(
+            model="model-a",
+            system="",
+            messages=[],
+            images=[],
+            schema=Result,
+            max_tokens=10,
+        )
+
+    assert budget.used_tokens == 0
+    assert budget.reserved_tokens == 0
     client.close()
 
 

@@ -1,0 +1,1 @@
+"{\"fields\":{\"drug_name\":{\"value\":null,\"confidence\":0.95,\"page\":1,\"bbox\":null},\"sig\":{\"value\":\"Take 1 capsule three times daily\",\"confidence\":0.98,\"page\":1,\"bbox\":null},\"prescriber_npi\":{\"value\":\"NPI: 1234567891\",\"confidence\":0.9,\"page\":1,\"bbox\":null},\"dea_number\":{\"value\":\"DEA: BH7298847\",\"confidence\":0.85,\"page\":1,\"bbox\":null}}}"

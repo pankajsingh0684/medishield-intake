@@ -7,7 +7,7 @@ import re
 import threading
 import time
 from collections.abc import Mapping, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from io import BytesIO
 from pathlib import Path
@@ -244,15 +244,16 @@ class GroqMinuteLimiter:
 
 
 class GroqDailyTokenBudget:
-    """Persistent estimated-token ledger with a 90% daily stop threshold."""
+    """Persistent actual-usage ledger using a UTC rolling 24-hour window."""
 
-    def __init__(self, limit: int, path: Path, *, today=None) -> None:
+    def __init__(self, limit: int, path: Path, *, now=None) -> None:
         self.limit = limit
         self.path = path
-        self.today = today or (lambda: datetime.now(UTC).date())
+        self.now = now or (lambda: datetime.now(UTC))
         self.used_tokens = 0
         self.reserved_tokens = 0
         self.budget_exceeded = False
+        self._events: list[dict[str, Any]] = []
         self._lock = threading.RLock()
         self._load()
 
@@ -261,11 +262,29 @@ class GroqDailyTokenBudget:
             data = json.loads(self.path.read_text(encoding="utf-8"))
         except (FileNotFoundError, json.JSONDecodeError):
             return
-        if data.get("date") == self.today().isoformat():
-            self.used_tokens = int(data.get("estimated_tokens", 0))
+        events = data.get("events")
+        if isinstance(events, list):
+            self._events = [event for event in events if isinstance(event, dict)]
+            self._prune()
+
+    def _prune(self) -> None:
+        cutoff = self.now() - timedelta(hours=24)
+        active: list[dict[str, Any]] = []
+        for event in self._events:
+            try:
+                timestamp = datetime.fromisoformat(str(event["timestamp"]))
+                if timestamp.tzinfo is None:
+                    timestamp = timestamp.replace(tzinfo=UTC)
+                if timestamp >= cutoff:
+                    active.append(event)
+            except (KeyError, TypeError, ValueError):
+                continue
+        self._events = active
+        self.used_tokens = sum(int(event.get("actual_tokens", 0)) for event in active)
 
     def check(self, estimated_tokens: int) -> None:
         with self._lock:
+            self._prune()
             threshold = int(self.limit * GROQ_DAILY_BUDGET_FRACTION)
             if self.used_tokens + self.reserved_tokens + estimated_tokens > threshold:
                 self.budget_exceeded = True
@@ -284,19 +303,23 @@ class GroqDailyTokenBudget:
         with self._lock:
             self.reserved_tokens = max(0, self.reserved_tokens - estimated_tokens)
 
-    def record_success(self, estimated_tokens: int) -> None:
+    def record_success(self, estimated_tokens: int, actual_tokens: int) -> None:
         with self._lock:
             self.reserved_tokens = max(0, self.reserved_tokens - estimated_tokens)
-            self.used_tokens += estimated_tokens
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(
-                json.dumps(
-                    {"date": self.today().isoformat(), "estimated_tokens": self.used_tokens},
-                    indent=2,
+            if actual_tokens > 0:
+                self._events.append(
+                    {"timestamp": self.now().isoformat(), "actual_tokens": actual_tokens}
                 )
-                + "\n",
-                encoding="utf-8",
-            )
+                self._prune()
+            self._persist()
+
+    def _persist(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(
+            json.dumps({"reset_window": "rolling_24h_utc", "events": self._events}, indent=2)
+            + "\n",
+            encoding="utf-8",
+        )
 
 
 class _HttpProvider:
@@ -391,6 +414,7 @@ class GroqProvider(_HttpProvider):
         self.retries_429 = 0
         self.wait_429_seconds = 0.0
         self.estimated_tokens_by_model: dict[str, int] = {}
+        self.actual_tokens_by_model: dict[str, int] = {}
         self._stats_lock = threading.Lock()
 
     def _http_error_message(self, response: httpx.Response) -> str:
@@ -457,6 +481,7 @@ class GroqProvider(_HttpProvider):
                 "retries_429": self.retries_429,
                 "seconds_waited": self.wait_429_seconds + self.minute_limiter.wait_seconds,
                 "estimated_tokens_by_model": dict(self.estimated_tokens_by_model),
+                "actual_tokens_by_model": dict(self.actual_tokens_by_model),
             }
         summary["daily_tokens_used"] = self.daily_budget.used_tokens if self.daily_budget else 0
         return summary
@@ -526,7 +551,14 @@ class GroqProvider(_HttpProvider):
                         payload=payload,
                     )
                     if self.daily_budget is not None:
-                        self.daily_budget.record_success(estimated_tokens)
+                        actual_tokens = 0
+                        usage = body.get("usage")
+                        if isinstance(usage, dict):
+                            prompt_tokens = usage.get("prompt_tokens")
+                            completion_tokens = usage.get("completion_tokens")
+                            if prompt_tokens is not None and completion_tokens is not None:
+                                actual_tokens = int(prompt_tokens) + int(completion_tokens)
+                        self.daily_budget.record_success(estimated_tokens, actual_tokens)
                         budget_reserved = False
                     break
                 except GroqRateLimitError as error:
@@ -551,7 +583,15 @@ class GroqProvider(_HttpProvider):
         except (KeyError, IndexError, TypeError) as error:
             raise LLMProviderError("groq returned no completion content") from error
         input_tokens, output_tokens = _usage(body)
+        actual_tokens = (
+            input_tokens + output_tokens
+            if input_tokens is not None and output_tokens is not None
+            else 0
+        )
         with self._stats_lock:
+            self.actual_tokens_by_model[model] = (
+                self.actual_tokens_by_model.get(model, 0) + actual_tokens
+            )
             self.estimated_tokens_by_model[model] = (
                 self.estimated_tokens_by_model.get(model, 0) + estimated_tokens
             )

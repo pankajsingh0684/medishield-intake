@@ -156,6 +156,8 @@ class Gateway:
                     "cached_calls": 0,
                     "estimated_input_tokens": {"live": 0, "cached": 0},
                     "estimated_output_tokens": {"live": 0, "cached": 0},
+                    "actual_input_tokens": {"live": 0, "cached": 0},
+                    "actual_output_tokens": {"live": 0, "cached": 0},
                 },
             )
             entry[f"{status}_calls"] += 1
@@ -264,6 +266,11 @@ class Gateway:
                     )
                     continue
                 tokens = (response.input_tokens, response.output_tokens)
+                if status == "live" and response.input_tokens is not None:
+                    entry = self._prompt_usage[prompt_name]
+                    entry["actual_input_tokens"]["live"] += response.input_tokens
+                    if response.output_tokens is not None:
+                        entry["actual_output_tokens"]["live"] += response.output_tokens
                 if self.record_fixtures and self.fixtures and selected_provider.name != "stub":
                     self.fixtures.write(key, result.model_dump(mode="json"))
                 if self.response_cache is not None and cache_key is not None:
@@ -474,11 +481,15 @@ class Gateway:
                         "calls": values["live_calls"],
                         "estimated_input_tokens": values["estimated_input_tokens"]["live"],
                         "estimated_output_tokens": values["estimated_output_tokens"]["live"],
+                        "actual_input_tokens": values["actual_input_tokens"]["live"],
+                        "actual_output_tokens": values["actual_output_tokens"]["live"],
                     },
                     "cached": {
                         "calls": values["cached_calls"],
                         "estimated_input_tokens": values["estimated_input_tokens"]["cached"],
                         "estimated_output_tokens": values["estimated_output_tokens"]["cached"],
+                        "actual_input_tokens": values["actual_input_tokens"]["cached"],
+                        "actual_output_tokens": values["actual_output_tokens"]["cached"],
                     },
                 }
                 for name, values in self._prompt_usage.items()

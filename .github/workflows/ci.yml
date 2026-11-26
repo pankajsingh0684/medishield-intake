@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: medishield
+          POSTGRES_USER: medishield
+          POSTGRES_PASSWORD: ci-placeholder
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U medishield -d medishield"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+psycopg://medishield:ci-placeholder@127.0.0.1:5432/medishield
+      TEST_DATABASE_URL: postgresql+psycopg://medishield:ci-placeholder@127.0.0.1:5432/medishield_test
+      POSTGRES_TEST_DB: medishield_test
+      REDIS_URL: redis://:ci-placeholder@127.0.0.1:6380/0
+      REDIS_PASSWORD: ci-placeholder
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_ACCESS_KEY: medishield-local
+      S3_SECRET_KEY: ci-placeholder
+      S3_BUCKET: medishield-documents
+      S3_TEST_BUCKET: medishield-documents-test
+      QDRANT_URL: http://127.0.0.1:6333
+      QDRANT_API_KEY: ci-placeholder
+      LLM_PROVIDER: stub
+      LLM_VISION_MODEL: test-vision-placeholder
+      LLM_TEXT_MODEL: test-text-placeholder
+      JWT_SECRET: ci-placeholder
+      SEED_TEST_USER_PASSWORD: ci-placeholder
+      API_URL: http://127.0.0.1:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install Tesseract
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - name: Install Python dependencies
+        run: uv sync --locked --dev
+      - name: Ruff
+        run: uv run ruff check .
+      - name: Create test database
+        run: PGPASSWORD=ci-placeholder psql -h 127.0.0.1 -U medishield -d medishield -c 'CREATE DATABASE medishield_test;' || true
+      - name: Start Redis
+        run: docker run -d --name medishield-redis -p 6380:6379 redis:7-alpine redis-server --requirepass ci-placeholder
+      - name: Pytest
+        run: uv run pytest -q
+        env:
+          DATABASE_URL: postgresql+psycopg://medishield:ci-placeholder@127.0.0.1:5432/medishield_test
+          POSTGRES_TEST_DB: medishield_test
+          REDIS_URL: redis://:ci-placeholder@127.0.0.1:6380/0
+          REDIS_PASSWORD: ci-placeholder
+          S3_ENDPOINT: http://127.0.0.1:9000
+          S3_ACCESS_KEY: medishield-local
+          S3_SECRET_KEY: ci-placeholder
+          S3_BUCKET: medishield-documents
+          S3_TEST_BUCKET: medishield-documents-test
+          QDRANT_URL: http://127.0.0.1:6333
+          QDRANT_API_KEY: ci-placeholder
+          LLM_PROVIDER: stub
+          LLM_VISION_MODEL: test-vision-placeholder
+          LLM_TEXT_MODEL: test-text-placeholder
+          JWT_SECRET: ci-placeholder
+          SEED_TEST_USER_PASSWORD: ci-placeholder
+          API_URL: http://127.0.0.1:8000
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: apps/web
+      - name: Build
+        run: npm run build
+        working-directory: apps/web

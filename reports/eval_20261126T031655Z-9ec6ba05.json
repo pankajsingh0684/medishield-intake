@@ -1,0 +1,1659 @@
+{
+  "run": {
+    "provider": "groq",
+    "split": "holdout",
+    "sample_requested": null,
+    "sample_size": 20,
+    "received_at_override": true,
+    "data_as_of_date": "2025-12-31",
+    "run_id": "20261126T031655Z-9ec6ba05",
+    "retrieval_csv": "eval_20261126T031655Z-9ec6ba05_retrieval.csv"
+  },
+  "metrics": {
+    "sample_size": 20,
+    "classification": {
+      "correct": 11,
+      "sample_size": 20,
+      "accuracy": 0.55
+    },
+    "extraction": {
+      "correct": 10,
+      "sample_size": 40,
+      "completeness": 0.25
+    },
+    "decision": {
+      "correct": 4,
+      "sample_size": 20,
+      "accuracy": 0.2
+    },
+    "confusion_matrix": {
+      "APPROVE": {
+        "ESCALATE": 2,
+        "NO_DECISION": 3
+      },
+      "ESCALATE": {
+        "APPROVE": 1,
+        "ESCALATE": 2,
+        "NO_DECISION": 8
+      },
+      "REJECT": {
+        "ESCALATE": 1,
+        "NO_DECISION": 1,
+        "REJECT": 2
+      }
+    },
+    "breakdowns": {
+      "scenario": {
+        "amount_under_10k": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "date_conflict": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "duplicate_claim": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "expired_id": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "expiring_soon_id": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "missing_field": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "name_mismatch": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "policy_amendment": {
+          "correct": 2,
+          "sample_size": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "proc_diag_mismatch": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "prompt_injection": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "readmission_30d": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "tampered_id": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "uncovered_procedure": {
+          "correct": 1,
+          "sample_size": 1,
+          "accuracy": 1.0
+        },
+        "unknown": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        },
+        "valid_clean": {
+          "correct": 0,
+          "sample_size": 4,
+          "accuracy": 0.0
+        }
+      },
+      "document_category": {
+        "CLAIM_FORM": {
+          "correct": 1,
+          "sample_size": 8,
+          "accuracy": 0.125
+        },
+        "DISCHARGE_SUMMARY": {
+          "correct": 0,
+          "sample_size": 2,
+          "accuracy": 0.0
+        },
+        "ID_DOCUMENT": {
+          "correct": 0,
+          "sample_size": 4,
+          "accuracy": 0.0
+        },
+        "POLICY_AMENDMENT": {
+          "correct": 2,
+          "sample_size": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "PRESCRIPTION": {
+          "correct": 1,
+          "sample_size": 2,
+          "accuracy": 0.5
+        },
+        "UNKNOWN": {
+          "correct": 0,
+          "sample_size": 1,
+          "accuracy": 0.0
+        }
+      },
+      "split": {
+        "holdout": {
+          "correct": 4,
+          "sample_size": 20,
+          "accuracy": 0.2
+        }
+      }
+    },
+    "latency_ms": {
+      "sample_size": 20,
+      "p50": 49956.22855005786,
+      "p95": 130537.0913800202
+    },
+    "calibration": {
+      "sample_size": 8,
+      "bins": [
+        {
+          "lower": 0.0,
+          "upper": 0.2,
+          "sample_size": 1,
+          "mean_confidence": 0.1,
+          "accuracy": 0.0
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.4,
+          "sample_size": 2,
+          "mean_confidence": 0.3,
+          "accuracy": 0.5
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.6,
+          "sample_size": 2,
+          "mean_confidence": 0.44999999999999996,
+          "accuracy": 0.5
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.8,
+          "sample_size": 3,
+          "mean_confidence": 0.6533333333333333,
+          "accuracy": 0.6666666666666666
+        }
+      ],
+      "ece": 0.08
+    }
+  },
+  "weighted_score": {
+    "score": 0.3230769230769231,
+    "sample_size": 3,
+    "method": "Available automated PRD weights (classification 20%, extraction 20%, decision 25%) renormalized to 100%; retrieval is manual, UI and code quality are unscored."
+  },
+  "decision_mismatches": [
+    {
+      "doc_id": "id_PT_47353",
+      "expected": "REJECT",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.1,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:kyc",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.1
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.8000000000000002
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:KYC_FAILED",
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.1
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.8000000000000002
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.8,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.1,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.1,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "kyc"
+    },
+    {
+      "doc_id": "claim_PT_72021",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.3,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:policy, LOW_CONFIDENCE:policy_coverage",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.977
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.95
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.977
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "claims": {
+                "status": "OK",
+                "confidence": 0.95
+              },
+              "policy": {
+                "status": "OK",
+                "confidence": 0.3
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.99
+              }
+            },
+            "coverage_undetermined": true,
+            "low_confidence_agents": [
+              "policy",
+              "policy_coverage"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": false,
+          "inputs": {
+            "rejection_reasons": [],
+            "rejection_sources": []
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY"
+            ],
+            "applicable_agent_count": 6
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.99,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.977,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "OK",
+          "confidence": 0.95,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.3,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "policy"
+    },
+    {
+      "doc_id": "id_PT_62383",
+      "expected": "ESCALATE",
+      "actual": "APPROVE",
+      "decision_confidence": 0.7,
+      "fired_rules": [
+        {
+          "rule": "R4_APPROVE",
+          "summary": "R4_APPROVE",
+          "inputs": {
+            "blocked_by": [],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 1.0
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.9724999999999999
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 1.0
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": []
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": false,
+          "inputs": {
+            "rejection_reasons": [],
+            "rejection_sources": []
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": true,
+          "inputs": {
+            "blocked_by": [],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.972,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "fraud"
+    },
+    {
+      "doc_id": "id_PT_99687",
+      "expected": "APPROVE",
+      "actual": "ESCALATE",
+      "decision_confidence": 0.45,
+      "fired_rules": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "summary": "R1 LOW_CONFIDENCE:kyc",
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.44999999999999996
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.908
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.98
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "summary": "R3 REJECTION:KYC_FAILED",
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        }
+      ],
+      "rule_trace": [
+        {
+          "rule": "R1_AGENT_RELIABILITY",
+          "fired": true,
+          "inputs": {
+            "threshold": 0.6,
+            "error_agents": [],
+            "missing_agents": [],
+            "applicable_agents": {
+              "kyc": {
+                "status": "OK",
+                "confidence": 0.44999999999999996
+              },
+              "ocr": {
+                "status": "OK",
+                "confidence": 0.908
+              },
+              "fraud": {
+                "status": "OK",
+                "confidence": 0.7
+              },
+              "classification": {
+                "status": "OK",
+                "confidence": 0.98
+              }
+            },
+            "coverage_undetermined": false,
+            "low_confidence_agents": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R2_FRAUD_SCORE",
+          "fired": false,
+          "inputs": {
+            "threshold": 0.3,
+            "fraud_score": 0.0
+          }
+        },
+        {
+          "rule": "R3_REJECTION",
+          "fired": true,
+          "inputs": {
+            "rejection_reasons": [
+              "KYC_FAILED"
+            ],
+            "rejection_sources": [
+              "kyc"
+            ]
+          }
+        },
+        {
+          "rule": "R4_APPROVE",
+          "fired": false,
+          "inputs": {
+            "blocked_by": [
+              "R1_AGENT_RELIABILITY",
+              "R3_REJECTION"
+            ],
+            "applicable_agent_count": 4
+          }
+        }
+      ],
+      "agents": [
+        {
+          "agent": "classifier",
+          "status": "OK",
+          "confidence": 0.98,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "claims",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "kyc",
+          "status": "OK",
+          "confidence": 0.45,
+          "is_minimum_confidence": true
+        },
+        {
+          "agent": "ocr",
+          "status": "OK",
+          "confidence": 0.908,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "policy",
+          "status": "SKIPPED",
+          "confidence": 1.0,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "fraud",
+          "status": "OK",
+          "confidence": 0.7,
+          "is_minimum_confidence": false
+        },
+        {
+          "agent": "orchestrator",
+          "status": "OK",
+          "confidence": 0.45,
+          "is_minimum_confidence": false
+        }
+      ],
+      "minimum_confidence_agent": "kyc"
+    }
+  ],
+  "known_divergences": [
+    {
+      "doc_id": "claim_PT_16658",
+      "expected": "REJECT",
+      "known_engine_result": "ESCALATE",
+      "rule": "R2",
+      "reason": "The $9,950 uncovered claim is in the near-threshold band; R2 fires before R3.",
+      "observed": "NOT_EVALUATED"
+    }
+  ],
+  "failures": [
+    {
+      "doc_id": "claim_extra_PT_EX0038",
+      "agent": "ocr",
+      "message": "OCR processing failed: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0039",
+      "agent": "ocr",
+      "message": "OCR processing failed: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0041",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0042",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0042_dup",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0043",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "rx_extra_PT_EX0043",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "id_extra_PT_EX0044",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "amend_extra_PT_EX0044",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0045",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0046",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    },
+    {
+      "doc_id": "unknown_extra_unrelated_001",
+      "agent": "classification",
+      "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+    }
+  ],
+  "groq_usage": {
+    "calls_by_model": {
+      "qwen/qwen3.8-27b": 39,
+      "openai/gpt-oss-120b": 11
+    },
+    "rate_limit_responses_429": 13,
+    "retries_429": 2,
+    "seconds_waited": 811.472000000067,
+    "estimated_tokens_by_model": {
+      "qwen/qwen3.8-27b": 73492,
+      "openai/gpt-oss-120b": 12395
+    },
+    "actual_tokens_by_model": {
+      "qwen/qwen3.8-27b": 57654,
+      "openai/gpt-oss-120b": 11332
+    },
+    "daily_tokens_used": 68986,
+    "cache_hits": 3,
+    "usage_by_prompt": {
+      "classifier": {
+        "live": {
+          "calls": 19,
+          "estimated_input_tokens": 42959,
+          "estimated_output_tokens": 5700,
+          "actual_input_tokens": 20460,
+          "actual_output_tokens": 365
+        },
+        "cached": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "kyc_tamper": {
+        "live": {
+          "calls": 7,
+          "estimated_input_tokens": 16121,
+          "estimated_output_tokens": 2100,
+          "actual_input_tokens": 14609,
+          "actual_output_tokens": 387
+        },
+        "cached": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "orchestrator_justify": {
+        "live": {
+          "calls": 8,
+          "estimated_input_tokens": 2426,
+          "estimated_output_tokens": 2400,
+          "actual_input_tokens": 4264,
+          "actual_output_tokens": 792
+        },
+        "cached": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "ocr": {
+        "live": {
+          "calls": 8,
+          "estimated_input_tokens": 18712,
+          "estimated_output_tokens": 8000,
+          "actual_input_tokens": 13026,
+          "actual_output_tokens": 2585
+        },
+        "cached": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "claims_extract": {
+        "live": {
+          "calls": 3,
+          "estimated_input_tokens": 6627,
+          "estimated_output_tokens": 3000,
+          "actual_input_tokens": 6033,
+          "actual_output_tokens": 189
+        },
+        "cached": {
+          "calls": 0,
+          "estimated_input_tokens": 0,
+          "estimated_output_tokens": 0,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      },
+      "policy_decide": {
+        "live": {
+          "calls": 3,
+          "estimated_input_tokens": 5469,
+          "estimated_output_tokens": 2100,
+          "actual_input_tokens": 5795,
+          "actual_output_tokens": 481
+        },
+        "cached": {
+          "calls": 3,
+          "estimated_input_tokens": 5885,
+          "estimated_output_tokens": 2100,
+          "actual_input_tokens": 0,
+          "actual_output_tokens": 0
+        }
+      }
+    }
+  },
+  "daily_budget_stop": null,
+  "partial": false,
+  "predictions": [
+    {
+      "doc_id": "id_PT_47353",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.1,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "expired_id",
+      "split": "holdout",
+      "latency_ms": 3586.1504999920726,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_24208",
+      "doc_type": "CLAIM_FORM",
+      "decision": "REJECT",
+      "confidence": 0.63,
+      "fields": {
+        "claim_amount": "8050.00",
+        "icd10_codes": [
+          "F32.1"
+        ],
+        "cpt_codes": [
+          "21120",
+          "71250"
+        ],
+        "provider_npi": "5610293847",
+        "service_date": "2025-05-12",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.98,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Joseph",
+            "page": 1,
+            "x": 188.0,
+            "y": 1152.0,
+            "w": 292.0,
+            "h": 74.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "policy_number": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "claim_amount": null,
+          "icd10_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "cpt_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "provider_npi": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "service_date": {
+            "text": "1.",
+            "page": 1,
+            "x": 176.0,
+            "y": 599.0,
+            "w": 39.0,
+            "h": 43.0
+          },
+          "provider_name": null,
+          "diagnosis": {
+            "text": "G.",
+            "page": 1,
+            "x": 986.0,
+            "y": 1145.0,
+            "w": 80.0,
+            "h": 55.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "uncovered_procedure",
+      "split": "holdout",
+      "latency_ms": 209305.68170011975,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_PT_24208",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.44999999999999996,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "holdout",
+      "latency_ms": 41565.46309986152,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_PT_72021",
+      "doc_type": "CLAIM_FORM",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": "47550.00",
+        "icd10_codes": [
+          "K21.0"
+        ],
+        "cpt_codes": [
+          "27447",
+          "43239",
+          "71250",
+          "99291"
+        ],
+        "provider_npi": "1029384756",
+        "service_date": "2025-05-07",
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": true,
+        "extra": {},
+        "field_confidence": {
+          "member_id": 0.98,
+          "member_name": 0.98,
+          "dob": 0.98,
+          "claim_amount": 0.98,
+          "icd10_codes": 0.98,
+          "cpt_codes": 0.95,
+          "provider_npi": 0.98,
+          "service_date": 0.98,
+          "provider_name": 0.98,
+          "diagnosis": 0.98,
+          "signature_present": 0.98
+        },
+        "field_source": {
+          "member_id": {
+            "text": "1.",
+            "page": 1,
+            "x": 324.0,
+            "y": 606.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "member_name": {
+            "text": "C)",
+            "page": 1,
+            "x": 1068.0,
+            "y": 583.0,
+            "w": 67.0,
+            "h": 77.0
+          },
+          "dob": {
+            "text": "1.",
+            "page": 1,
+            "x": 324.0,
+            "y": 606.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "claim_amount": {
+            "text": "4.",
+            "page": 1,
+            "x": 3653.0,
+            "y": 599.0,
+            "w": 43.0,
+            "h": 44.0
+          },
+          "icd10_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 324.0,
+            "y": 606.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "cpt_codes": {
+            "text": "1.",
+            "page": 1,
+            "x": 324.0,
+            "y": 606.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "provider_npi": {
+            "text": "1.",
+            "page": 1,
+            "x": 324.0,
+            "y": 606.0,
+            "w": 38.0,
+            "h": 43.0
+          },
+          "service_date": {
+            "text": "2.",
+            "page": 1,
+            "x": 322.0,
+            "y": 1064.0,
+            "w": 41.0,
+            "h": 44.0
+          },
+          "provider_name": {
+            "text": "M.",
+            "page": 1,
+            "x": 1272.0,
+            "y": 1164.0,
+            "w": 83.0,
+            "h": 56.0
+          },
+          "diagnosis": {
+            "text": "AS",
+            "page": 1,
+            "x": 3904.0,
+            "y": 709.0,
+            "w": 93.0,
+            "h": 56.0
+          },
+          "signature_present": null
+        }
+      },
+      "scenario": "valid_clean",
+      "split": "holdout",
+      "latency_ms": 126391.3761000149,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_PT_62383",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "APPROVE",
+      "confidence": 0.7,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "tampered_id",
+      "split": "holdout",
+      "latency_ms": 61576.1887000408,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "id_PT_99687",
+      "doc_type": "ID_DOCUMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.44999999999999996,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "expiring_soon_id",
+      "split": "holdout",
+      "latency_ms": 108773.55840010568,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "rx_PT_45400",
+      "doc_type": "PRESCRIPTION",
+      "decision": "REJECT",
+      "confidence": 0.63,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [
+          "F32.1"
+        ],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {
+          "rx_date": "2025-02-18",
+          "drug_name": null,
+          "sig": "Take 1 capsule three times daily",
+          "prescriber_npi": ": 1234567891",
+          "dea_number": "DEA: BH7298847",
+          "refills": 0
+        },
+        "field_confidence": {
+          "member_name": 0.98,
+          "dob": 0.98,
+          "policy_number": 0.98,
+          "icd10_codes": 0.98,
+          "diagnosis": 0.95,
+          "provider_name": 0.98,
+          "rx_date": 0.98,
+          "drug_name": 0.9,
+          "sig": 0.98,
+          "prescriber_npi": 0.9,
+          "dea_number": 0.85
+        },
+        "field_source": {
+          "member_name": {
+            "text": "Brown",
+            "page": 1,
+            "x": 458.0,
+            "y": 722.0,
+            "w": 150.0,
+            "h": 72.0
+          },
+          "dob": null,
+          "policy_number": {
+            "text": "7",
+            "page": 1,
+            "x": 638.0,
+            "y": 728.0,
+            "w": 30.0,
+            "h": 48.0
+          },
+          "icd10_codes": null,
+          "diagnosis": {
+            "text": "ate",
+            "page": 1,
+            "x": 2636.0,
+            "y": 681.0,
+            "w": 53.0,
+            "h": 19.0
+          },
+          "provider_name": {
+            "text": "A",
+            "page": 1,
+            "x": 317.0,
+            "y": 1597.0,
+            "w": 31.0,
+            "h": 44.0
+          },
+          "rx_date": {
+            "text": "02/18/2025",
+            "page": 1,
+            "x": 2596.0,
+            "y": 1093.0,
+            "w": 298.0,
+            "h": 48.0
+          },
+          "drug_name": null,
+          "sig": null,
+          "prescriber_npi": null,
+          "dea_number": null
+        }
+      },
+      "scenario": "missing_field",
+      "split": "holdout",
+      "latency_ms": 71447.80369987711,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "amend_PT_45400",
+      "doc_type": "POLICY_AMENDMENT",
+      "decision": "ESCALATE",
+      "confidence": 0.3,
+      "fields": {
+        "claim_amount": null,
+        "icd10_codes": [],
+        "cpt_codes": [],
+        "provider_npi": null,
+        "service_date": null,
+        "claim_number": null,
+        "admit_date": null,
+        "discharge_date": null,
+        "signature_present": null,
+        "extra": {},
+        "field_confidence": {},
+        "field_source": {}
+      },
+      "scenario": "policy_amendment",
+      "split": "holdout",
+      "latency_ms": 113458.49729981273,
+      "terminal_status": "DECIDED",
+      "failures": []
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0038",
+      "doc_type": "CLAIM_FORM",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "prompt_injection",
+      "split": "holdout",
+      "latency_ms": 53351.265100063756,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "ocr",
+          "message": "OCR processing failed: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0039",
+      "doc_type": "CLAIM_FORM",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "amount_under_10k",
+      "split": "holdout",
+      "latency_ms": 100787.49440005049,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "ocr",
+          "message": "OCR processing failed: groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0041",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "holdout",
+      "latency_ms": 50311.230699997395,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0042",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "holdout",
+      "latency_ms": 9589.279999956489,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0042_dup",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "duplicate_claim",
+      "split": "holdout",
+      "latency_ms": 0.0,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ],
+      "duplicate_of": "f7fa25b2-4145-48a9-a9d4-1fd021fb5246"
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0043",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "valid_clean",
+      "split": "holdout",
+      "latency_ms": 321.4980000630021,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "rx_extra_PT_EX0043",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "date_conflict",
+      "split": "holdout",
+      "latency_ms": 49913.171499967575,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "id_extra_PT_EX0044",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "name_mismatch",
+      "split": "holdout",
+      "latency_ms": 9475.758099928498,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "amend_extra_PT_EX0044",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "policy_amendment",
+      "split": "holdout",
+      "latency_ms": 432.5063000433147,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "claim_extra_PT_EX0045",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "proc_diag_mismatch",
+      "split": "holdout",
+      "latency_ms": 49999.28560014814,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "discharge_extra_PT_EX0046",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "readmission_30d",
+      "split": "holdout",
+      "latency_ms": 9455.04550007172,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    },
+    {
+      "doc_id": "unknown_extra_unrelated_001",
+      "doc_type": "UNKNOWN",
+      "decision": null,
+      "confidence": null,
+      "fields": {},
+      "scenario": "unknown",
+      "split": "holdout",
+      "latency_ms": 342.00479998253286,
+      "terminal_status": "NEEDS_REVIEW",
+      "failures": [
+        {
+          "agent": "classification",
+          "message": "groq returned HTTP 429: code=rate_limit_exceeded; message=Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m02tf2qke6m8pezmdd4jhm4g` service tier `on_demand` on tokens per day (T"
+        }
+      ]
+    }
+  ]
+}
