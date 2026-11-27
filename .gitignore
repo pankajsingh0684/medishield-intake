@@ -12,6 +12,9 @@ htmlcov/
 node_modules/
 apps/web/.next/
 apps/web/out/
+demo/
+web/demo/
+apps/web/demo/
 playwright-report/
 test-results/
 apps/web/test-results/

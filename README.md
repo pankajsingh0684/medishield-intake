@@ -6,6 +6,12 @@ MediShield is a multi-agent insurance-document intake system.
 
 It ingests claim documents and policy PDFs, runs OCR/classification/KYC/claims/policy/fraud agents, persists audit evidence, and presents decisions in a Next.js case-management UI.
 
+## Demo video
+
+[Watch the demo video](docs/medishield-demo.mp4)
+
+Walkthrough : dashboard and document upload, Processing.
+
 ## Screenshots
 
 ![Sign-in screen](docs/screenshots/login.png)
